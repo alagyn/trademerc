@@ -1,0 +1,27 @@
+{
+  "name": "asdf",
+  "variables": {
+    "atr": 10,
+    "safety": 15.0,
+    "days_to_update": 25,
+    "ema": {
+      "fast": 1,
+      "slow": 2,
+      "long": 3
+    },
+    "macd": {
+      "fast": 4,
+      "slow": 5,
+      "asdf": 6
+    },
+    "stoch": {
+      "p": 7,
+      "fast": 8,
+      "slow": 9
+    },
+    "parabolic": {
+      "af": 10.1,
+      "afmax": 11.2
+    }
+  }
+}

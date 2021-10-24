@@ -1,0 +1,27 @@
+{
+  "name": "Invalid Type",
+  "variables": {
+    "ema": {
+      "fast": 3,
+      "slow": 20,
+      "long": 60.0
+    },
+    "macd": {
+      "fast": 10,
+      "slow": 20,
+      "signal": 20
+    },
+    "stoch": {
+      "p": 20,
+      "fast": 10,
+      "slow": 10
+    },
+    "parabolic": {
+      "af": 0.02,
+      "afmax": 0.07
+    },
+    "atr": 5,
+    "safety": 2,
+    "days_to_update": 7
+  }
+}
