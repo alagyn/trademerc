@@ -166,7 +166,16 @@ class BTGUI(tk.Frame):
                                                            columnspan=2, sticky='ew',
                                                            pady=10)
 
-        RUN_BTN_ROW = SEP2_ROW + 1
+        OUT_BTN_ROW = SEP2_ROW + 1
+
+        outbtn = tk.Button(runFrame, text='Select Output:', command=self.selectOut)
+        outbtn.grid(row=OUT_BTN_ROW, column=0, padx=2)
+        self.outVar = tk.StringVar()
+        self.outVar.set('stats.json')
+        outLabel = tk.Label(runFrame, textvariable=self.outVar)
+        outLabel.grid(row=OUT_BTN_ROW, column=1, padx=2)
+
+        RUN_BTN_ROW = OUT_BTN_ROW + 1
 
         runBtn = tk.Button(runFrame, text='Run Backtest', command=self.runBT)
         runBtn.grid(row=RUN_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
@@ -186,6 +195,11 @@ class BTGUI(tk.Frame):
 
     def closeWindow(self):
         self.root.destroy()
+
+    def selectOut(self):
+        ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False)
+        if len(ret) > 0:
+            self.outVar.set(ret)
 
     def selectStrat(self):
         ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False)
@@ -221,4 +235,4 @@ class BTGUI(tk.Frame):
         startDate = self.startInput.get_date().strftime(DATE_FMT)
         endDate = self.endInput.get_date().strftime(DATE_FMT)
 
-        backtester.backtest(stock, strat, startDate, endDate)
+        backtester.backtest(stock, strat, startDate, endDate, self.outVar.get())

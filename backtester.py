@@ -8,28 +8,6 @@ import yfinance as yf
 import json
 from consts import STRAT_FORMAT, DATE_FMT
 
-# TODO remove/update
-"""
-# Record information to excel file
-def record():
-    filename = 'record.csv'
-    file_exists = os.path.isfile(filename)
-    # updates the history file to write into it, if "a" value was a "w" the function would write over the existing data
-    with open(filename, 'a', newline="") as backtest_record:  
-        fieldnames = ["Stock", "Value", "Profit($)", "Percent Gained(%)", "Total Trades", "Win %", "SQN"]
-        writer = csv.DictWriter(backtest_record, fieldnames=fieldnames)
-        if not file_exists:
-            writer.writeheader()  # file doesn't exist yet, write a header
-        writer.writerow({'Stock': stock,
-                         'Value': ending_value,
-                         'Profit($)': str(round(ending_value - starting_value, 2)),
-                         'Percent Gained(%)': str(round(((ending_value - starting_value) / starting_value), 2)),
-                         'Total Trades': tt,
-                         'Win %': win,
-                         'SQN': sqn
-                         })
-"""
-
 
 # Analyzes the efficiency of trade
 def tradeAnalysis(strat):
@@ -97,8 +75,7 @@ def verifyStrat(strat):
     recursVerify(fmt, strat, "root")
 
 
-def backtest(stock: str, strat, start_date: str, end_date: str, plotter=None):
-
+def backtest(stock: str, strat, start_date: str, end_date: str, outputFile, startingVal=10000):
     cerebro = bt.Cerebro()  # Create a cerebro entity
 
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="ta")  # Adds trade analyzer
@@ -112,7 +89,7 @@ def backtest(stock: str, strat, start_date: str, end_date: str, plotter=None):
     cerebro.adddata(data)
     print(f'Stock: {stock}')
 
-    cerebro.broker.setcash(10000)  # Sets initial portfolio amount
+    cerebro.broker.setcash(startingVal)  # Sets initial portfolio amount
 
     startingValue = cerebro.broker.getvalue()
 
@@ -121,22 +98,58 @@ def backtest(stock: str, strat, start_date: str, end_date: str, plotter=None):
     duration = time.time() - t0
 
     endingValue = cerebro.broker.getvalue()
-    strat = results[0]
+    results = results[0]
 
     print("")
     print(f'Run Time: {duration:.2f}s')
     print(f'Stock: {stock}')
-    print(f'Ending Value: {endingValue:.2f}')
-    print(f'Profit: {endingValue - startingValue:.2f}')
-    percentGain = (endingValue - startingValue) / startingValue
-    print(f'Percent Gained: {percentGain:.2%}%')
-    tradeAnalysis(strat)
-    print(f'SQN: {sqn(strat):.2f}')
+    print(f'Ending Value: ${endingValue:.2f}')
 
-    cerebro.plot(plotter=plotter)
+    profit = endingValue - startingValue
+    print(f'Profit: ${profit:.2f}')
+    percentGain = (endingValue - startingValue) / startingValue
+    print(f'Percent Gained: {percentGain:.2%}')
+    tradeAnalysis(results)
+    sqnVal = sqn(results)
+    print(f'SQN: {sqnVal:.2f}')
+
+    stats = {
+        'Strat': strat['name'],
+        'Stock': stock,
+        'StartValue': startingVal,
+        'EndValue': endingValue,
+        'Profit': profit,
+        'PercentGain': percentGain,
+        'SQN': sqnVal
+    }
+
+    with open(outputFile, mode='a') as f:
+        json.dump(stats, f)
+        f.write('\n')
+
+    cerebro.plot()
     # TODO remove?
     # record()
-
+"""
+# Record information to excel file
+def record():
+    filename = 'record.csv'
+    file_exists = os.path.isfile(filename)
+    # updates the history file to write into it, if "a" value was a "w" the function would write over the existing data
+    with open(filename, 'a', newline="") as backtest_record:  
+        fieldnames = ["Stock", "Value", "Profit($)", "Percent Gained(%)", "Total Trades", "Win %", "SQN"]
+        writer = csv.DictWriter(backtest_record, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()  # file doesn't exist yet, write a header
+        writer.writerow({'Stock': stock,
+                         'Value': ending_value,
+                         'Profit($)': str(round(ending_value - starting_value, 2)),
+                         'Percent Gained(%)': str(round(((ending_value - starting_value) / starting_value), 2)),
+                         'Total Trades': tt,
+                         'Win %': win,
+                         'SQN': sqn
+                         })
+"""
 
 def main():
     parser = ArgumentParser()
