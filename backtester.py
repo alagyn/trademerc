@@ -71,7 +71,7 @@ def verifyStrat(strat):
     with open(STRAT_FORMAT, mode='r') as f:
         fmt = json.load(f)
 
-    print(fmt)
+    # print(fmt)
     recursVerify(fmt, strat, "root")
 
 
@@ -130,6 +130,8 @@ def backtest(stock: str, strat, start_date: str, end_date: str, outputFile, star
     cerebro.plot()
     # TODO remove?
     # record()
+
+
 """
 # Record information to excel file
 def record():
@@ -150,6 +152,7 @@ def record():
                          'SQN': sqn
                          })
 """
+
 
 def main():
     parser = ArgumentParser()
