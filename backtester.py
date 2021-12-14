@@ -7,6 +7,7 @@ from bt_errors import *
 import yfinance as yf
 import json
 from consts import STRAT_FORMAT, DATE_FMT
+from typing import List
 
 
 # Analyzes the efficiency of trade
@@ -75,61 +76,64 @@ def verifyStrat(strat):
     recursVerify(fmt, strat, "root")
 
 
-def backtest(stock: str, strat, start_date: str, end_date: str, outputFile, startingVal=10000):
-    cerebro = bt.Cerebro()  # Create a cerebro entity
+def backtest(stocks: List[str], strat, start_date: str, end_date: str, outputFile, startingVal=10000):
 
-    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="ta")  # Adds trade analyzer
-    cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")  # Adds SQN analyzer
+    for stock in stocks:
+        cerebro = bt.Cerebro()  # Create a cerebro entity
 
-    cerebro.addstrategy(MasterStrategy, strat['variables'])
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="ta")  # Adds trade analyzer
+        cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")  # Adds SQN analyzer
 
-    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)  # Sets the amount willing to risk per trade
+        cerebro.addstrategy(MasterStrategy, strat['variables'])
 
-    data = bt.feeds.PandasData(dataname=yf.download(stock, start_date, end_date, auto_adjust=True))
-    cerebro.adddata(data)
-    print(f'Stock: {stock}')
+        cerebro.addsizer(bt.sizers.PercentSizer, percents=100)  # Sets the amount willing to risk per trade
 
-    cerebro.broker.setcash(startingVal)  # Sets initial portfolio amount
+        data = bt.feeds.PandasData(dataname=yf.download(stock, start_date, end_date, auto_adjust=True))
+        cerebro.adddata(data)
+        print(f'Stock: {stock}')
 
-    startingValue = cerebro.broker.getvalue()
+        cerebro.broker.setcash(startingVal)  # Sets initial portfolio amount
 
-    t0 = time.time()
-    results = cerebro.run()
-    duration = time.time() - t0
+        startingValue = cerebro.broker.getvalue()
 
-    endingValue = cerebro.broker.getvalue()
-    results = results[0]
+        t0 = time.time()
+        results = cerebro.run()
+        duration = time.time() - t0
 
-    print("")
-    print(f'Run Time: {duration:.2f}s')
-    print(f'Stock: {stock}')
-    print(f'Ending Value: ${endingValue:.2f}')
+        endingValue = cerebro.broker.getvalue()
+        results = results[0]
 
-    profit = endingValue - startingValue
-    print(f'Profit: ${profit:.2f}')
-    percentGain = (endingValue - startingValue) / startingValue
-    print(f'Percent Gained: {percentGain:.2%}')
-    tradeAnalysis(results)
-    sqnVal = sqn(results)
-    print(f'SQN: {sqnVal:.2f}')
+        print("")
+        print(f'Run Time: {duration:.2f}s')
+        # print(f'Stock: {stock}')
+        print(f'Ending Value: ${endingValue:.2f}')
 
-    stats = {
-        'Strat': strat['name'],
-        'Stock': stock,
-        'StartValue': startingVal,
-        'EndValue': endingValue,
-        'Profit': profit,
-        'PercentGain': percentGain,
-        'SQN': sqnVal
-    }
+        profit = endingValue - startingValue
+        print(f'Profit: ${profit:.2f}')
+        percentGain = (endingValue - startingValue) / startingValue
+        print(f'Percent Gained: {percentGain:.2%}')
+        tradeAnalysis(results)
+        sqnVal = sqn(results)
+        print(f'SQN: {sqnVal:.2f}')
 
-    with open(outputFile, mode='a') as f:
-        json.dump(stats, f)
-        f.write('\n')
+        stats = {
+            'Strat': strat['name'],
+            'Stock': stock,
+            'StartValue': startingVal,
+            'EndValue': round(endingValue, 2),
+            'Profit': round(profit, 2),
+            'PercentGain': round(percentGain, 4),
+            'SQN': round(sqnVal, 4)
+        }
 
-    cerebro.plot()
-    # TODO remove?
+        with open(outputFile, mode='a') as f:
+            json.dump(stats, f)
+            f.write('\n')
+
+    # print('Plotting')
+    # cerebro.plot()
     # record()
+    # print('Done')
 
 
 """

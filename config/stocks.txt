@@ -1,5 +1,5 @@
 QQQ
-#DIA
+DIA
 #SPY
 #SOXL
 #FVRR
