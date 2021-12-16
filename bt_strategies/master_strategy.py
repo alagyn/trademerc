@@ -166,7 +166,8 @@ class MasterStrategy(bt.Strategy):
         if self.parabolic > self.data.close[0]:
             self.confidence -= w7
 
-        # Checks to see if an order is pending. If it is, function is closed, to wait for order to finish
+        # Checks to see if an order is pending. If it is, function is closed,
+        # wait for order to finish.
         if self.order:
             return
 

@@ -1,7 +1,7 @@
 from dotenv import dotenv_values
 from argparse import ArgumentParser
 import alpaca_backtrader_api as alpaca
-from strategies.master_strategy import MasterStrategy
+from bt_strategies.master_strategy import MasterStrategy
 from backtester import loadStratFile, loadStockFile
 import backtrader as bt
 import pandas as pd

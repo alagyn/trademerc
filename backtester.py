@@ -2,7 +2,7 @@ import time
 from datetime import datetime
 import backtrader as bt
 from argparse import ArgumentParser
-from strategies.master_strategy import MasterStrategy
+from bt_strategies.master_strategy import MasterStrategy
 from bt_errors import *
 import yfinance as yf
 import json

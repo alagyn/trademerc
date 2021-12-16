@@ -1,24 +1,102 @@
+import datetime
+
 from alpaca_trade_api.common import URL
 from dotenv import dotenv_values
 from argparse import ArgumentParser
 from backtester import loadStratFile, loadStockFile
 import alpaca_trade_api as tradeapi
-from asyncio import sleep
+import threading
+from time import sleep
+import signal
+
+NEED_TO_STOP = False
+
+
+def toTS(time):
+    return time.replace(tzinfo=datetime.timezone.utc).timestamp()
+
+
+class Stock:
+    def __init__(self, symbol: str):
+        self.symbol: str = symbol
+        self.confidence = 0
+        self.status = ''
+        self.stopID = ''
+        self.buyDate = ''
+
+        self.indct = {}
+
 
 class Trader:
     def __init__(self, strat, stx, api: tradeapi.REST):
         self.api = api
         info = self.api.get_account()
         self.equity = float(info.equity)
+        print(self.equity)
 
+        self.confidences = {}
 
-    async def run(self):
+        for x in stx:
+            self.confidences[x] = Stock(x)
+
+        # TODO init indicators with old data?
+        # Initialize confidences too
+
+    def position(self, stock: Stock):
+        return self.api.get_position(stock.symbol)
+
+    def run(self):
+        global NEED_TO_STOP
+
         # First cancel any existing orders?
+        self.api.cancel_all_orders()
+
+        while not NEED_TO_STOP:
+            is_open, curTime, openTime = self.clock()
+            if not is_open:
+                self.updConf()
+
+                self.waitForMarketOpen()
+
+        print()
+        print('Stopping System, Cancelling all existing order')
+        self.api.cancel_all_orders()
+        print('Done')
+
+    def updConf(self):
+        # TODO
         pass
 
-    async def waitForMarketOpen(self):
-        if not self.api.get_clock().is_open:
-            pass
+    def clock(self):
+        return self.api.get_clock()
+
+    def waitForTS(self, ts):
+        while True:
+            clock = self.clock()
+            diff = ts - toTS(clock.timestamp)
+            if diff < 0:
+                return
+
+            if diff > 6:
+                print(f'Waiting {diff / 60:.2f}min')
+                timeToSleep = diff - 5
+                sleep(timeToSleep)
+            else:
+                sleep(2)
+
+    def waitForMarketClose(self):
+        clock = self.clock()
+        if clock.is_open:
+            self.waitForTS(toTS(clock.close_time))
+
+        print('Market Closed')
+
+    def waitForMarketOpen(self):
+        clock = self.clock()
+        if not clock.is_open:
+            self.waitForTS(toTS(clock.open_time))
+
+        print('Market Open')
 
 
 PAPER_ENDPOINT = 'https://paper-api.alpaca.markets'
@@ -64,5 +142,14 @@ def main():
     trader.run()
 
 
+def exitHandler(signum, x):
+    global NEED_TO_STOP
+    NEED_TO_STOP = True
+    if signum != signal.SIGINT:
+        print('Critical Err, signum:', signum)
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, exitHandler)
+
     main()
