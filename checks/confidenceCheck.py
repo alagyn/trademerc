@@ -7,13 +7,15 @@ class ConfidenceCheck(Check):
     def __init__(self, minConf, maxConf=1.0, checks: List[Tuple[Check, float]] = None):
         self._checks: List[ConfidenceCheck.WeightedCheck] = []
 
+        self._totalWeight = 0
+        self._minConf = minConf
+        self._maxConf = maxConf
+
         if checks is not None:
             for x in checks:
                 self.addCheck(*x)
 
-        self._totalWeight = 0
-        self._minConf = minConf
-        self._maxConf = maxConf
+
 
     class WeightedCheck:
         def __init__(self, check: Check, weight: float):

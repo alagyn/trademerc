@@ -3,7 +3,7 @@ from datetime import datetime
 import backtrader as bt
 from argparse import ArgumentParser
 from bt_strategies.master_strategy import MasterStrategy
-from bt_errors import *
+from cmErrors import *
 import yfinance as yf
 import json
 from consts import STRAT_FORMAT, DATE_FMT
@@ -58,11 +58,11 @@ def recursVerify(fmt, strat, path):
         try:
             stratVal = strat[key]
         except KeyError:
-            raise StrategyMissingVal(curPath)
+            raise JSONStrategyMissingVal(curPath)
 
         if not isinstance(stratVal, type(val)):
             if not (isinstance(val, float) and isinstance(stratVal, int)):
-                raise StrategyInvalidType(curPath, type(val), type(stratVal))
+                raise JSONStrategyInvalidType(curPath, type(val), type(stratVal))
 
         if isinstance(val, dict):
             recursVerify(val, stratVal, curPath)

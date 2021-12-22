@@ -5,7 +5,7 @@ from tkcalendar import DateEntry
 import backtester
 import json
 from consts import STRAT_FORMAT, DATE_FMT
-from bt_errors import StrategyError
+from cmErrors import StrategyError
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 

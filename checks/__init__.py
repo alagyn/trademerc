@@ -4,3 +4,4 @@ from .maxCheck import MaxCheck
 from .minCheck import MinCheck
 from .rangeCheck import RangeCheck
 from .compareCheck import CompareLessThan, CompareGreaterThan
+from .confidenceCheck import ConfidenceCheck

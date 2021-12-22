@@ -4,11 +4,6 @@ ValueFunc = Callable[[], float]
 
 _ID_GEN = 1
 
-LOW_PRIORITY = 2
-MED_PRIORITY = 1
-HIGH_PRIORITY = 0
-
-_PRIORITIES = [HIGH_PRIORITY, MED_PRIORITY, LOW_PRIORITY]
 
 
 class Indicator:
@@ -20,7 +15,7 @@ class Indicator:
         _ID_GEN += 1
 
     def set(self, symbol: str):
-        _register(self, symbol)
+        IndicatorManager().register(self, symbol)
         return self
 
     def addData(self, *, low=None, close=None, high=None) -> None:
@@ -37,45 +32,60 @@ class Indicator:
         return self._id
 
 
-# symbol -> priority -> list indicators
-_INDICATORS: Dict[str, Dict[int, List[Indicator]]] = {}
+LOW_PRIORITY = 2
+MED_PRIORITY = 1
+HIGH_PRIORITY = 0
+
+_PRIORITIES = [HIGH_PRIORITY, MED_PRIORITY, LOW_PRIORITY]
 
 
-def addData(symbol: str, low: float, close: float, high: float) -> None:
-    global _INDICATORS, _PRIORITIES
+class IndicatorManager:
+    _inst = None
 
-    if symbol not in _INDICATORS:
-        return
+    def __new__(cls):
+        if cls._inst is None:
+            cls._inst = super().__new__(cls)
 
-    for p in _PRIORITIES:
-        try:
-            for i in _INDICATORS[symbol][p]:
-                i.addData(low=low, close=close, high=high)
-        except KeyError:
-            pass
+            # symbol -> priority -> list indicators
+            cls._inst._indicators = {}
 
-
-def getSetupTime() -> int:
-    """
-    Calculates the min setup time for every created indicator to be properly setup
-    :return: The min setup time required
-    """
-    out = 0
-    for symb, ps in _INDICATORS.items():
-        for p, l in ps.items():
-            for i in l:
-                out = max(out, i.setupTime())
-
-    return out
+        return cls._inst
 
 
-def _register(i: Indicator, symbol: str):
-    if symbol not in _INDICATORS:
-        newsymb = {i.priority: [i]}
-        _INDICATORS[symbol] = newsymb
-    else:
-        symb = _INDICATORS[symbol]
-        if i.priority in symb:
-            symb[i.priority].append(i)
+    def register(self, i: Indicator, symbol: str):
+        if symbol not in self._indicators:
+            newsymb = {i.priority: [i]}
+            self._indicators[symbol] = newsymb
         else:
-            symb[i.priority] = [i]
+            symb = self._indicators[symbol]
+            if i.priority in symb:
+                symb[i.priority].append(i)
+            else:
+                symb[i.priority] = [i]
+
+    def addData(self, symbol: str, low: float, close: float, high: float) -> None:
+        if symbol not in self._indicators:
+            return
+
+        for p in _PRIORITIES:
+            try:
+                for i in self._indicators[symbol][p]:
+                    i.addData(low=low, close=close, high=high)
+            except KeyError:
+                pass
+
+    def getSetupTime(self) -> int:
+        """
+        Calculates the min setup time for every created indicator to be properly setup
+        :return: The min setup time required
+        """
+        out = 0
+        for symb, ps in self._indicators.items():
+            for p, l in ps.items():
+                for i in l:
+                    out = max(out, i.setupTime())
+
+        return out
+
+    def clearIndicators(self):
+        self._indicators = {}

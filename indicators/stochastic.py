@@ -37,7 +37,7 @@ class Stochastic(Indicator):
         high = max(self.highs)
 
         self._percK = 100 * (close - low) / (high - low)
-        self._percDfast.next(self.percK)
+        self._percDfast.next(self._percK)
 
         if self.slow:
             self._percD = self._percDslow.next(self._percDfast.getValue())

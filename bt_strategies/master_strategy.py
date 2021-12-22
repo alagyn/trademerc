@@ -1,7 +1,7 @@
 import backtrader as bt
 import backtrader.indicators as btI
 from datetime import timedelta as TD
-from bt_errors import StrategyError
+from cmErrors import StrategyError
 
 
 # Standard trading strategy for trend trading, see commented section above for sudo code
