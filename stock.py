@@ -14,8 +14,6 @@ class Stock:
         self.order = None
         self.buyDate = ''
 
-        self.initBuyPower = 0
-        self.buyPower = 0
         self.activeOrder = None
         self.position = None
 
@@ -23,15 +21,6 @@ class Stock:
 
     def updateBar(self, bar):
         self.bar = bar
-
-    def updatePosition(self, newPos):
-        if self.position is None:
-            self.buyPower -= newPos.cost_basis
-
-        self.position = newPos
-
-    def addToPot(self, amnt):
-        self.buyPower += amnt
 
     def status(self) -> StockStatus:
         if self.position is None:

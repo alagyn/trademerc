@@ -3,10 +3,8 @@ from indicators import *
 from checks import *
 from cmErrors import *
 from stock import *
-import math
 
 STOP_LIMIT_MARGIN = 0.95
-QTY_MARGIN = 0.95
 
 
 class HardStrategy(Strategy):
@@ -88,13 +86,8 @@ class HardStrategy(Strategy):
                 # TODO ask John about this calc
                 limitPrice = stopPrice * STOP_LIMIT_MARGIN
 
-                # TODO ask John about qty calc
-                currentPrice = stock.bar.c
-                qty = math.floor((stock.buyPower / currentPrice) * QTY_MARGIN)
-
                 out = Action(stock, ActionEnum.Buy,
                              stopPrice=stopPrice,
-                             qty=qty,
                              limitPrice=limitPrice
                              )
 

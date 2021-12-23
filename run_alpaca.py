@@ -1,15 +1,14 @@
 import alpaca_trade_api as alpaca
-import alpaca_trade_api.rest
 from alpaca_trade_api.common import URL
 from alpaca_trade_api import TimeFrame, TimeFrameUnit
 
 from dotenv import dotenv_values
 from argparse import ArgumentParser
 import datetime
-from threading import Thread
 from time import sleep
 import signal
 from typing import Dict, List
+import math
 
 import cmErrors
 from backtester import loadStratFile, loadStockFile
@@ -27,7 +26,7 @@ def toTS(time):
 
 
 DATE_FMT = r'%Y-%m-%d'
-BUY_PWR_SAFETY = 0.9
+BUY_PWR_SAFETY = 0.95
 
 
 class Trader:
@@ -45,12 +44,11 @@ class Trader:
         info = self.api.get_account()
 
         # setup initial buying power
+        # TODO add flag for buying power vs cash
         initialBuyingPower = info.buying_power
-        safeBuyingPwr = initialBuyingPower * BUY_PWR_SAFETY
-        perstockBuyPwr = round(safeBuyingPwr / len(strats), 2)
-        print(f'Total Buying Power: ${initialBuyingPower:.2f}\n'
-              f'Safe Buying power at {BUY_PWR_SAFETY:.2%}%: ${safeBuyingPwr:.2f}\n'
-              f'Buying power per stock with {len(strats)} stocks: ${perstockBuyPwr:.2f}')
+        self.buyPwr = round(initialBuyingPower * BUY_PWR_SAFETY, 2)
+        print(f'Total Buying Power: ${initialBuyingPower:.2f}\n')
+        print(f'Safe Buying Power: ${self.buyPwr:.2f} at {BUY_PWR_SAFETY:.2%}')
 
         # Internal day counter
         self.tradeDay = 0
@@ -72,8 +70,6 @@ class Trader:
 
         for x in strats.keys():
             stock = Stock(x)
-            stock.buyPower = perstockBuyPwr
-            stock.initBuyPower = perstockBuyPwr
 
             self.stocks[x] = stock
             setupBars[x] = self.api.get_bars(x, TimeFrame(1, TimeFrameUnit.Day),
@@ -86,6 +82,47 @@ class Trader:
                 high = setupBars[x]['high'][i]
 
                 self.iManage.addData(x, low, close, high)
+
+    def run(self):
+        global NEED_TO_STOP
+
+        while not NEED_TO_STOP:
+            # Inc trade day
+            self.tradeDay += 1
+
+            # wait for 15min before
+            self.waitForMarketClose(15 * 60)
+
+            # Update indicators with today's values
+            self.updateIndicators()
+
+            # Update positions and BP
+            self.updatePositions()
+            self.updateBuyPwr()
+
+            # Calculate today's actions
+            actions = self.getDailyActions()
+
+            # Run actions
+            self.runActions(actions)
+
+            # Wait for 1min after the market to close
+            self.waitForMarketClose(-60)
+
+            # Update positions and BP
+            self.updatePositions()
+            self.updateBuyPwr()
+
+            # Send update email
+            self.sendDailyUpdate(actions)
+
+        print()
+        print('Stopping System, Cancelling all existing order')
+        self.api.cancel_all_orders()
+        # Close all positions?
+        # self.api.close_all_positions()
+        print('Done')
+
 
     def updateIndicators(self):
         snaps = self.api.get_snapshots(list(self.stocks.keys()))
@@ -101,67 +138,19 @@ class Trader:
         for p in positions:
             openset.add(p.symbol)
 
-            self.stocks[p.symbol].updatePosition(p)
+            self.stocks[p.symbol].position = p
 
         closed = self.stocks.keys() - openset
         for s in closed:
-            self.stocks[s].updatePosition(None)
-
-    def updatePots(self):
-        today = datetime.datetime.today().strftime(DATE_FMT)
-        activities = self.api.get_activities('fill', date=today)
-
-        for a in activities:
-            stk = self.stocks[a.symbol]
-            amnt = a.qty * a.price
-            if a.side == 'buy':
-                stk.addToPot(-amnt)
-            elif a.side == 'sell':
-                stk.addToPot(amnt)
+            self.stocks[s].position = None
 
     def position(self, stock: Stock):
         return self.api.get_position(stock.symbol)
 
-    def run(self):
-        global NEED_TO_STOP
-
-        while not NEED_TO_STOP:
-            # Inc trade day
-            self.tradeDay += 1
-
-            # wait for 15min before
-            self.waitForMarketClose(15 * 60)
-
-            # Update indicators with today's values
-            self.updateIndicators()
-
-            # Update positions and pots
-            self.updatePositions()
-            self.updatePots()
-
-            # Calculate today's actions
-            actions = self.getDailyActions()
-
-            # Run actions
-            for a in actions:
-                self.runAction(a)
-
-            # Wait for 1min after the market to close
-            self.waitForMarketClose(-60)
-
-            # Update positions and pits
-            self.updatePositions()
-            self.updatePots()
-
-            # Send update email
-            self.sendDailyUpdate(actions)
-
-        print()
-        print('Stopping System, Cancelling all existing order')
-        self.api.cancel_all_orders()
-        # Close all positions?
-        # self.api.close_all_positions()
-        print('Done')
+    def updateBuyPwr(self):
+        info = self.api.get_account()
+        # TODO cash flag
+        self.buyPwr = round(info.buying_power * BUY_PWR_SAFETY, 2)
 
     def getDailyActions(self) -> List[Action]:
         actions = []
@@ -171,23 +160,34 @@ class Trader:
 
         return actions
 
-    def runAction(self, action: Action):
-        if action.action == ActionEnum.Buy:
-            self.submitBuy(action)
-        elif action.action == ActionEnum.Sell:
-            self.submitSell(action)
-        elif action.action == ActionEnum.UpdateStop:
-            self.submitUpdateStop(action)
-        elif action.action == ActionEnum.Hold:
-            # ILB
-            pass
+    def runActions(self, actions: List[Action]):
+        numOutOfMarket = 0
+        for sym, stock in self.stocks.items():
+            if stock.status() == StockStatus.OutMarket:
+                numOutOfMarket += 1
 
-    def submitBuy(self, action: Action):
+        buyPwr = self.buyPwr / numOutOfMarket
+
+        for a in actions:
+            if a.action == ActionEnum.Buy:
+                self.submitBuy(a, buyPwr)
+            elif a.action == ActionEnum.Sell:
+                self.submitSell(a)
+            elif a.action == ActionEnum.UpdateStop:
+                self.submitUpdateStop(a)
+            elif a.action == ActionEnum.Hold:
+                # ILB
+                pass
+
+
+    def submitBuy(self, action: Action, buyPwr):
+
+        qty = math.floor(buyPwr / action.stock.bar.c)
 
         try:
             order = self.api.submit_order(
                 symbol=action.stock.symbol,
-                qty=action.args['qty'],
+                qty=qty,
                 side='buy',
                 type='market',
                 time_in_force='day',
@@ -264,7 +264,6 @@ class Trader:
         for sym in sorted(self.strats.keys()):
             stkUpdates += f'Symbol: {sym}\n'
             stock = self.stocks[sym]
-            stkUpdates += f'\tCurrent Buying Power Pot: ${stock.buyPower:.2f}'
 
             if stock.position is None:
                 stkUpdates += f'\tStatus: Out Of Market\n'
@@ -287,8 +286,6 @@ class Trader:
 
         content = accountInfo + stkUpdates
         self.emailer.send(header, content)
-
-
 
     def clock(self) -> alpaca.rest.Clock:
         """Shorcut to get the API clock"""
