@@ -359,7 +359,7 @@ def main():
         endpoint = PAPER_ENDPOINT
 
     print('Loading Strategy')
-    stratVars = loadStratFile(args.strat)
+    stratVars = loadStratFile(args.strat)['variables']
 
     print('Loading Stocks')
     stocks = loadStockFile(args.stocks)
