@@ -88,4 +88,4 @@ class IndicatorManager:
         return out
 
     def clearIndicators(self):
-        self._indicators = {}
+        self._indicators.clear()
