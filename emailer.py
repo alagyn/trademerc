@@ -12,6 +12,9 @@ class CMEmailer:
 
         self._toAddr = config['RECIEVING_ADDR']
 
+        print(f'"{self._fromAddr}"')
+        print(f'"{self._fromPass}"')
+
     def send(self, subject: str, content: str):
         msg = EmailMessage()
         msg.set_content(content)

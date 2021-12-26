@@ -9,6 +9,9 @@ from time import sleep
 import signal
 from typing import Dict, List
 import math
+import logging as log
+import os.path
+import time
 
 import cmErrors
 from backtester import loadStratFile, loadStockFile
@@ -21,12 +24,24 @@ from emailer import CMEmailer
 NEED_TO_STOP = False
 
 
-def toTS(time):
-    return time.replace(tzinfo=datetime.timezone.utc).timestamp()
+def toTS(t):
+    return t.replace(tzinfo=datetime.timezone.utc).timestamp()
 
 
 DATE_FMT = r'%Y-%m-%d'
-BUY_PWR_SAFETY = 0.95
+BUY_PWR_SAFETY = 0.985
+
+MARKET_CLOSE_DELTA = 15 * 60
+
+
+def calcSetupStartDate(endDay, setupTime):
+    out = endDay
+    while setupTime >= 0 or out.weekday() >= 5:
+        out -= datetime.timedelta(1)
+        if out.weekday() < 5:
+            setupTime -= 1
+
+    return out
 
 
 class Trader:
@@ -45,10 +60,10 @@ class Trader:
 
         # setup initial buying power
         # TODO add flag for buying power vs cash
-        initialBuyingPower = info.buying_power
+        initialBuyingPower = float(info.buying_power)
         self.buyPwr = round(initialBuyingPower * BUY_PWR_SAFETY, 2)
-        print(f'Total Buying Power: ${initialBuyingPower:.2f}\n')
-        print(f'Safe Buying Power: ${self.buyPwr:.2f} at {BUY_PWR_SAFETY:.2%}')
+        log.info(f'Total Buying Power: ${initialBuyingPower:.2f}\n')
+        log.info(f'Safe Buying Power: ${self.buyPwr:.2f} at {BUY_PWR_SAFETY:.2%}')
 
         # Internal day counter
         self.tradeDay = 0
@@ -62,20 +77,31 @@ class Trader:
         setupBars = {}
 
         endSetupDay = datetime.datetime.today()
-        setupDelta = datetime.timedelta(setupTime + 1)
-        startSetupDay = endSetupDay - setupDelta
+
+        if self.clock().is_open:
+            endSetupDay -= datetime.timedelta(1)
+
+        startSetupDay = calcSetupStartDate(endSetupDay, setupTime)
 
         startSetupStr = startSetupDay.strftime(DATE_FMT)
         endSetupStr = endSetupDay.strftime(DATE_FMT)
-
+        actualSetup = 0
         for x in strats.keys():
             stock = Stock(x)
 
             self.stocks[x] = stock
-            setupBars[x] = self.api.get_bars(x, TimeFrame(1, TimeFrameUnit.Day),
-                                             startSetupStr, endSetupStr, adjustment='raw').df
+            setupBars[x] = self.api.get_bars(symbol=x,
+                                             timeframe=TimeFrame(1, TimeFrameUnit.Day),
+                                             start=startSetupStr,
+                                             end=endSetupStr,
+                                             adjustment='raw').df
+            actualSetup = len(setupBars[x])
+
+        if actualSetup < setupTime:
+            raise cmErrors.NotSetupError()
+
         # Setup Indicators
-        for i in range(setupTime):
+        for i in range(actualSetup):
             for x in setupBars:
                 low = setupBars[x]['low'][i]
                 close = setupBars[x]['close'][i]
@@ -86,43 +112,53 @@ class Trader:
     def run(self):
         global NEED_TO_STOP
 
-        while not NEED_TO_STOP:
-            # Inc trade day
-            self.tradeDay += 1
+        try:
+            while not NEED_TO_STOP:
+                # Inc trade day
+                self.tradeDay += 1
 
-            # wait for 15min before
-            self.waitForMarketClose(15 * 60)
+                clock = self.clock()
+                nextclose = toTS(clock.next_close)
 
-            # Update indicators with today's values
-            self.updateIndicators()
+                # wait for 15min before close
+                self.waitForTS(nextclose - MARKET_CLOSE_DELTA)
 
-            # Update positions and BP
-            self.updatePositions()
-            self.updateBuyPwr()
+                # Update indicators with today's values
+                self.updateIndicators()
 
-            # Calculate today's actions
-            actions = self.getDailyActions()
+                # Update positions and BP
+                self.updatePositions()
+                self.updateBuyPwr()
 
-            # Run actions
-            self.runActions(actions)
+                # Calculate today's actions
+                actions = self.getDailyActions()
 
-            # Wait for 1min after the market to close
-            self.waitForMarketClose(-60)
+                # Run actions
+                self.runActions(actions)
 
-            # Update positions and BP
-            self.updatePositions()
-            self.updateBuyPwr()
+                # Wait for 1min after the market to close
+                self.waitForTS(nextclose + 60)
 
-            # Send update email
-            self.sendDailyUpdate(actions)
+                # Update positions and BP
+                self.updatePositions()
+                self.updateBuyPwr()
 
-        print()
-        print('Stopping System, Cancelling all existing order')
+                # Send update email
+                self.sendDailyUpdate(actions)
+
+                # Force wait till morning
+                nextOpen = toTS(self.clock().next_open)
+
+                self.waitForTS(nextOpen + 60)
+
+        except cmErrors.CMError as err:
+            log.critical(err)
+
+        log.info('Stopping System, Cancelling all existing order')
         self.api.cancel_all_orders()
         # Close all positions?
         # self.api.close_all_positions()
-        print('Done')
-
+        log.info('Done')
 
     def updateIndicators(self):
         snaps = self.api.get_snapshots(list(self.stocks.keys()))
@@ -150,7 +186,7 @@ class Trader:
     def updateBuyPwr(self):
         info = self.api.get_account()
         # TODO cash flag
-        self.buyPwr = round(info.buying_power * BUY_PWR_SAFETY, 2)
+        self.buyPwr = round(float(info.buying_power) * BUY_PWR_SAFETY, 2)
 
     def getDailyActions(self) -> List[Action]:
         actions = []
@@ -179,6 +215,7 @@ class Trader:
                 # ILB
                 pass
 
+            log.info(str(a))
 
     def submitBuy(self, action: Action, buyPwr):
 
@@ -201,7 +238,6 @@ class Trader:
             )
 
             action.stock.order = order
-            # TODO log buy action
 
         except KeyError as err:
             raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
@@ -241,7 +277,7 @@ class Trader:
             order = self.api.replace_order(order_id=action.stock.order.id,
                                            stop_price=action.args['stopPrice'],
                                            limit_price=action.args['limitPrice'])
-            # TODO log
+
             action.stock.order = order
         except KeyError as err:
             raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
@@ -254,11 +290,11 @@ class Trader:
         for a in actions:
             acts[a.stock.symbol] = a
 
-        header = f'Stock Algo Daily Update: {datetime.datetime.today()}\n\n'
+        header = f'Stock Algo Daily Update: {datetime.datetime.today()}'
 
         info = self.api.get_account()
-        accountInfo = f'Account:\n' \
-                      f'Buying Power: ${info.buying_power:.2f}\n\n'
+        accountInfo = f'Account:\n'
+        accountInfo += f'Buying Power: ${float(info.buying_power):.2f}\n\n'
 
         stkUpdates = ''
         for sym in sorted(self.strats.keys()):
@@ -277,12 +313,12 @@ class Trader:
             stkUpdates += '\n'
 
             stkUpdates += f"\tToday's Action: {acts[sym].action.name}\n"
-            for key, val in acts[sym].args:
+            for key, val in acts[sym].args.items():
                 stkUpdates += f'\t\t{key}: {val}\n'
 
             stkUpdates += '\n'
 
-        # TODO open orders?
+        # TODO send open orders?
 
         content = accountInfo + stkUpdates
         self.emailer.send(header, content)
@@ -294,8 +330,6 @@ class Trader:
     def waitForTS(self, ts):
         """Utility to wait until timestamp"""
 
-        # TODO use log
-
         while True:
             clock = self.clock()
             diff = ts - toTS(clock.timestamp)
@@ -303,28 +337,11 @@ class Trader:
                 return
 
             if diff > 6:
-                print(f'Waiting {diff / 60:.2f}min')
+                log.info(f'Waiting {diff / 60:.2f}min')
                 timeToSleep = diff - 5
                 sleep(timeToSleep)
             else:
                 sleep(2)
-
-    def waitForMarketClose(self, delta=0):
-        """Waits till delta secs before market close"""
-        clock = self.clock()
-
-        if clock.is_open:
-            self.waitForTS(toTS(clock.close_time) - delta)
-
-        print('Market Closed')
-
-    def waitForMarketOpen(self, delta=0):
-        """Waits till delta secs before market open"""
-        clock = self.clock()
-        if not clock.is_open:
-            self.waitForTS(toTS(clock.open_time) - delta)
-
-        print('Market Open')
 
 
 PAPER_ENDPOINT = 'https://paper-api.alpaca.markets'
@@ -341,6 +358,21 @@ def main():
     args = parser.parse_args()
 
     config = dotenv_values('ignore/.env')
+    logname = time.strftime(r'%Y_%b_%dT%H_%M_%S')
+
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+
+    log.basicConfig(
+        filename=f'logs/{logname}.txt',
+        format='%(asctime)s %(levelname)s %(message)s',
+        datefmt=r'%Y-%m-%d %H:%M:%S',
+        filemode='w',
+    )
+
+    console = log.StreamHandler()
+
+    log.getLogger("").addHandler(console)
 
     if args.liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
@@ -348,20 +380,20 @@ def main():
             print('System Exiting')
             return
         else:
-            print('Initializing Live Account')
+            log.info('Initializing Live Account')
             api_key = config['LIVE_API_KEY_ID']
             api_secret = config['LIVE_SECRET']
             endpoint = LIVE_ENDPOINT
     else:
-        print('Initializing Paper Account')
+        log.info('Initializing Paper Account')
         api_key = config['PAPER_API_KEY_ID']
         api_secret = config['PAPER_SECRET']
         endpoint = PAPER_ENDPOINT
 
-    print('Loading Strategy')
+    log.info('Loading Strategy')
     stratVars = loadStratFile(args.strat)['variables']
 
-    print('Loading Stocks')
+    log.info('Loading Stocks')
     stocks = loadStockFile(args.stocks)
 
     api = alpaca.REST(api_key, api_secret, URL(endpoint), 'v2')
@@ -380,7 +412,7 @@ def exitHandler(signum, x):
     global NEED_TO_STOP
     NEED_TO_STOP = True
     if signum != signal.SIGINT:
-        print('Critical Err, signum:', signum)
+        log.critical('Critical Err, signum:', signum)
 
 
 if __name__ == '__main__':

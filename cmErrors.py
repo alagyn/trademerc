@@ -1,4 +1,4 @@
-class IndicatorError(Exception):
+class CMError(Exception):
     def __init__(self, msg=''):
         super().__init__()
         self.msg = msg
@@ -7,7 +7,16 @@ class IndicatorError(Exception):
         return self.msg
 
 
-class CheckError(Exception):
+class IndicatorError(CMError):
+    def __init__(self, msg=''):
+        super().__init__()
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
+class CheckError(CMError):
     def __init__(self, msg=''):
         super().__init__()
         self.msg = msg
@@ -21,7 +30,7 @@ class NotSetupError(CheckError):
         super(NotSetupError, self).__init__('Check indicator returned None, not enough setup days')
 
 
-class ActionError(Exception):
+class ActionError(CMError):
     def __init__(self, msg):
         self.msg = msg
 
@@ -29,7 +38,7 @@ class ActionError(Exception):
         return self.msg
 
 
-class StrategyError(Exception):
+class StrategyError(CMError):
     def __init__(self, msg):
         self.msg = msg
 
