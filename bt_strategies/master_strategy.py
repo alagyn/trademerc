@@ -38,7 +38,7 @@ class MasterStrategy(bt.Strategy):
                 for x in path:
                     cur = cur[x]
                 return cur
-            except KeyError as err:
+            except KeyError:
                 p = ''
                 for idx, x in enumerate(path):
                     p += x

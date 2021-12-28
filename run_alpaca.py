@@ -2,11 +2,10 @@ import alpaca_trade_api as alpaca
 from alpaca_trade_api.common import URL
 from alpaca_trade_api import TimeFrame, TimeFrameUnit
 
-from dotenv import dotenv_values
+from configparser import ConfigParser
 from argparse import ArgumentParser
 import datetime
 from time import sleep
-import signal
 from typing import Dict, List
 import math
 import logging as log
@@ -16,12 +15,11 @@ import time
 import cmErrors
 from backtester import loadStratFile, loadStockFile
 from indicators.indicator import IndicatorManager
-from stock import *
+from objects.action import *
+from objects.stock import *
 from strategies.strategy import *
 from strategies.hardStrategy import HardStrategy
 from emailer import CMEmailer
-
-NEED_TO_STOP = False
 
 
 def toTS(t):
@@ -109,10 +107,8 @@ class Trader:
                 self.iManage.addData(x, low, close, high)
 
     def run(self):
-        global NEED_TO_STOP
-
         try:
-            while not NEED_TO_STOP:
+            while True:
                 # Inc trade day
                 self.tradeDay += 1
                 log.info(f'Begin Trade Day: {self.tradeDay}')
@@ -364,7 +360,9 @@ def main():
 
     args = parser.parse_args()
 
-    config = dotenv_values('ignore/.env')
+    config = ConfigParser()
+    config.read(r'config/system.cfg')
+
     logname = time.strftime(r'%Y_%b_%dT%H_%M_%S')
 
     if not os.path.exists('logs'):
@@ -383,6 +381,8 @@ def main():
     console.setLevel(log.INFO)
     log.getLogger("").addHandler(console)
 
+    apiCfg = config['Alpaca']
+
     if args.liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
         if x != 'YES':
@@ -390,13 +390,13 @@ def main():
             return
         else:
             log.info('Initializing Live Account')
-            api_key = config['LIVE_API_KEY_ID']
-            api_secret = config['LIVE_SECRET']
+            api_key = apiCfg['Live_API_Key']
+            api_secret = apiCfg['Live_API_Secret']
             endpoint = LIVE_ENDPOINT
     else:
         log.info('Initializing Paper Account')
-        api_key = config['PAPER_API_KEY_ID']
-        api_secret = config['PAPER_SECRET']
+        api_key = apiCfg['Paper_API_Key']
+        api_secret = apiCfg['Paper_API_Secret']
         endpoint = PAPER_ENDPOINT
 
     log.info('Loading Strategy')
@@ -411,7 +411,7 @@ def main():
     for sym in stocks:
         strats[sym] = HardStrategy(sym, stratVars)
 
-    emailer = CMEmailer(config)
+    emailer = CMEmailer(config['Email'])
 
     trader = Trader(strats, api, emailer)
     trader.run()

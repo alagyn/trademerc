@@ -1,0 +1,8 @@
+# Ignore everything in this folder
+*
+
+# Except...
+!example_system.cfg
+!example_strat1.json
+!example_stocks.txt
+!STRAT_FMT.json

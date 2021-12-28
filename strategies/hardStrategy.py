@@ -2,7 +2,8 @@ from .strategy import *
 from indicators import *
 from checks import *
 from cmErrors import *
-from stock import *
+from objects.stock import *
+from objects.action import *
 
 STOP_LIMIT_MARGIN = 0.95
 
@@ -18,7 +19,7 @@ class HardStrategy(Strategy):
                 for x in path:
                     cur = cur[x]
                 return cur
-            except KeyError as err:
+            except KeyError:
                 p = ''
                 for idx, x in enumerate(path):
                     p += x

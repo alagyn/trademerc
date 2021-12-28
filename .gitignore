@@ -4,5 +4,6 @@ venv/
 ignore/
 stats.json
 .spyproject/
-config/
 logs/
+
+testnotebook.py

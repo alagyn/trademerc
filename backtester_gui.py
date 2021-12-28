@@ -257,7 +257,8 @@ class BTGUI(tk.Frame):
         startDate = self.startInput.get_date().strftime(DATE_FMT)
         endDate = self.endInput.get_date().strftime(DATE_FMT)
 
-        backtester.backtest(self.stocks, strat, startDate, endDate, self.outVar.get(), startingVal=self.startValVar.get())
+        backtester.backtest(self.stocks, strat, startDate, endDate, self.outVar.get(),
+                            startingVal=self.startValVar.get())
 
 
 

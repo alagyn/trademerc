@@ -1,21 +1,11 @@
 ### TODO:
-2) Setup a GUI to perform a backtest with a strategy
-3) Integrate Alpaca paper trading API
-4) Reporting
-	4a) Alert for stock meeting buy criteria and is bought @ X% of portfolio
-	4b) Alert for stock meeting sell criteria and sale is triggered
-	4c) Weekly update on: number of trades (buy and sold) and portfolio size, and portfolio change
+1) Setup a GUI to perform a backtest with a strategy
+2) Reporting
+   1) Alert for stock meeting buy criteria and is bought @ X% of portfolio
+   2) Alert for stock meeting sell criteria and sale is triggered
+   3) Weekly update on: number of trades (buy and sold) and portfolio size, and portfolio change
 
-5) Setup GUI to create strategies - This is fairly complicated given the number of indicators and variables 
-
-
-
-
-### Dependencies:  
-* backtrader  
-* yfinance  
-* matplotlib  
-
+3) Setup GUI to create strategies - This is fairly complicated given the number of indicators and variables 
 
 ### STRATEGY 1
 

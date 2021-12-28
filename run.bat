@@ -1,4 +1,0 @@
-venv\Scripts\python.exe backtester.py -stk QQQ -str config\strat1.json
-
-
-cmd /k

@@ -1,0 +1,28 @@
+{
+  "name": "",
+  "variables": {
+    "atr": 0,
+    "safety": 0.0,
+    "days_to_update": 0,
+    "ema": {
+      "fast": 0,
+      "slow": 0,
+      "long": 0
+    },
+    "macd": {
+      "fast": 0,
+      "slow": 0,
+      "signal": 0
+    },
+    "stoch": {
+      "p": 0,
+      "fast": 0,
+      "slow": 0
+    },
+    "parabolic":{
+      "af": 0.0,
+      "afmax": 0.0
+    }
+  }
+
+}

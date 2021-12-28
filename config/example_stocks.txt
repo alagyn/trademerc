@@ -1,0 +1,16 @@
+# Lines beginning with # are ignored
+
+QQQ
+
+#DIA
+#SPY
+#SOXL
+#FVRR
+#TSLA
+#AAPL
+#DOCU
+#ZM
+#NVDA
+#AMD
+#TQQQ
+#SQQQ

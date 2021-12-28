@@ -1,18 +1,17 @@
 import smtplib
 from email.message import EmailMessage
-from typing import Dict
 
 
 # TODO https://stackoverflow.com/questions/882712/sending-html-email-using-python
 
 class CMEmailer:
-    def __init__(self, config: Dict[str, str]):
-        self._fromAddr = config['LOG_EMAIL_ADDR']
-        self._fromPass = config['LOG_EMAIL_PASS']
-        self._server = config['EMAIL_SERVER']
-        self._port = int(config['EMAIL_PORT'])
+    def __init__(self, config):
+        self._fromAddr = config['SendingEmailAddr']
+        self._fromPass = config['SendingEmailPass']
+        self._server = config['SMTP_Server']
+        self._port = int(config['SMTP_Port'])
 
-        self._toAddr = config['RECIEVING_ADDR']
+        self._toAddr = config['RecievingEmail']
 
     def send(self, subject: str, content: str):
         msg = EmailMessage()
