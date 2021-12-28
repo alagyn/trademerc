@@ -45,9 +45,10 @@ def calcSetupStartDate(endDay, setupTime):
 
 
 class Trader:
-    def __init__(self, strats: Dict[str, Strategy], api: alpaca.REST, emailer: CMEmailer):
+    def __init__(self, strats: Dict[str, Strategy], api: alpaca.REST, emailer: CMEmailer, cashOnly: bool = False):
         self.api = api
         self.emailer = emailer
+        self.cashOnly = cashOnly
 
         # First cancel any existing orders?
         self.api.cancel_all_orders()
@@ -56,14 +57,9 @@ class Trader:
 
         self.iManage = IndicatorManager()
 
-        info = self.api.get_account()
-
         # setup initial buying power
-        # TODO add flag for buying power vs cash
-        initialBuyingPower = float(info.buying_power)
-        self.buyPwr = round(initialBuyingPower * BUY_PWR_SAFETY, 2)
-        log.info(f'Total Buying Power: ${initialBuyingPower:.2f}\n')
-        log.info(f'Safe Buying Power: ${self.buyPwr:.2f} at {BUY_PWR_SAFETY:.2%}')
+        self.buyPwr = 0
+        self.updateBuyPwr()
 
         # Internal day counter
         self.tradeDay = 0
@@ -71,13 +67,16 @@ class Trader:
         # Dict of symb->strat
         self.strats = strats
 
+        # Dict of symb->stock
+        self.stocks = {}
+
         setupTime = self.iManage.getSetupTime()
 
-        self.stocks = {}
         setupBars = {}
 
         endSetupDay = datetime.datetime.today()
 
+        # if market is open, only get up to yesterday
         if self.clock().is_open:
             endSetupDay -= datetime.timedelta(1)
 
@@ -116,43 +115,55 @@ class Trader:
             while not NEED_TO_STOP:
                 # Inc trade day
                 self.tradeDay += 1
+                log.info(f'Begin Trade Day: {self.tradeDay}')
 
                 clock = self.clock()
                 nextclose = toTS(clock.next_close)
 
                 # wait for 15min before close
+                log.info('Waiting for 15min before close')
                 self.waitForTS(nextclose - MARKET_CLOSE_DELTA)
 
                 # Update indicators with today's values
+                log.info('Updating Indicators')
                 self.updateIndicators()
 
                 # Update positions and BP
+                log.info('Updating Positions')
                 self.updatePositions()
                 self.updateBuyPwr()
 
                 # Calculate today's actions
+                log.info('Calculating Daily Actions')
                 actions = self.getDailyActions()
 
                 # Run actions
+                log.info('Running Daily Actions')
                 self.runActions(actions)
 
                 # Wait for 1min after the market to close
+                log.info('Waiting for 1min after close')
                 self.waitForTS(nextclose + 60)
 
                 # Update positions and BP
+                log.info('Updating Positions')
                 self.updatePositions()
                 self.updateBuyPwr()
 
                 # Send update email
+                log.info('Sending Update Email')
                 self.sendDailyUpdate(actions)
 
                 # Force wait till morning
+                log.info('Waiting until next open')
                 nextOpen = toTS(self.clock().next_open)
-
                 self.waitForTS(nextOpen + 60)
+
 
         except cmErrors.CMError as err:
             log.critical(err)
+        except KeyboardInterrupt:
+            pass
 
         log.info('Stopping System, Cancelling all existing order')
         self.api.cancel_all_orders()
@@ -185,7 +196,6 @@ class Trader:
 
     def updateBuyPwr(self):
         info = self.api.get_account()
-        # TODO cash flag
         self.buyPwr = round(float(info.buying_power) * BUY_PWR_SAFETY, 2)
 
     def getDailyActions(self) -> List[Action]:
@@ -238,15 +248,14 @@ class Trader:
             )
 
             action.stock.order = order
+            action.stock.stopOrder = order.legs[0]
 
         except KeyError as err:
             raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
         except alpaca.rest.APIError:
-            # TODO err
             raise
 
     def submitSell(self, action: Action):
-        # TOCHANGE allow partial sells?
         """
         try:
             order = self.api.submit_order(
@@ -267,14 +276,11 @@ class Trader:
             self.api.close_position(symbol=action.stock.symbol)
             action.stock.order = None
         except alpaca.rest.APIError:
-            # TODO error
             raise
-
-        # TODO log
 
     def submitUpdateStop(self, action: Action):
         try:
-            order = self.api.replace_order(order_id=action.stock.order.id,
+            order = self.api.replace_order(order_id=action.stock.stopOrder.id,
                                            stop_price=action.args['stopPrice'],
                                            limit_price=action.args['limitPrice'])
 
@@ -282,7 +288,6 @@ class Trader:
         except KeyError as err:
             raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
         except alpaca.rest.APIError:
-            # TODO err
             raise
 
     def sendDailyUpdate(self, actions: List[Action]):
@@ -309,6 +314,7 @@ class Trader:
                 stkUpdates += f'\t\tQty: {stock.position.qty}\n'
                 stkUpdates += f'\t\tCurrent Total Market Value: ${stock.position.market_value}\n'
                 stkUpdates += f'P/L: ${stock.position.unrealized_pl:.2f}, {stock.position.unrealized_plpc:.2%}\n'
+                stkUpdates += f'Stop: ${stock.stopOrder.stop_price}, Limit: ${stock.stopOrder.limit_price}'
 
             stkUpdates += '\n'
 
@@ -354,6 +360,7 @@ def main():
     parser.add_argument('-s', '--strat', required=True)
     parser.add_argument('-stx', '--stocks', required=True)
     parser.add_argument('--liveRun', action='store_true')
+    # parser.add_argument('-c', '--cashOnly', action='store_true')
 
     args = parser.parse_args()
 
@@ -368,10 +375,12 @@ def main():
         format='%(asctime)s %(levelname)s %(message)s',
         datefmt=r'%Y-%m-%d %H:%M:%S',
         filemode='w',
+        level=log.INFO
     )
 
     console = log.StreamHandler()
-
+    console.setFormatter(log.Formatter('%(message)s'))
+    console.setLevel(log.INFO)
     log.getLogger("").addHandler(console)
 
     if args.liveRun:
@@ -408,14 +417,6 @@ def main():
     trader.run()
 
 
-def exitHandler(signum, x):
-    global NEED_TO_STOP
-    NEED_TO_STOP = True
-    if signum != signal.SIGINT:
-        log.critical('Critical Err, signum:', signum)
-
-
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, exitHandler)
 
     main()

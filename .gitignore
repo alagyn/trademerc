@@ -5,3 +5,4 @@ ignore/
 stats.json
 .spyproject/
 config/
+logs/

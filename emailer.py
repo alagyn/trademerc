@@ -3,6 +3,8 @@ from email.message import EmailMessage
 from typing import Dict
 
 
+# TODO https://stackoverflow.com/questions/882712/sending-html-email-using-python
+
 class CMEmailer:
     def __init__(self, config: Dict[str, str]):
         self._fromAddr = config['LOG_EMAIL_ADDR']
@@ -11,9 +13,6 @@ class CMEmailer:
         self._port = int(config['EMAIL_PORT'])
 
         self._toAddr = config['RECIEVING_ADDR']
-
-        print(f'"{self._fromAddr}"')
-        print(f'"{self._fromPass}"')
 
     def send(self, subject: str, content: str):
         msg = EmailMessage()

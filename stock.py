@@ -12,6 +12,7 @@ class Stock:
     def __init__(self, symbol: str):
         self.symbol: str = symbol
         self.order = None
+        self.stopOrder = None
         self.buyDate = ''
 
         self.activeOrder = None
