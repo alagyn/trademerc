@@ -2,7 +2,7 @@ from dotenv import dotenv_values
 from argparse import ArgumentParser
 import alpaca_backtrader_api as alpaca
 from bt_strategies.master_strategy import MasterStrategy
-from backtester import loadStratFile, loadStockFile
+from bt_backtester import loadStratFile, loadStockFile
 import backtrader as bt
 import pandas as pd
 from datetime import datetime

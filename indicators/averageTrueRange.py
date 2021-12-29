@@ -24,6 +24,8 @@ class AverageTrueRange(Indicator):
 
         self.atr_smma.next(self.tr)
 
+        self.prevClose = close
+
     def getATR(self):
         return self.atr_smma.getValue()
 
@@ -31,4 +33,4 @@ class AverageTrueRange(Indicator):
         return self.tr
 
     def setupTime(self) -> int:
-        return self.atr_smma.setupTime()
+        return self.atr_smma.setupTime() + 1

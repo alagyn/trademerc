@@ -11,10 +11,10 @@ STOP_LIMIT_MARGIN = 0.95
 class HardStrategy(Strategy):
 
     def __init__(self, symbol, jsonStrat):
-        super(HardStrategy, self).__init__(symbol)
+        super(HardStrategy, self).__init__(symbol, jsonStrat['name'])
 
         def getVar(*path):
-            cur = jsonStrat
+            cur = jsonStrat['variables']
             try:
                 for x in path:
                     cur = cur[x]
@@ -68,7 +68,10 @@ class HardStrategy(Strategy):
         self.oldStopPrice = None
 
     def getNewStop(self):
+        print(f'C: {self.dayval.close():.2f}, ATR: {self.atr.getATR():.2f}')
         return self.dayval.close() - (self.atr.getATR() * self.safteyFac)
+
+
 
     def nextAction(self, day: int, stock: Stock) -> Action:
 
@@ -113,6 +116,5 @@ class HardStrategy(Strategy):
                                      )
                         self.oldStopPrice = stopPrice
 
-        print(f'Position: {pos.name}, Confidence: {conf:.2f}, {out}')
-
+        # print(f'Position: {pos.name}, Confidence: {conf:.2f}, {out}')
         return out

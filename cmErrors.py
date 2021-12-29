@@ -54,3 +54,8 @@ class JSONStrategyMissingVal(StrategyError):
 class JSONStrategyInvalidType(StrategyError):
     def __init__(self, path, expected, actual):
         super().__init__(f"Invalid strategy datatype: Path: {path}, Expected: {expected}, Actual: {actual}")
+
+
+class BacktestError(StrategyError):
+    def __init__(self, msg):
+        super(BacktestError, self).__init__(msg)

@@ -3,25 +3,19 @@ from indicators.ema import SoloEMA
 
 
 class SoloSMMA:
+    """
+    SMMA is equivalent to an EMA with alpha = 1/period
+    """
     def __init__(self, period: int):
         self._a = 1 / period
-        self._smma = SoloEMA(alpha=self._a)
-        self._c = 0
-        self._tempSum = 0
+        self._ema = SoloEMA(alpha=self._a)
         self._p = period
 
     def next(self, data) -> float:
-        if self._c < self._p:
-            self._tempSum += data
-            self._c += 1
-
-        if self._c >= self._p:
-            self._smma.next(data)
-
-        return self._smma.getValue()
+        return self._ema.next(data)
 
     def getValue(self) -> float:
-        return self._smma.getValue()
+        return self._ema.getValue()
 
     def setupTime(self) -> int:
         return self._p

@@ -1,6 +1,4 @@
 import alpaca_trade_api as alpaca
-from alpaca_trade_api.common import URL
-from alpaca_trade_api import TimeFrame, TimeFrameUnit
 
 from configparser import ConfigParser
 from argparse import ArgumentParser
@@ -13,33 +11,23 @@ import os.path
 import time
 
 import cmErrors
-from backtester import loadStratFile, loadStockFile
+from utils.file_utils import loadStratFile, loadStockFile
+from utils.api_utils import loadAPI, getSetupBars
 from indicators.indicator import IndicatorManager
 from objects.action import *
 from objects.stock import *
 from strategies.strategy import *
 from strategies.hardStrategy import HardStrategy
-from emailer import CMEmailer
+from utils.emailer import CMEmailer
 
 
 def toTS(t):
     return t.replace(tzinfo=datetime.timezone.utc).timestamp()
 
 
-DATE_FMT = r'%Y-%m-%d'
 BUY_PWR_SAFETY = 0.985
 
 MARKET_CLOSE_DELTA = 15 * 60
-
-
-def calcSetupStartDate(endDay, setupTime):
-    out = endDay
-    while setupTime >= 0 or out.weekday() >= 5:
-        out -= datetime.timedelta(1)
-        if out.weekday() < 5:
-            setupTime -= 1
-
-    return out
 
 
 class Trader:
@@ -67,44 +55,15 @@ class Trader:
 
         # Dict of symb->stock
         self.stocks = {}
+        for x in self.strats.keys():
+            self.stocks[x] = Stock(x)
 
         setupTime = self.iManage.getSetupTime()
 
-        setupBars = {}
-
-        endSetupDay = datetime.datetime.today()
-
-        # if market is open, only get up to yesterday
-        if self.clock().is_open:
-            endSetupDay -= datetime.timedelta(1)
-
-        startSetupDay = calcSetupStartDate(endSetupDay, setupTime)
-
-        startSetupStr = startSetupDay.strftime(DATE_FMT)
-        endSetupStr = endSetupDay.strftime(DATE_FMT)
-        actualSetup = 0
-        for x in strats.keys():
-            stock = Stock(x)
-
-            self.stocks[x] = stock
-            setupBars[x] = self.api.get_bars(symbol=x,
-                                             timeframe=TimeFrame(1, TimeFrameUnit.Day),
-                                             start=startSetupStr,
-                                             end=endSetupStr,
-                                             adjustment='raw').df
-            actualSetup = len(setupBars[x])
-
-        if actualSetup < setupTime:
-            raise cmErrors.NotSetupError()
+        setupBars = getSetupBars(self.api, setupTime, list(self.strats.keys()))
 
         # Setup Indicators
-        for i in range(actualSetup):
-            for x in setupBars:
-                low = setupBars[x]['low'][i]
-                close = setupBars[x]['close'][i]
-                high = setupBars[x]['high'][i]
-
-                self.iManage.addData(x, low, close, high)
+        self.iManage.setupIndicators(setupBars)
 
     def run(self):
         try:
@@ -346,10 +305,6 @@ class Trader:
                 sleep(2)
 
 
-PAPER_ENDPOINT = 'https://paper-api.alpaca.markets'
-LIVE_ENDPOINT = 'https://api.alpaca.markets'
-
-
 def main():
     parser = ArgumentParser()
 
@@ -383,29 +338,16 @@ def main():
 
     apiCfg = config['Alpaca']
 
-    if args.liveRun:
-        x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
-        if x != 'YES':
-            print('System Exiting')
-            return
-        else:
-            log.info('Initializing Live Account')
-            api_key = apiCfg['Live_API_Key']
-            api_secret = apiCfg['Live_API_Secret']
-            endpoint = LIVE_ENDPOINT
-    else:
-        log.info('Initializing Paper Account')
-        api_key = apiCfg['Paper_API_Key']
-        api_secret = apiCfg['Paper_API_Secret']
-        endpoint = PAPER_ENDPOINT
+    api = loadAPI(apiCfg, args.liveRun)
+    if api is None:
+        log.info('System Exitting')
+        return
 
     log.info('Loading Strategy')
-    stratVars = loadStratFile(args.strat)['variables']
+    stratVars = loadStratFile(args.strat)
 
     log.info('Loading Stocks')
     stocks = loadStockFile(args.stocks)
-
-    api = alpaca.REST(api_key, api_secret, URL(endpoint), 'v2')
 
     strats = {}
     for sym in stocks:
@@ -418,5 +360,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()

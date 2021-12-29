@@ -89,3 +89,12 @@ class IndicatorManager:
 
     def clearIndicators(self):
         self._indicators.clear()
+
+    def setupIndicators(self, bars):
+        for i in range(len(bars)):
+            for x in bars:
+                low = bars[x]['low'][i]
+                close = bars[x]['close'][i]
+                high = bars[x]['high'][i]
+
+                self.addData(x, low, close, high)

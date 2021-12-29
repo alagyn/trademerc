@@ -1,13 +1,15 @@
 import datetime
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from tkcalendar import DateEntry
-import backtester
 import json
+from tkcalendar import DateEntry
+
+import cm_backtester
+from utils.file_utils import loadStratFile, loadStockFile
+from utils.api_utils import loadPaperAPI
 from consts import STRAT_FORMAT, DATE_FMT
 from cmErrors import StrategyError
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from strategies.hardStrategy import HardStrategy
 
 
 def makeLabelEntry(p, text, loc, vartype=str):
@@ -141,12 +143,10 @@ class BTGUI(tk.Frame):
         self.startValVar = tk.IntVar(value=10000)
         tk.Spinbox(runFrame, textvariable=self.startValVar).grid(row=START_VAL_ROW, column=1, sticky='ew')
 
-
         SYMBOL_BTN_ROW = START_VAL_ROW + 1
 
         symbolBtn = tk.Button(runFrame, text='Load Symbols', command=self.selectSymbolFile)
         symbolBtn.grid(row=SYMBOL_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5, pady=2)
-
 
         SYMBOL_IN_ROW = SYMBOL_BTN_ROW + 1
 
@@ -168,7 +168,9 @@ class BTGUI(tk.Frame):
         startLabel = tk.Label(runFrame, text='Start Date:')
         startLabel.grid(row=START_DATE_ROW, column=0, sticky='ew')
 
-        self.startInput = DateEntry(runFrame)
+        md = datetime.datetime.today() - datetime.timedelta(1)
+
+        self.startInput = DateEntry(runFrame, maxdate=md)
         self.startInput.grid(row=START_DATE_ROW, column=1, sticky='ew', padx=5)
         self.startInput.set_date(datetime.datetime(2018, 1, 1))
 
@@ -177,9 +179,9 @@ class BTGUI(tk.Frame):
         endLabel = tk.Label(runFrame, text='End Date:')
         endLabel.grid(row=END_DATE_ROW, column=0, sticky='ew')
 
-        self.endInput = DateEntry(runFrame)
+        self.endInput = DateEntry(runFrame, maxdate=md)
         self.endInput.grid(row=END_DATE_ROW, column=1, sticky='ew', padx=5)
-        self.endInput.set_date(datetime.datetime.today())
+        self.endInput.set_date(md)
 
         SEP2_ROW = END_DATE_ROW + 1
         ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=SEP2_ROW, column=0,
@@ -212,7 +214,6 @@ class BTGUI(tk.Frame):
         runFrame.grid(row=0, column=0, sticky='nsew', padx=FRAME_PAD)
         # stratFrame.grid(row=0, column=1, sticky='nsew', padx=FRAME_PAD)
 
-
     def closeWindow(self):
         self.root.destroy()
 
@@ -222,19 +223,19 @@ class BTGUI(tk.Frame):
             self.outVar.set(ret)
 
     def selectStrat(self):
-        ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False, initialdir='.')
+        ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False, initialdir='./config')
         if len(ret) > 0:
             try:
-                strat = backtester.loadStratFile(ret)
+                strat = loadStratFile(ret)
                 recurseLoadStrat(self.stratVars, strat)
                 self.stratNameVar.set(strat['name'])
             except StrategyError as err:
                 messagebox.showerror("Strategy Error", str(err))
 
     def selectSymbolFile(self):
-        ret = filedialog.askopenfilename(filetypes=[('.txt', '.txt')], multiple=False, initialdir='.')
+        ret = filedialog.askopenfilename(filetypes=[('.txt', '.txt')], multiple=False, initialdir='./config')
         if len(ret) > 0:
-            self.stocks = backtester.loadStockFile(ret)
+            self.stocks = loadStockFile(ret)
 
     def saveStrat(self):
         strat = self.buildStrat()
@@ -254,12 +255,20 @@ class BTGUI(tk.Frame):
     def runBT(self):
         strat = self.buildStrat()
 
-        startDate = self.startInput.get_date().strftime(DATE_FMT)
-        endDate = self.endInput.get_date().strftime(DATE_FMT)
+        startDate = self.startInput.get_date()
+        endDate = self.endInput.get_date()
 
-        backtester.backtest(self.stocks, strat, startDate, endDate, self.outVar.get(),
-                            startingVal=self.startValVar.get())
+        api = loadPaperAPI()
+        strats = {}
+        for x in self.stocks:
+            strats[x] = HardStrategy(x, strat)
 
+        cm_backtester.backtest(api=api,
+                               strats=strats,
+                               startDate=startDate,
+                               endDate=endDate,
+                               outputFile=self.outVar.get(),
+                               startingVal=self.startValVar.get())
 
 
 if __name__ == '__main__':

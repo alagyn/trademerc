@@ -3,5 +3,3 @@ backtrader==1.9.76.123
 matplotlib==3.2.0
 yfinance==0.1.63
 tkcalendar==1.6.1
-
-python-dotenv
