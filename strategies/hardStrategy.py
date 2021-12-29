@@ -47,7 +47,7 @@ class HardStrategy(Strategy):
                                      afMax=float(getVar('parabolic', 'afmax'))).set(self.symbol)
         self.atr = AverageTrueRange(period=int(getVar('atr'))).set(self.symbol)
 
-        self.dayval = DayValue().set(self.symbol)
+        self.dayval = BarValue().set(self.symbol)
 
         checks = [
             (CompareGreaterThan(self.emaFast.getValue, self.emaSlow.getValue), 0.35),

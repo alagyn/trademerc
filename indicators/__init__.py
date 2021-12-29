@@ -1,6 +1,6 @@
 
 from .indicator import Indicator
-from .dayValue import DayValue
+from .barValue import BarValue
 from .ema import EMA
 from .crossover import Crossover
 from .averageTrueRange import AverageTrueRange
@@ -14,4 +14,4 @@ from .indicator import Indicator
 
 INDICATORS = []
 for x in Indicator.__subclasses__():
-    INDICATORS.append(x)
+    INDICATORS.append((x.__name__, x.getKeys()))

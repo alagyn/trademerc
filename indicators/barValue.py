@@ -5,13 +5,13 @@ _L = 'low'
 _H = 'high'
 
 
-class DayValue(Indicator):
+class BarValue(Indicator):
     @classmethod
     def getKeys(cls):
         return [_L, _C, _H]
 
     def __init__(self):
-        super(DayValue, self).__init__(HIGH_PRIORITY,
+        super(BarValue, self).__init__(HIGH_PRIORITY,
                                        {
                                            _L: self.low,
                                            _C: self.close,
