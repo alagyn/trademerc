@@ -10,6 +10,7 @@ from utils.api_utils import loadPaperAPI
 from consts import STRAT_FORMAT, DATE_FMT
 from cmErrors import StrategyError
 from strategies.hardStrategy import HardStrategy
+from run_alpaca import runTrader
 
 
 def makeLabelEntry(p, text, loc, vartype=str):
@@ -208,6 +209,20 @@ class BTGUI(tk.Frame):
 
         self.stratVars = genStrategyFrame(stratFrame)
 
+        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=RUN_BTN_ROW + 1, column=0,
+                                                           columnspan=2, sticky='ew',
+                                                           pady=10)
+
+        LIVE_TOGGLE_ROW = RUN_BTN_ROW + 2
+        self.liveToggleVar = tk.BooleanVar(value=False)
+        liveCheckBox = tk.Checkbutton(runFrame, text='LIVE Account?', variable=self.liveToggleVar)
+        liveCheckBox.grid(row=LIVE_TOGGLE_ROW, column=0, columnspan=2)
+
+        RUN_LIVE_BTN_ROW = LIVE_TOGGLE_ROW + 1
+
+        liveBtn = tk.Button(runFrame, text='Run on Alpaca', command=self.runAlpaca)
+        liveBtn.grid(row=RUN_LIVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
+
         # GRID MAIN FRAMES
         FRAME_PAD = 5
 
@@ -269,6 +284,24 @@ class BTGUI(tk.Frame):
                                endDate=endDate,
                                outputFile=self.outVar.get(),
                                startingVal=self.startValVar.get())
+
+    def runAlpaca(self):
+        if self.stocks is None:
+            return
+
+        liveRun = self.liveToggleVar.get()
+        if liveRun:
+            ret = messagebox.askyesno('Run LIVE Account?',
+                                      'Are you sure you want to run using the LIVE (real money) account?')
+            if ret is None or not ret:
+                print('Cancelling Run')
+                return
+
+        runTrader(stratVars=self.buildStrat(),
+                  stocks=self.stocks,
+                  liveRun=liveRun)
+
+
 
 
 if __name__ == '__main__':

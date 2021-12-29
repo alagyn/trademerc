@@ -120,7 +120,7 @@ class Trader:
         except KeyboardInterrupt:
             pass
 
-        log.info('Stopping System, Cancelling all existing order')
+        log.info('Stopping System, Cancelling all existing orders')
         self.api.cancel_all_orders()
         # Close all positions?
         # self.api.close_all_positions()
@@ -305,15 +305,8 @@ class Trader:
                 sleep(2)
 
 
-def main():
-    parser = ArgumentParser()
-
-    parser.add_argument('-s', '--strat', required=True)
-    parser.add_argument('-stx', '--stocks', required=True)
-    parser.add_argument('--liveRun', action='store_true')
-    # parser.add_argument('-c', '--cashOnly', action='store_true')
-
-    args = parser.parse_args()
+def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = False,
+              stocks: List[str] = None, stratVars=None):
 
     config = ConfigParser()
     config.read(r'config/system.cfg')
@@ -338,16 +331,18 @@ def main():
 
     apiCfg = config['Alpaca']
 
-    api = loadAPI(apiCfg, args.liveRun)
+    api = loadAPI(apiCfg, liveRun)
     if api is None:
         log.info('System Exitting')
         return
 
-    log.info('Loading Strategy')
-    stratVars = loadStratFile(args.strat)
+    if stratFile is not None:
+        log.info('Loading Strategy')
+        stratVars = loadStratFile(stratFile)
 
-    log.info('Loading Stocks')
-    stocks = loadStockFile(args.stocks)
+    if stockFile is not None:
+        log.info('Loading Stocks')
+        stocks = loadStockFile(stockFile)
 
     strats = {}
     for sym in stocks:
@@ -357,6 +352,18 @@ def main():
 
     trader = Trader(strats, api, emailer)
     trader.run()
+
+
+def main():
+    parser = ArgumentParser()
+
+    parser.add_argument('-s', '--strat', required=True)
+    parser.add_argument('-stx', '--stocks', required=True)
+    parser.add_argument('--liveRun', action='store_true')
+    # parser.add_argument('-c', '--cashOnly', action='store_true')
+
+    args = parser.parse_args()
+    runTrader(stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun)
 
 
 if __name__ == '__main__':

@@ -77,10 +77,15 @@ def getSetupBars(api: alpaca.REST, setupTime: int, syms: List[str], endSetupDay=
     startSetupStr = startSetupDay.strftime(DATE_FMT)
     endSetupStr = endSetupDay.strftime(DATE_FMT)
 
+    print(startSetupStr)
+    print(endSetupStr)
+
+    actualLen = 0
     for x in syms:
         setupBars[x] = getBars(api, x, startSetupStr, endSetupStr)
+        actualLen = len(setupBars[x])
 
-    if len(setupBars) < setupTime:
-        raise cmErrors.NotSetupError()
+    if actualLen < setupTime:
+        raise cmErrors.CMError(f'DEV ERR: Not enough setup days, expected: {setupTime}, actual: {actualLen}')
 
     return setupBars

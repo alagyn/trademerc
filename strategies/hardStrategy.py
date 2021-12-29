@@ -5,7 +5,7 @@ from cmErrors import *
 from objects.stock import *
 from objects.action import *
 
-STOP_LIMIT_MARGIN = 0.95
+STOP_LIMIT_MARGIN = 0.9
 
 
 class HardStrategy(Strategy):
