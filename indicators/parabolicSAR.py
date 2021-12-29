@@ -5,7 +5,7 @@ AF_INC = 0.02
 
 class ParabolicSAR(Indicator):
     def __init__(self, af: float = 0.02, afMax: float = 0.2):
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, {'psar': self.getSAR})
 
         self.afStart = af
         self.af = af

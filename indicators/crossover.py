@@ -3,7 +3,9 @@ from indicators.indicator import Indicator, ValueFunc, MED_PRIORITY
 
 class Crossover(Indicator):
     def __init__(self, i1: ValueFunc, i2: ValueFunc):
-        super().__init__(MED_PRIORITY)
+        super().__init__(MED_PRIORITY,
+                         {'crossover': self.getCrossOver})
+
         self.i1 = i1
         self.prev1 = None
         self.i2 = i2

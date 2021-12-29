@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Dict
 
 ValueFunc = Callable[[], float]
 
@@ -7,12 +7,13 @@ _ID_GEN = 1
 
 
 class Indicator:
-    def __init__(self, priority: int):
+    def __init__(self, priority: int, values: Dict[str, ValueFunc]):
         global _ID_GEN
 
         self.priority = priority
         self._id = _ID_GEN
         _ID_GEN += 1
+        self._values = values
 
     def set(self, symbol: str):
         IndicatorManager().register(self, symbol)
@@ -24,12 +25,17 @@ class Indicator:
     def setupTime(self) -> int:
         raise NotImplementedError
 
+    def __getitem__(self, item) -> ValueFunc:
+        return self._values[item]
+
     def __eq__(self, other):
         if isinstance(other, type(self)):
             return self._id == other._id
 
     def __hash__(self):
         return self._id
+
+
 
 
 LOW_PRIORITY = 2

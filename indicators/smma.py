@@ -6,6 +6,7 @@ class SoloSMMA:
     """
     SMMA is equivalent to an EMA with alpha = 1/period
     """
+
     def __init__(self, period: int):
         self._a = 1 / period
         self._ema = SoloEMA(alpha=self._a)
@@ -23,7 +24,7 @@ class SoloSMMA:
 
 class SMMA(Indicator):
     def __init__(self, period: int, value='c'):
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, {'smma': self.getAvg})
 
         self._value = value
         self._smma = SoloSMMA(period)

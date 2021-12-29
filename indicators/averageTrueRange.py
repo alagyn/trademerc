@@ -4,7 +4,10 @@ from indicators.smma import SoloSMMA
 
 class AverageTrueRange(Indicator):
     def __init__(self, period: int):
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, {
+            'atr': self.getATR,
+            'tr': self.getTR
+        })
 
         self.p = period
 

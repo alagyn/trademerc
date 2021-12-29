@@ -5,7 +5,11 @@ from indicators.ema import SoloEMA
 # Moving Average Convergence Divergence
 class MACD(Indicator):
     def __init__(self, fastPeriod: int, slowPeriod: int, sigPeriod: int):
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY,
+                         {
+                             'signal': self.getSignal,
+                             'macd': self.getMACD
+                         })
 
         self._fp = fastPeriod
         self._sp = slowPeriod

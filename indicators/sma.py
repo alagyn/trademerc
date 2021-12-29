@@ -28,7 +28,7 @@ class SMA(Indicator):
     """
 
     def __init__(self, period: int, data='c'):
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, {'sma': self.getValue})
         self.avg = 0
         self.data = data
         self.sma = SoloSMA(period)

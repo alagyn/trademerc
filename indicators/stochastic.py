@@ -11,7 +11,12 @@ class Stochastic(Indicator):
         :param dPeriod: The period of the percD SMA calculations
         :param slowPeriod: If > 0, adds another SMA with the given period
         """
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY,
+                         {
+                             'percentK': self.percK,
+                             'percentD': self.percD
+                         })
+
         self._kp = kPeriod
         self._dp = dPeriod
         self._sp = slowPeriod

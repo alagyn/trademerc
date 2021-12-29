@@ -3,7 +3,12 @@ from indicators.indicator import Indicator, HIGH_PRIORITY
 
 class DayValue(Indicator):
     def __init__(self):
-        super(DayValue, self).__init__(HIGH_PRIORITY)
+        super(DayValue, self).__init__(HIGH_PRIORITY,
+                                       {
+                                           'low': self.low,
+                                           'close': self.close,
+                                           'high': self.high
+                                       })
         self.lo = 0
         self.closeVal = 0
         self.hi = 0

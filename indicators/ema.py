@@ -32,7 +32,7 @@ class EMA(Indicator):
     """
 
     def __init__(self, period: int, smoothing: int = 2, data='c'):
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, {'ema': self.getValue})
 
         self.data = data
         self.ema = SoloEMA(smoothing=smoothing, period=period)
