@@ -1,4 +1,4 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 
 ValueFunc = Callable[[], float]
 
@@ -23,6 +23,10 @@ class Indicator:
         raise NotImplementedError
 
     def setupTime(self) -> int:
+        raise NotImplementedError
+
+    @classmethod
+    def getKeys(cls) -> List[str]:
         raise NotImplementedError
 
     def __getitem__(self, item) -> ValueFunc:

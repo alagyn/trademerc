@@ -9,3 +9,9 @@ from .parabolicSAR import ParabolicSAR
 from .smma import SMMA
 from .sma import SMA
 from .stochastic import Stochastic
+
+from .indicator import Indicator
+
+INDICATORS = []
+for x in Indicator.__subclasses__():
+    INDICATORS.append(x)

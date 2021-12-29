@@ -1,13 +1,21 @@
 from indicators.indicator import Indicator, HIGH_PRIORITY
 
+_C = 'close'
+_L = 'low'
+_H = 'high'
+
 
 class DayValue(Indicator):
+    @classmethod
+    def getKeys(cls):
+        return [_L, _C, _H]
+
     def __init__(self):
         super(DayValue, self).__init__(HIGH_PRIORITY,
                                        {
-                                           'low': self.low,
-                                           'close': self.close,
-                                           'high': self.high
+                                           _L: self.low,
+                                           _C: self.close,
+                                           _H: self.high
                                        })
         self.lo = 0
         self.closeVal = 0

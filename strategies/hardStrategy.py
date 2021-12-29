@@ -7,7 +7,6 @@ from objects.action import *
 
 STOP_LIMIT_MARGIN = 0.9
 
-
 class HardStrategy(Strategy):
 
     def __init__(self, symbol, jsonStrat):

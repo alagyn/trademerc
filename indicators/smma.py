@@ -22,9 +22,18 @@ class SoloSMMA:
         return self._p
 
 
+_SMMA = 'smma'
+
+
 class SMMA(Indicator):
+    """Smoothing Moving Average"""
+
+    @classmethod
+    def getKeys(cls):
+        return [_SMMA]
+
     def __init__(self, period: int, value='c'):
-        super().__init__(HIGH_PRIORITY, {'smma': self.getAvg})
+        super().__init__(HIGH_PRIORITY, {_SMMA: self.getAvg})
 
         self._value = value
         self._smma = SoloSMMA(period)

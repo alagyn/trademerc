@@ -1,12 +1,19 @@
 from indicators.indicator import Indicator, HIGH_PRIORITY
 from indicators.smma import SoloSMMA
 
+_ATR = 'atr'
+_TR = 'tr'
+
 
 class AverageTrueRange(Indicator):
+    @classmethod
+    def getKeys(cls):
+        return [_ATR, _TR]
+
     def __init__(self, period: int):
         super().__init__(HIGH_PRIORITY, {
-            'atr': self.getATR,
-            'tr': self.getTR
+            _ATR: self.getATR,
+            _TR: self.getTR
         })
 
         self.p = period

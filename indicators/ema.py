@@ -25,14 +25,20 @@ class SoloEMA:
         return self._avg
 
 
+_EMA = 'ema'
+
 
 class EMA(Indicator):
     """
     Exponential Moving Average
     """
 
+    @classmethod
+    def getKeys(cls):
+        return [_EMA]
+
     def __init__(self, period: int, smoothing: int = 2, data='c'):
-        super().__init__(HIGH_PRIORITY, {'ema': self.getValue})
+        super().__init__(HIGH_PRIORITY, {_EMA: self.getValue})
 
         self.data = data
         self.ema = SoloEMA(smoothing=smoothing, period=period)

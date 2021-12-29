@@ -2,10 +2,16 @@ from indicators.indicator import Indicator, HIGH_PRIORITY
 
 AF_INC = 0.02
 
+_PSAR = 'psar'
+
 
 class ParabolicSAR(Indicator):
+    @classmethod
+    def getKeys(cls):
+        return [_PSAR]
+
     def __init__(self, af: float = 0.02, afMax: float = 0.2):
-        super().__init__(HIGH_PRIORITY, {'psar': self.getSAR})
+        super().__init__(HIGH_PRIORITY, {_PSAR: self.getSAR})
 
         self.afStart = af
         self.af = af

@@ -2,8 +2,15 @@ from indicators.indicator import Indicator, HIGH_PRIORITY
 from indicators.sma import SoloSMA
 from collections import deque
 
+_PERC_K = 'percentK'
+_PERC_D = 'percentD'
+
 
 class Stochastic(Indicator):
+    @classmethod
+    def getKeys(cls):
+        return [_PERC_D, _PERC_K]
+
     def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0):
         """
         Stochastic Oscillator Indicator
@@ -13,8 +20,8 @@ class Stochastic(Indicator):
         """
         super().__init__(HIGH_PRIORITY,
                          {
-                             'percentK': self.percK,
-                             'percentD': self.percD
+                             _PERC_K: self.percK,
+                             _PERC_D: self.percD
                          })
 
         self._kp = kPeriod

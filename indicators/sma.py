@@ -22,13 +22,20 @@ class SoloSMA:
         return self.avg
 
 
+_SMA = 'sma'
+
+
 class SMA(Indicator):
     """
     Simple Moving Average
     """
 
+    @classmethod
+    def getKeys(cls):
+        return [_SMA]
+
     def __init__(self, period: int, data='c'):
-        super().__init__(HIGH_PRIORITY, {'sma': self.getValue})
+        super().__init__(HIGH_PRIORITY, {_SMA: self.getValue})
         self.avg = 0
         self.data = data
         self.sma = SoloSMA(period)
