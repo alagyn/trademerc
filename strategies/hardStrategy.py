@@ -68,10 +68,7 @@ class HardStrategy(Strategy):
         self.oldStopPrice = None
 
     def getNewStop(self):
-        print(f'C: {self.dayval.close():.2f}, ATR: {self.atr.getATR():.2f}')
         return self.dayval.close() - (self.atr.getATR() * self.safteyFac)
-
-
 
     def nextAction(self, day: int, stock: Stock) -> Action:
 
