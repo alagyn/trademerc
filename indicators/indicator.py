@@ -32,6 +32,9 @@ class Indicator:
     def __getitem__(self, item) -> ValueFunc:
         return self._values[item]
 
+    def __contains__(self, item) -> bool:
+        return item in self._values
+
     def __eq__(self, other):
         if isinstance(other, type(self)):
             return self._id == other._id

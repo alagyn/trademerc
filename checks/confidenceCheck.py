@@ -15,8 +15,6 @@ class ConfidenceCheck(Check):
             for x in checks:
                 self.addCheck(*x)
 
-
-
     class WeightedCheck:
         def __init__(self, check: Check, weight: float):
             self._c = check

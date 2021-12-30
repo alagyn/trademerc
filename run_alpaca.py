@@ -30,6 +30,10 @@ BUY_PWR_SAFETY = 0.985
 MARKET_CLOSE_DELTA = 15 * 60
 
 
+def calcQty(buyPwr: float, cost: float):
+    return math.floor(buyPwr / cost)
+
+
 class Trader:
     def __init__(self, strats: Dict[str, Strategy], api: alpaca.REST, emailer: CMEmailer, cashOnly: bool = False):
         self.api = api
@@ -172,6 +176,8 @@ class Trader:
         for a in actions:
             if a.action == ActionEnum.Buy:
                 self.submitBuy(a, buyPwr)
+            elif a.action == ActionEnum.BuyAndStop:
+                self.submitBuyAndStop(a, buyPwr)
             elif a.action == ActionEnum.Sell:
                 self.submitSell(a)
             elif a.action == ActionEnum.UpdateStop:
@@ -183,8 +189,21 @@ class Trader:
             log.info(str(a))
 
     def submitBuy(self, action: Action, buyPwr):
+        qty = calcQty(buyPwr, action.stock.bar.c)
 
-        qty = math.floor(buyPwr / action.stock.bar.c)
+        order = self.api.submit_order(
+            symbol=action.stock.symbol,
+            qty=qty,
+            side='buy',
+            type='market',
+            time_in_force='day'
+        )
+
+        action.stock.order = order
+        action.stock.stopOrder = None
+
+    def submitBuyAndStop(self, action: Action, buyPwr):
+        qty = calcQty(buyPwr, action.stock.bar.c)
 
         try:
             order = self.api.submit_order(
@@ -194,7 +213,7 @@ class Trader:
                 type='market',
                 time_in_force='day',
 
-                # Class: One-Triggers-Other, activates the stop loss after buy goes through
+                # Class: One-Triggers-Other, activates the stop loss after buy is filled
                 order_class='oto',
                 stop_loss={
                     'stop_price': action.args['stopPrice'],
@@ -230,16 +249,20 @@ class Trader:
         try:
             self.api.close_position(symbol=action.stock.symbol)
             action.stock.order = None
+            action.stock.stopOrder = None
         except alpaca.rest.APIError:
             raise
 
     def submitUpdateStop(self, action: Action):
         try:
+            if action.stock.stopOrder is None:
+                raise cmErrors.ActionError('Cannot Update stop, no stop created')
+
             order = self.api.replace_order(order_id=action.stock.stopOrder.id,
                                            stop_price=action.args['stopPrice'],
                                            limit_price=action.args['limitPrice'])
 
-            action.stock.order = order
+            action.stock.stopOrder = order
         except KeyError as err:
             raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
         except alpaca.rest.APIError:
@@ -307,7 +330,6 @@ class Trader:
 
 def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = False,
               stocks: List[str] = None, stratVars=None):
-
     config = ConfigParser()
     config.read(r'config/system.cfg')
 

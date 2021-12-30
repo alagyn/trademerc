@@ -1,5 +1,6 @@
 from enum import IntEnum
 import enum
+from .action import Action, ActionEnum
 
 
 class StockStatus(IntEnum):
@@ -28,3 +29,19 @@ class Stock:
             return StockStatus.OutMarket
         else:
             return StockStatus.InMarket
+
+    def buyAndStop(self, stopPrice: float, limitPrice: float):
+        """Creates a buy action for this stock"""
+        return Action(self, ActionEnum.BuyAndStop, stopPrice=stopPrice, limitPrice=limitPrice)
+
+    def buy(self):
+        return Action(self, ActionEnum.Buy)
+
+    def sell(self):
+        """Creates a sell action for this stock"""
+        return Action(self, ActionEnum.Sell)
+
+    def updateStop(self, stopPrice: float, limitPrice: float):
+        """Creates a stop update action for this stock"""
+        return Action(self, ActionEnum.UpdateStop, stopPrice=stopPrice, limitPrice=limitPrice)
+

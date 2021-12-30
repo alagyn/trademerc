@@ -1,5 +1,5 @@
 
-from .indicator import Indicator
+from .indicator import Indicator, ValueFunc
 from .barValue import BarValue
 from .ema import EMA
 from .crossover import Crossover

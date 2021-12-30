@@ -179,7 +179,7 @@ def backtest(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDat
 
         print(f'Start Value: ${startingVal:.2f}, End Value: ${stats.value:.2f}')
         print(f'Profit: {profit:.2f}, Percent Gain: {percentGain:.2%}')
-        print(f'Wins: {wins}, Losses: {losses}, W/L: {wins / losses}')
+        print(f'Wins: {wins}, Losses: {losses}, W/L: {wins / losses:.2f}')
         print(f'Win %: {wins / (wins + losses):.2%}')
         print(f'Avg Gain: ${winTotal / wins:.2f}')
         print(f'Avg Loss: ${lossTotal / losses:.2f}')
