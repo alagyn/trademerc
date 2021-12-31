@@ -5,3 +5,7 @@ class Check:
     """
     def check(self) -> bool:
         raise NotImplementedError
+
+    @classmethod
+    def factory(cls, valFuncs, checks, args):
+        raise NotImplementedError

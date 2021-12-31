@@ -1,5 +1,6 @@
 from indicators.indicator import Indicator, ValueFunc, MED_PRIORITY
 
+
 class Crossover(Indicator):
     def __init__(self, i1, i2):
         super().__init__(MED_PRIORITY)

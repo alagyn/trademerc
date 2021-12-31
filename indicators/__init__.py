@@ -1,8 +1,6 @@
-
 from .indicator import Indicator, ValueFunc
 from .barValue import BarValue
 from .ema import EMA
-from .crossover import Crossover
 from .averageTrueRange import AverageTrueRange
 from .macd import MACD
 from .parabolicSAR import ParabolicSAR
@@ -12,6 +10,4 @@ from .stochastic import Stochastic
 
 from .indicator import Indicator
 
-INDICATORS = []
-for x in Indicator.__subclasses__():
-    INDICATORS.append((x.__name__, x.getKeys()))
+INDICATORS = {x.__name__: x for x in Indicator.__subclasses__()}

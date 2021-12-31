@@ -1,10 +1,9 @@
 from .check import Check
-from indicators.indicator import ValueFunc
-from cmErrors import NotSetupError
+from cmErrors import NotSetupError, CheckError
 
 
 class CompareLessThan(Check):
-    def __init__(self, i1: ValueFunc, i2: ValueFunc):
+    def __init__(self, i1, i2):
         self.i1 = i1
         self.i2 = i2
 
@@ -17,9 +16,16 @@ class CompareLessThan(Check):
 
         return val1 < val2
 
+    @classmethod
+    def factory(cls, valFuncs, checks, args):
+        if len(valFuncs) != 2:
+            raise CheckError('Len of value funcs is not 2')
+
+        return CompareLessThan(*valFuncs)
+
 
 class CompareGreaterThan(Check):
-    def __init__(self, i1: ValueFunc, i2: ValueFunc):
+    def __init__(self, i1, i2):
         self.i1 = i1
         self.i2 = i2
 
@@ -32,3 +38,9 @@ class CompareGreaterThan(Check):
 
         return val1 > val2
 
+    @classmethod
+    def factory(cls, valFuncs, checks, args):
+        if len(valFuncs) != 2:
+            raise CheckError('Len of value funcs is not 2')
+
+        return CompareLessThan(*valFuncs)

@@ -1,11 +1,24 @@
 from checks.check import Check
 from typing import List, Tuple
+from cmErrors import CheckError
+
+
+class _WeightedCheck:
+    def __init__(self, check: Check, weight: float):
+        self._c = check
+        self._w = weight
+
+    def check(self) -> bool:
+        return self._c.check()
+
+    def weight(self) -> float:
+        return self._w
 
 
 class ConfidenceCheck(Check):
 
     def __init__(self, minConf, maxConf=1.0, checks: List[Tuple[Check, float]] = None):
-        self._checks: List[ConfidenceCheck.WeightedCheck] = []
+        self._checks: List[_WeightedCheck] = []
 
         self._totalWeight = 0
         self._minConf = minConf
@@ -15,19 +28,21 @@ class ConfidenceCheck(Check):
             for x in checks:
                 self.addCheck(*x)
 
-    class WeightedCheck:
-        def __init__(self, check: Check, weight: float):
-            self._c = check
-            self._w = weight
+    @classmethod
+    def factory(cls, valFuncs, checks, args):
+        confs = args['confs']
 
-        def check(self) -> bool:
-            return self._c.check()
+        if len(confs) != len(checks):
+            raise CheckError("Len of checks not equal to len of confidences")
 
-        def weight(self) -> float:
-            return self._w
+        return ConfidenceCheck(
+            minConf=args['minConf'],
+            maxConf=args['maxConf'],
+            checks=list(zip(checks, confs))
+        )
 
     def addCheck(self, check: Check, weight: float):
-        self._checks.append(self.WeightedCheck(check, weight))
+        self._checks.append(_WeightedCheck(check, weight))
         self._totalWeight += weight
 
     def confidence(self):

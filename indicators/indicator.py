@@ -1,4 +1,5 @@
 from typing import Dict, List
+import functools
 
 _ID_GEN = 1
 
@@ -18,7 +19,8 @@ class ValueFunc:
         self.key = key
 
     def __call__(self, func):
-        return _ValueFuncWrapper(self.key, func)
+        x = functools.wraps(func)
+        return x(_ValueFuncWrapper(self.key, func))
 
 
 class Indicator:

@@ -1,18 +1,18 @@
 import cmErrors
-from checks.check import Check
 from typing import List
 from .strategy import *
-from indicators import *
-from objects.action import *
 from objects.stock import *
+import json
+from indicators import *
+from checks import *
 
 
 class CheckList:
     def __init__(self, checks: List[Check] = None):
         self._checks: List[Check] = [] if checks is None else checks
 
-    def addCheck(self, check: Check):
-        self._checks.append(check)
+    def addCheck(self, c: Check):
+        self._checks.append(c)
 
     def check(self) -> bool:
         value = True
@@ -24,7 +24,7 @@ class CheckList:
 
 
 class StopCalculation:
-    def __init__(self, value: ValueFunc, scale: float, limitScale: float):
+    def __init__(self, value, scale: float, limitScale: float):
         self._valF = value
         self._scale = scale
         self._lscale = limitScale
@@ -35,9 +35,8 @@ class StopCalculation:
 
 
 class CustomStrategy(Strategy):
-    def __init__(self, name: str, symbol: str, enterCond: CheckList, exitCond: CheckList,
-                 stopCalc: StopCalculation = None, stopUpdatePeriod=0,
-                 inDefAction: Action = ActionEnum.Hold, outDefAction: Action = ActionEnum.Hold):
+    def __init__(self, name: str, symbol: str, enterCond: Check, exitCond: Check,
+                 stopCalc: StopCalculation = None, stopUpdatePeriod=0):
 
         super().__init__(symbol, name)
 
@@ -46,9 +45,6 @@ class CustomStrategy(Strategy):
         self.stopCalc = stopCalc
         self.stopPeriod = stopUpdatePeriod
         self.nextStop = 0
-
-        self.inDefAction = inDefAction
-        self.outDefAction = outDefAction
 
     def nextAction(self, day: int, stock: Stock) -> Action:
         pos = stock.status()
@@ -74,4 +70,54 @@ class CustomStrategy(Strategy):
                     return stock.buy()
 
         return Action(stock, ActionEnum.Hold)
+
+
+def makeCustomStrategy(stratvars, symbol: str) -> CustomStrategy:
+    # TODO json error catching
+
+    all_inds = []
+
+    for i in stratvars['indicators']:
+        newind = INDICATORS[i['class']](**i['args']).set
+        all_inds.append(newind)
+
+    all_checks = []
+
+    for c_idx, c in enumerate(stratvars['checks']):
+        valFuncs = []
+        for i in c['indicators']:
+            idx = i['idx']
+            key = i['key']
+            valFuncs.append(all_inds[idx][key])
+
+        checks = []
+
+        for i in c['checks']:
+            if i >= c_idx:
+                raise cmErrors.StrategyError('Invalid Check Idx')
+            checks.append(all_checks[i])
+
+        newcheck = CHECKS[c['class']].factory(valFuncs, checks, c['args'])
+        all_checks.append(newcheck)
+
+    enterCondIdx = stratvars['enterCond']
+    exitCondIdx = stratvars['exitCond']
+
+    stopCalcIdx = stratvars['stopCalc']['indicator']
+    stopCalcKey = stratvars['stopCalc']['key']
+
+    stopCalcVal = all_inds[stopCalcIdx][stopCalcKey]
+    stopScale = stratvars['stopCalc']['scale']
+    stopLimitScale = stratvars['stopCalc']['limitScale']
+
+    stopCalc = StopCalculation(stopCalcVal, stopScale, stopLimitScale)
+
+    return CustomStrategy(
+        name=stratvars['name'],
+        symbol=symbol,
+        enterCond=all_checks[enterCondIdx],
+        exitCond=all_checks[exitCondIdx],
+        stopCalc=stopCalc,
+        stopUpdatePeriod=stratvars['daysToUpdateStop']
+    )
 

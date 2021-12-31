@@ -1,11 +1,17 @@
-from cmErrors import NotSetupError
+from cmErrors import NotSetupError, CheckError
 
 from checks.check import Check
-from indicators.indicator import ValueFunc
 
 
 class MaxCheck(Check):
-    def __init__(self, i: ValueFunc, maxVal: float):
+    @classmethod
+    def factory(cls, valFuncs, checks, args):
+        if len(valFuncs) != 1:
+            raise CheckError('Len of val funcs is not 1')
+
+        return MaxCheck(valFuncs[0], args['maxVal'])
+
+    def __init__(self, i, maxVal: float):
         self.i = i
         self.maxVal = maxVal
 
@@ -14,3 +20,4 @@ class MaxCheck(Check):
         if val is None:
             raise NotSetupError
         return self.i() <= self.maxVal
+

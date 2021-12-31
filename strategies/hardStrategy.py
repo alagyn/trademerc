@@ -36,13 +36,9 @@ class HardStrategy(Strategy):
                          slowPeriod=int(getVar('macd', 'slow')),
                          sigPeriod=int(getVar('macd', 'signal'))).set(self.symbol)
 
-        self.macdX = Crossover(self.macd.getMACD, self.macd.getSignal).set(self.symbol)
-
         self.stoch = Stochastic(kPeriod=int(getVar('stoch', 'p')),
                                 dPeriod=int(getVar('stoch', 'fast')),
                                 slowPeriod=int(getVar('stoch', 'slow'))).set(self.symbol)
-
-        self.stochX = Crossover(self.stoch.percK, self.stoch.percD).set(self.symbol)
 
         self.parabSAR = ParabolicSAR(af=float(getVar('parabolic', 'af')),
                                      afMax=float(getVar('parabolic', 'afmax'))).set(self.symbol)
@@ -50,13 +46,17 @@ class HardStrategy(Strategy):
 
         self.dayval = BarValue().set(self.symbol)
 
+
+        self.macdX = CrossoverCheck(self.macd.getMACD, self.macd.getSignal, 'up')
+        self.stochX = CrossoverCheck(self.stoch.percK, self.stoch.percD, 'up')
+
         checks = [
+            (self.macdX, 0.15),
+            (self.stochX, 0.05),
             (CompareGreaterThan(self.emaFast.getValue, self.emaSlow.getValue), 0.35),
             (CompareGreaterThan(self.emaFast.getValue, self.emaLong.getValue), 0.05),
-            (MinCheck(self.macdX.getCrossOver, 0), 0.15),
             (MinCheck(self.macd.getSignal, 0), 0.05),
             (MinCheck(self.stoch.percD, 50), 0.15),
-            (MinCheck(self.stochX.getCrossOver, 0), 0.05),
             (CompareLessThan(self.parabSAR.getSAR, self.dayval.close), 0.20)
         ]
 

@@ -1,11 +1,9 @@
-
 from .check import Check
 from .maxCheck import MaxCheck
 from .minCheck import MinCheck
 from .rangeCheck import RangeCheck
 from .compareCheck import CompareLessThan, CompareGreaterThan
 from .confidenceCheck import ConfidenceCheck
+from .crossoverCheck import CrossoverCheck
 
-CHECK_NAMES = []
-for x in Check.__subclasses__():
-    CHECK_NAMES.append(x.__name__)
+CHECKS = {x.__name__: x for x in Check.__subclasses__()}
