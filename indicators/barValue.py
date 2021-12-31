@@ -1,22 +1,10 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY
-
-_C = 'close'
-_L = 'low'
-_H = 'high'
+from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
 
 
 class BarValue(Indicator):
-    @classmethod
-    def getKeys(cls):
-        return [_L, _C, _H]
 
     def __init__(self):
-        super(BarValue, self).__init__(HIGH_PRIORITY,
-                                       {
-                                           _L: self.low,
-                                           _C: self.close,
-                                           _H: self.high
-                                       })
+        super(BarValue, self).__init__(HIGH_PRIORITY)
         self.lo = 0
         self.closeVal = 0
         self.hi = 0
@@ -29,11 +17,14 @@ class BarValue(Indicator):
     def setupTime(self) -> int:
         return 1
 
+    @ValueFunc(key='low')
     def low(self) -> float:
         return self.lo
 
+    @ValueFunc(key='close')
     def close(self) -> float:
         return self.closeVal
 
+    @ValueFunc(key='high')
     def high(self) -> float:
         return self.hi

@@ -1,16 +1,9 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY
+from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
 from indicators.sma import SoloSMA
 from collections import deque
 
-_PERC_K = 'percentK'
-_PERC_D = 'percentD'
-
 
 class Stochastic(Indicator):
-    @classmethod
-    def getKeys(cls):
-        return [_PERC_D, _PERC_K]
-
     def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0):
         """
         Stochastic Oscillator Indicator
@@ -18,11 +11,7 @@ class Stochastic(Indicator):
         :param dPeriod: The period of the percD SMA calculations
         :param slowPeriod: If > 0, adds another SMA with the given period
         """
-        super().__init__(HIGH_PRIORITY,
-                         {
-                             _PERC_K: self.percK,
-                             _PERC_D: self.percD
-                         })
+        super().__init__(HIGH_PRIORITY)
 
         self._kp = kPeriod
         self._dp = dPeriod
@@ -56,9 +45,11 @@ class Stochastic(Indicator):
         else:
             self._percD = self._percDfast.getValue()
 
+    @ValueFunc(key='percentK')
     def percK(self) -> float:
         return self._percK
 
+    @ValueFunc(key='percentD')
     def percD(self) -> float:
         return self._percD
 

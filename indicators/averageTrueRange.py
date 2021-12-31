@@ -1,20 +1,10 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY
+from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
 from indicators.smma import SoloSMMA
-
-_ATR = 'atr'
-_TR = 'tr'
 
 
 class AverageTrueRange(Indicator):
-    @classmethod
-    def getKeys(cls):
-        return [_ATR, _TR]
-
     def __init__(self, period: int):
-        super().__init__(HIGH_PRIORITY, {
-            _ATR: self.getATR,
-            _TR: self.getTR
-        })
+        super().__init__(HIGH_PRIORITY)
 
         self.p = period
 
@@ -36,9 +26,11 @@ class AverageTrueRange(Indicator):
 
         self.prevClose = close
 
+    @ValueFunc(key='atr')
     def getATR(self):
         return self.atr_smma.getValue()
 
+    @ValueFunc(key='tr')
     def getTR(self):
         return self.tr
 

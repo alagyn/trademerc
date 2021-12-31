@@ -1,22 +1,13 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY
+from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
 from indicators.ema import SoloEMA
 
-_SIG = 'signal'
-_MACD = 'macd'
 
-
-# Moving Average Convergence Divergence
 class MACD(Indicator):
-    @classmethod
-    def getKeys(cls):
-        return [_MACD, _SIG]
-
+    """
+    Moving Average Convergence Divergence
+    """
     def __init__(self, fastPeriod: int, slowPeriod: int, sigPeriod: int):
-        super().__init__(HIGH_PRIORITY,
-                         {
-                             _SIG: self.getSignal,
-                             _MACD: self.getMACD
-                         })
+        super().__init__(HIGH_PRIORITY)
 
         self._fp = fastPeriod
         self._sp = slowPeriod
@@ -37,9 +28,11 @@ class MACD(Indicator):
         self.macd = slowVal - fastVal
         self.sigEMA.next(self.macd)
 
+    @ValueFunc(key='signal')
     def getSignal(self) -> float:
         return self.sigEMA.getValue()
 
+    @ValueFunc(key='macd')
     def getMACD(self) -> float:
         return self.macd
 

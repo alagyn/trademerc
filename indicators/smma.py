@@ -1,4 +1,4 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY
+from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
 from indicators.ema import SoloEMA
 
 
@@ -28,12 +28,8 @@ _SMMA = 'smma'
 class SMMA(Indicator):
     """Smoothing Moving Average"""
 
-    @classmethod
-    def getKeys(cls):
-        return [_SMMA]
-
     def __init__(self, period: int, value='c'):
-        super().__init__(HIGH_PRIORITY, {_SMMA: self.getAvg})
+        super().__init__(HIGH_PRIORITY)
 
         self._value = value
         self._smma = SoloSMMA(period)
@@ -48,6 +44,7 @@ class SMMA(Indicator):
 
         self._smma.next(data)
 
+    @ValueFunc(key='smma')
     def getAvg(self):
         return self._smma.getValue()
 

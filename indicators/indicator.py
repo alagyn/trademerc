@@ -1,19 +1,41 @@
-from typing import Callable, Dict, List
-
-ValueFunc = Callable[[], float]
+from typing import Dict, List
 
 _ID_GEN = 1
 
 
+class _ValueFuncWrapper:
+    def __init__(self, key: str, func):
+        self.key = key
+        self.func = func
+        self.ref = None
+
+    def __call__(self) -> float:
+        return self.func(self.ref)
+
+
+class ValueFunc:
+    def __init__(self, key: str):
+        self.key = key
+
+    def __call__(self, func):
+        return _ValueFuncWrapper(self.key, func)
+
 
 class Indicator:
-    def __init__(self, priority: int, values: Dict[str, ValueFunc]):
+    def __init__(self, priority: int):
         global _ID_GEN
 
         self.priority = priority
         self._id = _ID_GEN
         _ID_GEN += 1
-        self._values = values
+        self._values: Dict[str, _ValueFuncWrapper] = {}
+
+        for name in dir(self):
+            x = getattr(self, name)
+            if isinstance(x, _ValueFuncWrapper):
+                self._values[x.key] = x
+                x.ref = self
+
 
     def set(self, symbol: str):
         IndicatorManager().register(self, symbol)
@@ -25,11 +47,10 @@ class Indicator:
     def setupTime(self) -> int:
         raise NotImplementedError
 
-    @classmethod
-    def getKeys(cls) -> List[str]:
-        raise NotImplementedError
+    def keys(self) -> List[str]:
+        return list(self._values.keys())
 
-    def __getitem__(self, item) -> ValueFunc:
+    def __getitem__(self, item) -> _ValueFuncWrapper:
         return self._values[item]
 
     def __contains__(self, item) -> bool:
@@ -41,8 +62,6 @@ class Indicator:
 
     def __hash__(self):
         return self._id
-
-
 
 
 LOW_PRIORITY = 2
@@ -63,7 +82,6 @@ class IndicatorManager:
             cls._inst._indicators = {}
 
         return cls._inst
-
 
     def register(self, i: Indicator, symbol: str):
         if symbol not in self._indicators:

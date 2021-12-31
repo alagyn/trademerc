@@ -1,16 +1,8 @@
 from indicators.indicator import Indicator, ValueFunc, MED_PRIORITY
 
-_CO = 'crossover'
-
-
 class Crossover(Indicator):
-    @classmethod
-    def getKeys(cls):
-        return [_CO]
-
-    def __init__(self, i1: ValueFunc, i2: ValueFunc):
-        super().__init__(MED_PRIORITY,
-                         {_CO: self.getCrossOver})
+    def __init__(self, i1, i2):
+        super().__init__(MED_PRIORITY)
 
         self.i1 = i1
         self.prev1 = None
@@ -41,6 +33,7 @@ class Crossover(Indicator):
         self.prev2 = new2
         self._trend = out
 
+    @ValueFunc(key='crossover')
     def getCrossOver(self) -> float:
         return self._trend
 
