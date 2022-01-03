@@ -1,4 +1,5 @@
 import alpaca_trade_api as alpaca
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from configparser import ConfigParser
 from argparse import ArgumentParser
@@ -38,7 +39,15 @@ class Trader:
     def __init__(self, strats: Dict[str, Strategy], api: alpaca.REST, emailer: CMEmailer, cashOnly: bool = False):
         self.api = api
         self.emailer = emailer
+        self.htmlEnv = Environment(
+            loader=FileSystemLoader('html_templates'),
+            autoescape=select_autoescape()
+        )
+        self.emailTemplate = self.htmlEnv.get_template("emailtemplate.html")
+
         self.cashOnly = cashOnly
+
+        # TODO check for proper shutdown
 
         # First cancel any existing orders?
         self.api.cancel_all_orders()
@@ -50,6 +59,8 @@ class Trader:
         # setup initial buying power
         self.buyPwr = 0
         self.updateBuyPwr()
+
+        self.prevEquity = round(float(self.api.get_account().equity), 2)
 
         # Internal day counter
         self.tradeDay = 0
@@ -68,6 +79,16 @@ class Trader:
 
         # Setup Indicators
         self.iManage.setupIndicators(setupBars)
+
+        # If market is closed, get current day
+        if not self.api.get_clock().is_open:
+            self.updateIndicators()
+
+        # Dict of order.id -> order
+        self.openOrders = {}
+        # List of trades to send in next update
+        self.trades = []
+
 
     def run(self):
         try:
@@ -108,10 +129,11 @@ class Trader:
                 log.info('Updating Positions')
                 self.updatePositions()
                 self.updateBuyPwr()
+                self.updateTrades()
 
                 # Send update email
                 log.info('Sending Update Email')
-                self.sendDailyUpdate(actions)
+                self.sendUpdate(actions)
 
                 # Force wait till morning
                 log.info('Waiting until next open')
@@ -138,6 +160,31 @@ class Trader:
             bar = stk.bar
             self.iManage.addData(sym, bar.l, bar.c, bar.h)
 
+    def updateTrades(self):
+        filled = []
+        for orderid in self.openOrders:
+            order = self.api.get_order(orderid)
+
+            if order.status == 'filled':
+                filled.append(orderid)
+
+                qty = int(order.filled_qty)
+                price = float(order.filled_avg_price)
+                value = qty * price
+
+                t = {
+                    'symbol': order.symbol,
+                    'side': order.side,
+                    'qty': qty,
+                    'price': price,
+                    'value': value
+                }
+
+                self.trades.append(t)
+
+        for x in filled:
+            self.openOrders.pop(x)
+
     def updatePositions(self):
         positions = self.api.list_positions()
         openset = set()
@@ -149,6 +196,7 @@ class Trader:
         closed = self.stocks.keys() - openset
         for s in closed:
             self.stocks[s].position = None
+
 
     def position(self, stock: Stock):
         return self.api.get_position(stock.symbol)
@@ -201,6 +249,7 @@ class Trader:
 
         action.stock.order = order
         action.stock.stopOrder = None
+        self.openOrders[order.id] = order
 
     def submitBuyAndStop(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.c)
@@ -223,6 +272,8 @@ class Trader:
 
             action.stock.order = order
             action.stock.stopOrder = order.legs[0]
+            self.openOrders[order.id] = order
+            self.openOrders[order.legs[0].id] = order.legs[0]
 
         except KeyError as err:
             raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
@@ -247,9 +298,11 @@ class Trader:
         """
 
         try:
-            self.api.close_position(symbol=action.stock.symbol)
+            order = self.api.close_position(symbol=action.stock.symbol)
             action.stock.order = None
             action.stock.stopOrder = None
+            action.stock.lastCloseOrder = order
+            self.openOrders[order.id] = order
         except alpaca.rest.APIError:
             raise
 
@@ -268,7 +321,7 @@ class Trader:
         except alpaca.rest.APIError:
             raise
 
-    def sendDailyUpdate(self, actions: List[Action]):
+    def sendUpdate(self, actions: List[Action]):
         acts = {}
         for a in actions:
             acts[a.stock.symbol] = a
@@ -276,36 +329,40 @@ class Trader:
         header = f'Stock Algo Daily Update: {datetime.datetime.today()}'
 
         info = self.api.get_account()
-        accountInfo = f'Account:\n'
-        accountInfo += f'Buying Power: ${float(info.buying_power):.2f}\n\n'
 
-        stkUpdates = ''
-        for sym in sorted(self.strats.keys()):
-            stkUpdates += f'Symbol: {sym}\n'
-            stock = self.stocks[sym]
+        curEquity = round(float(info.equity), 2)
+        totalPL = curEquity - self.prevEquity
 
-            if stock.position is None:
-                stkUpdates += f'\tStatus: Out Of Market\n'
-            else:
-                stkUpdates += f'\tStatus: In Market\n'
-                stkUpdates += f'\t\tEntry Price: ${stock.position.avg_entry_price:.2f}\n'
-                stkUpdates += f'\t\tQty: {stock.position.qty}\n'
-                stkUpdates += f'\t\tCurrent Total Market Value: ${stock.position.market_value}\n'
-                stkUpdates += f'P/L: ${stock.position.unrealized_pl:.2f}, {stock.position.unrealized_plpc:.2%}\n'
-                stkUpdates += f'Stop: ${stock.stopOrder.stop_price}, Limit: ${stock.stopOrder.limit_price}'
+        positions = []
+        for sym, s in self.stocks.items():
+            if s.position is not None:
+                p = {
+                    'symbol': s.symbol,
+                    'qty': s.position.qty,
+                    'pl': s.position.unrealized_pl,
+                    'price': s.position.current_price,
+                    'value': s.position.market_value,
+                    'p_value': s.position.avg_entry_price,
+                    'p_date': s.order.filled_at,
+                    'stop_price': s.stopOrder.stop_price,
+                    'last_stop': s.lastStopUpdate,
+                    'next_stop': s.nextStopUpdate
+                }
+                positions.append(p)
 
-            stkUpdates += '\n'
+        content = self.emailTemplate.render(
+            portfolio_start=self.prevEquity,
+            portfolio_cur=curEquity,
+            portfolio_pl=totalPL,
+            trades=self.trades,
+            postions=positions
+        )
 
-            stkUpdates += f"\tToday's Action: {acts[sym].action.name}\n"
-            for key, val in acts[sym].args.items():
-                stkUpdates += f'\t\t{key}: {val}\n'
-
-            stkUpdates += '\n'
-
-        # TODO send open orders?
-
-        content = accountInfo + stkUpdates
         self.emailer.send(header, content)
+        self.prevEquity = curEquity
+        self.trades = []
+
+
 
     def clock(self) -> alpaca.rest.Clock:
         """Shorcut to get the API clock"""

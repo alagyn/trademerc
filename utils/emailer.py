@@ -1,8 +1,7 @@
 import smtplib
-from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
-
-# TODO https://stackoverflow.com/questions/882712/sending-html-email-using-python
 
 class CMEmailer:
     def __init__(self, config):
@@ -13,12 +12,20 @@ class CMEmailer:
 
         self._toAddr = config['RecievingEmail']
 
+
+
     def send(self, subject: str, content: str):
-        msg = EmailMessage()
-        msg.set_content(content)
+        msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = self._fromAddr
         msg['To'] = self._toAddr
+
+        text = 'Hmmm, supposed to be some HTML here...'
+        part1 = MIMEText(text, 'plain')
+        part2 = MIMEText(content, 'html')
+
+        msg.attach(part1)
+        msg.attach(part2)
 
         s = smtplib.SMTP(self._server, self._port)
         s.ehlo()

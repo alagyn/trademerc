@@ -80,7 +80,7 @@ class HardStrategy(Strategy):
         if pos == StockStatus.OutMarket:
             if conf > 0.65:
                 self.nextUpdateDay = day + self.stopUpdatePeriod
-
+                stock.setNextStopDate(self.stopUpdatePeriod)
                 stopPrice = self.getNewStop()
                 self.oldStopPrice = stopPrice
 
@@ -101,6 +101,7 @@ class HardStrategy(Strategy):
             elif self.nextUpdateDay is not None:
                 if day >= self.nextUpdateDay:
                     self.nextUpdateDay = day + self.stopUpdatePeriod
+                    stock.setNextStopDate(self.stopUpdatePeriod)
                     stopPrice = self.getNewStop()
 
                     if stopPrice > self.oldStopPrice:

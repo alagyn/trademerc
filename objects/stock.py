@@ -1,6 +1,8 @@
 from enum import IntEnum
 import enum
 from .action import Action, ActionEnum
+import datetime
+from consts import DATE_FMT
 
 
 class StockStatus(IntEnum):
@@ -20,6 +22,11 @@ class Stock:
         self.position = None
 
         self.bar = None
+
+        self.lastCloseOrder = None
+
+        self.lastStopUpdate = None
+        self.nextStopUpdate = None
 
     def updateBar(self, bar):
         self.bar = bar
@@ -43,5 +50,9 @@ class Stock:
 
     def updateStop(self, stopPrice: float, limitPrice: float):
         """Creates a stop update action for this stock"""
+        self.lastStopUpdate = datetime.datetime.today().strftime(DATE_FMT)
         return Action(self, ActionEnum.UpdateStop, stopPrice=stopPrice, limitPrice=limitPrice)
 
+    def setNextStopDate(self, delta: int):
+        date = datetime.datetime.today() + datetime.timedelta(delta)
+        self.nextStopUpdate = date.strftime(DATE_FMT)
