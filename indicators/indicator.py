@@ -4,23 +4,16 @@ import functools
 _ID_GEN = 1
 
 
-class _ValueFuncWrapper:
-    def __init__(self, key: str, func):
-        self.key = key
-        self.func = func
-        self.ref = None
-
-    def __call__(self) -> float:
-        return self.func(self.ref)
-
-
 class ValueFunc:
     def __init__(self, key: str):
         self.key = key
+        self.val = None
 
-    def __call__(self, func):
-        x = functools.wraps(func)
-        return x(_ValueFuncWrapper(self.key, func))
+    def __call__(self) -> float:
+        return self.val
+
+    def set(self, val: float):
+        self.val = val
 
 
 class Indicator:
@@ -30,14 +23,13 @@ class Indicator:
         self.priority = priority
         self._id = _ID_GEN
         _ID_GEN += 1
-        self._values: Dict[str, _ValueFuncWrapper] = {}
+        self._values: Dict[str, ValueFunc] = {}
 
         for name in dir(self):
-            x = getattr(self, name)
-            if isinstance(x, _ValueFuncWrapper):
-                self._values[x.key] = x
-                x.ref = self
-
+            if not name.startswith('__'):
+                x = getattr(self, name)
+                if isinstance(x, ValueFunc):
+                    self._values[x.key] = x
 
     def set(self, symbol: str):
         IndicatorManager().register(self, symbol)
@@ -52,7 +44,7 @@ class Indicator:
     def keys(self) -> List[str]:
         return list(self._values.keys())
 
-    def __getitem__(self, item) -> _ValueFuncWrapper:
+    def __getitem__(self, item) -> ValueFunc:
         return self._values[item]
 
     def __contains__(self, item) -> bool:

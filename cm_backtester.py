@@ -179,8 +179,18 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
                 print("\t", act)
 
                 if totalCash < 0:
-                    print('Negative Value, Strategy Failure?')
-                    break
+                    raise cmErrors.BacktestError('Negative Value, Strategy Failure?')
+        # END Main for loop
+
+        # clear out any remaining positions
+        for sym, q in qty.items():
+            if q > 0:
+                newCash = q * allBars['close'][-1]
+                stats[sym].value = newCash
+                stats[sym].updateWL()
+
+                totalCash += newCash
+
     except cmErrors.BacktestError as err:
         print(f'BACKTEST ERROR: {err}')
         return

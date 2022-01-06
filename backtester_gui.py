@@ -291,7 +291,7 @@ class BTGUI(tk.Frame):
             "startingVal": self.startValVar.get()
         }
 
-        print(strat)
+        # print(strat)
 
         if not self.indivVar.get():
             strats = {}

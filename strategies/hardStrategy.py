@@ -47,17 +47,17 @@ class HardStrategy(Strategy):
 
         self.dayval = BarValue().set(self.symbol)
 
-        self.macdX = CrossoverCheck(self.macd.getMACD, self.macd.getSignal, 'up')
+        self.macdX = CrossoverCheck(self.macd.macd, self.macd.signal, 'up')
         self.stochX = CrossoverCheck(self.stoch.percK, self.stoch.percD, 'up')
 
         checks = [
             (self.macdX, 0.15),
             (self.stochX, 0.05),
-            (CompareGreaterThan(self.emaFast.getValue, self.emaSlow.getValue), 0.35),
-            (CompareGreaterThan(self.emaFast.getValue, self.emaLong.getValue), 0.05),
-            (MinCheck(self.macd.getSignal, 0), 0.05),
+            (CompareGreaterThan(self.emaFast.avg, self.emaSlow.avg), 0.35),
+            (CompareGreaterThan(self.emaFast.avg, self.emaLong.avg), 0.05),
+            (MinCheck(self.macd.signal, 0), 0.05),
             (MinCheck(self.stoch.percD, 50.0), 0.15),
-            (CompareLessThan(self.parabSAR.getSAR, self.dayval.close), 0.20)
+            (CompareLessThan(self.parabSAR.psar, self.dayval.close), 0.20)
         ]
 
         self.conf = ConfidenceCheck(0.5, checks=checks)
@@ -68,7 +68,7 @@ class HardStrategy(Strategy):
         self.oldStopPrice = None
 
     def getNewStop(self):
-        return self.dayval.close() - (self.atr.getATR() * self.safteyFac)
+        return self.dayval.close() - (self.atr.atr() * self.safteyFac)
 
     def nextAction(self, day: int, stock: Stock) -> Action:
 

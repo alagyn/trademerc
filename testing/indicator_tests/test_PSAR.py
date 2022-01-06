@@ -65,10 +65,10 @@ class PSARTest(unittest.TestCase):
             if val is not None and x[2] is not None:
 
                 a = round(val, 2)
-                b = round(sar.extreme, 2)
-                c = round(val - sar.extreme, 2)
-                d = round(sar.af, 2)
-                e = round(sar.af * (val - sar.extreme), 3)
+                b = round(sar._extreme, 2)
+                c = round(val - sar._extreme, 2)
+                d = round(sar._af, 2)
+                e = round(sar._af * (val - sar._extreme), 3)
 
                 # print(a, b, c, d, e)
                 self.assertAlmostEqual(x[2], val, delta=0.008)

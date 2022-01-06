@@ -29,10 +29,11 @@ class SMMA(Indicator):
     """Smoothing Moving Average"""
 
     def __init__(self, period: int, value='c'):
-        super().__init__(HIGH_PRIORITY)
-
         self._value = value
         self._smma = SoloSMMA(period)
+        self.avg = ValueFunc('smma')
+
+        super().__init__(HIGH_PRIORITY)
 
     def addData(self, low, close, high) -> None:
         if self._value == 'c':
@@ -42,11 +43,7 @@ class SMMA(Indicator):
         else:
             data = high
 
-        self._smma.next(data)
-
-    @ValueFunc(key='smma')
-    def getAvg(self):
-        return self._smma.getValue()
+        self.avg.set(self._smma.next(data))
 
     def setupTime(self) -> int:
         return self._smma.setupTime()

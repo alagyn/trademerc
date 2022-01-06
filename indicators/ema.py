@@ -33,25 +33,21 @@ class EMA(Indicator):
 
 
     def __init__(self, period: int, smoothing: int = 2, data='c'):
+        self._data = data
+        self._ema = SoloEMA(smoothing=smoothing, period=period)
+        self.avg = ValueFunc('ema')
+
         super().__init__(HIGH_PRIORITY)
 
-        self.data = data
-        self.ema = SoloEMA(smoothing=smoothing, period=period)
-        self.avg = 0
-
-    def addData(self, low, close, high) -> float:
-        if self.data == 'c':
-            self.avg = self.ema.next(close)
-        elif self.data == 'l':
-            self.avg = self.ema.next(low)
+    def addData(self, low, close, high):
+        if self._data == 'c':
+            out = self._ema.next(close)
+        elif self._data == 'l':
+            out = self._ema.next(low)
         else:
-            self.avg = self.ema.next(high)
+            out = self._ema.next(high)
 
-        return self.avg
-
-    @ValueFunc(key='ema')
-    def getValue(self) -> float:
-        return self.avg
+        self.avg.set(out)
 
     def setupTime(self) -> int:
         return 2

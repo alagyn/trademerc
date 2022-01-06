@@ -22,31 +22,28 @@ class SoloSMA:
         return self.avg
 
 
-
 class SMA(Indicator):
     """
     Simple Moving Average
     """
 
-
     def __init__(self, period: int, data='c'):
-        super().__init__(HIGH_PRIORITY)
-        self.avg = 0
-        self.data = data
-        self.sma = SoloSMA(period)
+        self.avg = ValueFunc('sma')
+        self._data = data
+        self._sma = SoloSMA(period)
         self._p = period
 
-    def addData(self, low, close, high) -> None:
-        if self.data == 'c':
-            self.avg = self.sma.next(close)
-        elif self.data == 'l':
-            self.avg = self.sma.next(low)
-        else:
-            self.avg = self.sma.next(high)
+        super().__init__(HIGH_PRIORITY)
 
-    @ValueFunc(key='sma')
-    def getValue(self) -> float:
-        return self.avg
+    def addData(self, low, close, high) -> None:
+        if self._data == 'c':
+            out = self._sma.next(close)
+        elif self._data == 'l':
+            out = self._sma.next(low)
+        else:
+            out = self._sma.next(high)
+
+        self.avg.set(out)
 
     def setupTime(self) -> int:
         return self._p

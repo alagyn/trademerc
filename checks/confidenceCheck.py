@@ -55,7 +55,7 @@ class ConfidenceCheck(Check):
             val = c.check()
             if val:
                 out += c.weight()
-            print(c, val)
+            # print(c, val)
 
         return out / self._totalWeight
 

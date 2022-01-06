@@ -6,81 +6,84 @@ AF_INC = 0.02
 class ParabolicSAR(Indicator):
 
     def __init__(self, af: float = 0.02, afMax: float = 0.2):
+        self._afStart = af
+        self._af = af
+        self._afMax = afMax
+        self._extreme = None
+        self._trend = False
+        self.psar = ValueFunc('psar')
+        self._nextSAR = None
+
+        self._prevHigh = None
+        self._prevLow = None
+
         super().__init__(HIGH_PRIORITY)
-
-        self.afStart = af
-        self.af = af
-        self.afMax = afMax
-        self.extreme = None
-        self.trend = False
-        self.curSAR = None
-        self.nextSAR = None
-
-        self.prevHigh = None
-        self.prevLow = None
 
     def addData(self, low, close, high) -> None:
         # Start case, takes 2 iterations to setup
-        if self.nextSAR is None:
-            if self.prevLow is None:
-                self.prevLow = close
+        if self._nextSAR is None:
+            if self._prevLow is None:
+                self._prevLow = close
                 return
 
             # estimated downtrend
-            if self.prevLow < close:
-                self.trend = False
-                self.extreme = low
+            if self._prevLow < close:
+                self._trend = False
+                self._extreme = low
             # else uptrend
             else:
-                self.trend = True
-                self.extreme = high
+                self._trend = True
+                self._extreme = high
 
-            self.nextSAR = (high + low) / 2
-            self.prevLow = low
-            self.prevHigh = high
+            self._nextSAR = (high + low) / 2
+            self._prevLow = low
+            self._prevHigh = high
             return
 
         # Update to today's SAR
-        self.curSAR = self.nextSAR
+        todayPSAR = self._nextSAR
 
         # Check for a trend switch
-        if (self.trend and self.curSAR >= low) or (not self.trend and self.curSAR <= high):
+        if (self._trend and todayPSAR >= low) or (not self._trend and todayPSAR <= high):
             # Reverse the trend
-            self.trend = not self.trend
-            self.curSAR = self.extreme
-            self.extreme = high if self.trend else low
-            self.af = self.afStart
+            self._trend = not self._trend
+            todayPSAR = self._extreme
+            self._extreme = high if self._trend else low
+            self._af = self._afStart
 
         # Check for new EP, inc AF if found
-        if self.trend:
-            if high > self.extreme:
-                self.extreme = high
-                self.af += AF_INC
+        if self._trend:
+            if high > self._extreme:
+                self._extreme = high
+                self._af += AF_INC
         else:
-            if low < self.extreme:
-                self.extreme = low
-                self.af += AF_INC
+            if low < self._extreme:
+                self._extreme = low
+                self._af += AF_INC
 
         # limit AF to max
-        self.af = min(self.af, self.afMax)
+        self._af = min(self._af, self._afMax)
 
-        self.nextSAR = self.curSAR + self.af * (self.extreme - self.curSAR)
+        # calc tomorrow's psar
+        self._nextSAR = todayPSAR + self._af * (self._extreme - todayPSAR)
 
-        # Limit nextSAR using ITS prev 2 lows and highs, i.e the current and 1 prev
-        if self.trend:
+        # Limit tomorrow's psar using ITS prev 2 lows and highs, i.e today's and yesterday's lows
+        if self._trend:
             # uptrend, sar should be below prev 2 lows
-            self.nextSAR = min(low, self.prevLow, self.nextSAR)
+            self._nextSAR = min(low, self._prevLow, self._nextSAR)
         else:
             # downtrend, sar should be above prev 2 highs
-            self.nextSAR = max(high, self.prevHigh, self.nextSAR)
+            self._nextSAR = max(high, self._prevHigh, self._nextSAR)
 
+        # Set output psar
+        self.psar.set(todayPSAR)
         # update prev vals
-        self.prevLow = low
-        self.prevHigh = high
+        self._prevLow = low
+        self._prevHigh = high
 
-    @ValueFunc(key='psar')
+    # @ValueFunc(key='psar')
     def getSAR(self):
-        return self.curSAR
+        return self.psar
 
     def setupTime(self) -> int:
         return 2

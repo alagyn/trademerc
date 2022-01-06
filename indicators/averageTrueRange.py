@@ -4,35 +4,25 @@ from indicators.smma import SoloSMMA
 
 class AverageTrueRange(Indicator):
     def __init__(self, period: int):
+        self._p = period
+
+        self._prevClose = None
+        self._atr_smma = SoloSMMA(self._p)
+
+        self.tr = ValueFunc('tr')
+        self.atr = ValueFunc('atr')
+
         super().__init__(HIGH_PRIORITY)
 
-        self.p = period
-
-        self.tr = None
-        self.prevClose = None
-
-        self._vals = []
-
-        self.atr_smma = SoloSMMA(self.p)
-
     def addData(self, low, close, high) -> None:
-        if self.prevClose is None:
-            self.prevClose = close
+        if self._prevClose is None:
+            self._prevClose = close
             return
 
-        self.tr = max(high, self.prevClose) - min(low, self.prevClose)
+        self.tr.set(max(high, self._prevClose) - min(low, self._prevClose))
+        self.atr.set(self._atr_smma.next(self.tr()))
 
-        self.atr_smma.next(self.tr)
-
-        self.prevClose = close
-
-    @ValueFunc(key='atr')
-    def getATR(self):
-        return self.atr_smma.getValue()
-
-    @ValueFunc(key='tr')
-    def getTR(self):
-        return self.tr
+        self._prevClose = close
 
     def setupTime(self) -> int:
-        return self.atr_smma.setupTime() + 1
+        return self._atr_smma.setupTime() + 1

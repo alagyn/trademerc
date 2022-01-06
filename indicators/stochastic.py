@@ -11,21 +11,22 @@ class Stochastic(Indicator):
         :param dPeriod: The period of the percD SMA calculations
         :param slowPeriod: If > 0, adds another SMA with the given period
         """
-        super().__init__(HIGH_PRIORITY)
 
         self._kp = kPeriod
         self._dp = dPeriod
         self._sp = slowPeriod
         self.slow = self._sp > 0
 
-        self._percK = 0
+        self.percK = ValueFunc('percentK')
+        self.percD = ValueFunc('percentD')
 
-        self._percD = 0
         self._percDfast = SoloSMA(dPeriod)
         self._percDslow = SoloSMA(slowPeriod)
 
         self.lows = deque()
         self.highs = deque()
+
+        super().__init__(HIGH_PRIORITY)
 
     def addData(self, low, close, high) -> None:
         self.lows.append(low)
@@ -37,20 +38,15 @@ class Stochastic(Indicator):
         lowest = min(self.lows)
         highest = max(self.highs)
 
-        self._percK = 100 * (close - lowest) / (highest - lowest)
-        self._percD = self._percDfast.next(self._percK)
+        newPercK = 100 * (close - lowest) / (highest - lowest)
+        self.percK.set(newPercK)
+
+        newPerD = self._percDfast.next(newPercK)
 
         if self.slow:
-            self._percD = self._percDslow.next(self._percD)
+            newPerD = self._percDslow.next(newPerD)
 
-
-    @ValueFunc(key='percentK')
-    def percK(self) -> float:
-        return self._percK
-
-    @ValueFunc(key='percentD')
-    def percD(self) -> float:
-        return self._percD
+        self.percD.set(newPerD)
 
     def setupTime(self) -> int:
         return self._kp + self._dp + self._sp
