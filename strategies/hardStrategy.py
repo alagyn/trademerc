@@ -68,7 +68,7 @@ class HardStrategy(Strategy):
         self.oldStopPrice = None
 
     def getNewStop(self):
-        return self.dayval.close() - (self.atr.atr() * self.safteyFac)
+        return round(self.dayval.close() - (self.atr.atr() * self.safteyFac), 2)
 
     def nextAction(self, day: int, stock: Stock) -> Action:
 
@@ -85,7 +85,7 @@ class HardStrategy(Strategy):
                 self.oldStopPrice = stopPrice
 
                 # TODO ask John about this calc
-                limitPrice = stopPrice * STOP_LIMIT_MARGIN
+                limitPrice = round(stopPrice * STOP_LIMIT_MARGIN, 2)
 
                 out = Action(stock, ActionEnum.Buy,
                              stopPrice=stopPrice,
@@ -106,7 +106,7 @@ class HardStrategy(Strategy):
 
                     if stopPrice > self.oldStopPrice:
                         # TODO ask John about this calc
-                        limitPrice = stopPrice * 0.95
+                        limitPrice = round(stopPrice * STOP_LIMIT_MARGIN, 2)
 
                         out = Action(stock, ActionEnum.UpdateStop,
                                      stopPrice=stopPrice,

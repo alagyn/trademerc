@@ -6,6 +6,7 @@ import json
 from tkcalendar import DateEntry
 
 import cm_backtester
+from indicators.indicator import IndicatorManager
 from utils.file_utils import loadStratFile, loadStockFile
 from utils.api_utils import loadPaperAPI
 from consts import STRAT_FORMAT, DATE_FMT
@@ -292,13 +293,14 @@ class BTGUI(tk.Frame):
         }
 
         # print(strat)
+        IndicatorManager().clearIndicators()
 
         if not self.indivVar.get():
             strats = {}
             for x in self.stocks:
                 strats[x] = HardStrategy(x, strat)
 
-            cm_backtester.backtestI(**args, strats=strats)
+            cm_backtester.backtest(**args, strats=strats)
 
         else:
             for x in self.stocks:

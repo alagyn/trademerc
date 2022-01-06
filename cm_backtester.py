@@ -87,6 +87,7 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
     allBars, setupTime, totalLen = setupBacktest(api, strats.keys(), startDate, endDate)
     iManage = IndicatorManager()
 
+
     totalCash = startingVal
     stats = {}
     stops = {}
@@ -105,6 +106,19 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
 
             perStockBP = 0
             for sym in strats.keys():
+                if sym in stops and stops[sym] > allBars[sym]['low'][i]:
+                    print(f'\t{sym}: Stop Activated')
+
+                    newCash = qty[sym] * stops[sym]
+                    totalCash += newCash
+
+                    qty[sym] = 0
+                    stops.pop(sym)
+                    stocks[sym].position = None
+
+                    stats[sym].value = newCash
+                    stats[sym].updateWL()
+
                 if stocks[sym].position is None:
                     perStockBP += 1
 
@@ -120,19 +134,6 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
                 stock = stocks[sym]
                 stat = stats[sym]
 
-                if sym in stops and stops[sym] > lo:
-                    print(f'\t{sym}: Stop Activated')
-
-                    newCash = qty[sym] * stops[sym]
-                    totalCash += newCash
-
-                    qty[sym] = 0
-                    stops.pop(sym)
-                    stock.position = None
-
-                    stat.value = newCash
-                    stat.updateWL()
-
                 act = strat.nextAction(day, stock)
 
                 if act.action == ActionEnum.Buy:
@@ -142,7 +143,7 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
                     checkStop(act.args['stopPrice'])
                     stops[sym] = act.args['stopPrice']
                     # Calc max whole stocks we can buy
-                    stocksToBuy = int(perStockBP / close)
+                    stocksToBuy = math.floor(perStockBP / close)
                     # update qty
                     qty[sym] = stocksToBuy
                     # Update value
@@ -185,7 +186,7 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
         # clear out any remaining positions
         for sym, q in qty.items():
             if q > 0:
-                newCash = q * allBars['close'][-1]
+                newCash = q * allBars[sym]['close'][-1]
                 stats[sym].value = newCash
                 stats[sym].updateWL()
 
@@ -242,152 +243,3 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
     with open(outputFile, mode='a') as f:
         json.dump(statDict, f)
         f.write('\n')
-
-
-def backtestI(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDate: datetime, startingVal=10000,
-              outputFile: str = 'stats.json', stratName='ASDF'):
-    iManage = IndicatorManager()
-    setupTime = iManage.getSetupTime()
-
-    setupStart = calcSetupStartDate(startDate - timedelta(1), setupTime)
-
-    startstr = setupStart.strftime(DATE_FMT)
-    endstr = endDate.strftime(DATE_FMT)
-
-    allBars = {}
-    for sym in strats.keys():
-        b = getBars(api, sym, startstr, endstr)
-        allBars[sym] = b
-        lo = b['low']
-        c = b['close']
-        hi = b['high']
-        for i in range(setupTime):
-            iManage.addData(sym, lo[i], c[i], hi[i])
-
-    for sym, strat in strats.items():
-        stock = Stock(sym)
-
-        bars = allBars[sym]
-
-        lows = bars['low']
-        closes = bars['close']
-        highs = bars['high']
-
-        currentStop = None
-        stats = Stats(startingVal)
-
-        ownedQty = 0
-
-        try:
-            for i in range(setupTime, len(bars)):
-                day = i - setupTime
-
-                lo = lows[day]
-                close = closes[day]
-                hi = highs[day]
-
-                iManage.addData(sym, lo, close, hi)
-
-                if currentStop is not None and lo <= currentStop:
-                    print('Stop Activated')
-
-                    stats.value += ownedQty * currentStop
-                    ownedQty = 0
-                    stats.updateWL()
-
-                    stock.position = None
-                    currentStop = None
-
-                act = strat.nextAction(day, stock)
-
-                print(f'Day: {day}, [{lo:.2f}, {close:.2f}, {hi:.2f}]')
-                print(f'\t{act}')
-
-                if act.action == ActionEnum.Buy:
-                    # Set position to non-None
-                    stock.position = "InMarket"
-                    # Set new stop
-                    checkStop(act.args['stopPrice'])
-                    currentStop = act.args['stopPrice']
-                    # Set initial value
-                    stats.valueBeforeBuy = stats.value
-                    # Calc max whole stocks we can buy
-                    stocksToBuy = int(stats.value / close)
-                    # update qty
-                    ownedQty = stocksToBuy
-                    # Update value
-                    trueCost = stocksToBuy * close
-                    stats.value -= trueCost
-
-                    stats.numTrades += 1
-
-                elif act.action == ActionEnum.Sell:
-                    # Clear position
-                    stock.position = None
-                    # Clear stop
-                    currentStop = None
-                    # Update value
-                    soldValue = ownedQty * close
-                    stats.value += soldValue
-                    ownedQty = 0
-                    # Update win/loss
-                    stats.updateWL()
-
-                elif act.action == ActionEnum.UpdateStop:
-                    checkStop(act.args['stopPrice'])
-                    currentStop = act.args['stopPrice']
-                else:
-                    # Hold, ILB
-                    pass
-
-                if stats.value < 0:
-                    print('Negative Value, Strategy Failure?')
-                    break
-
-            if ownedQty > 0:
-                stats.value += ownedQty * closes[-1]
-                stats.updateWL()
-        except cmErrors.BacktestError as err:
-            print(f'BACKTEST ERROR: {err}')
-
-        time.sleep(0.5)
-
-        wins = len(stats.winList)
-        losses = len(stats.lossList)
-        winTotal = sum(stats.winList)
-        lossTotal = sum(stats.lossList)
-
-        profit = stats.value - startingVal
-        percentGain = profit / startingVal
-
-        trades = stats.winList.copy()
-        trades.extend(stats.lossList)
-        sqnVal = 0 if len(trades) <= 1 else calcSQN(trades)
-
-        wlRatio = 1 if losses == 0 else wins / losses
-        avgGain = 0 if wins == 0 else winTotal / wins
-        avgLoss = 0 if losses == 0 else lossTotal / losses
-
-        winPercent = 0 if len(trades) == 0 else wins / (wins + losses)
-
-        print(f'Start Value: ${startingVal:.2f}, End Value: ${stats.value:.2f}')
-        print(f'Profit: {profit:.2f}, Percent Gain: {percentGain:.2%}')
-        print(f'Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
-        print(f'Win %: {winPercent:.2%}')
-        print(f'Avg Gain: ${avgGain:.2f}')
-        print(f'Avg Loss: ${avgLoss:.2f}')
-        print(f'SQN: {sqnVal:.3f}')
-
-        statDict = {
-            'Strat': strat.getName(),
-            'Stock': stock.symbol,
-            'StartValue': startingVal,
-            'EndValue': round(stats.value, 2),
-            'Profit': round(profit, 2),
-            'PercentGain': round(percentGain, 4),
-            'SQN': round(sqnVal, 4)
-        }
-
-        with open(outputFile, mode='a') as f:
-            json.dump(statDict, f)
-            f.write('\n')
