@@ -42,10 +42,10 @@ class HardStrategy(Strategy):
 
         self.parabSAR = ParabolicSAR(af=float(getVar('parabolic', 'af')),
                                      afMax=float(getVar('parabolic', 'afmax'))).set(self.symbol)
+
         self.atr = AverageTrueRange(period=int(getVar('atr'))).set(self.symbol)
 
         self.dayval = BarValue().set(self.symbol)
-
 
         self.macdX = CrossoverCheck(self.macd.getMACD, self.macd.getSignal, 'up')
         self.stochX = CrossoverCheck(self.stoch.percK, self.stoch.percD, 'up')
@@ -56,7 +56,7 @@ class HardStrategy(Strategy):
             (CompareGreaterThan(self.emaFast.getValue, self.emaSlow.getValue), 0.35),
             (CompareGreaterThan(self.emaFast.getValue, self.emaLong.getValue), 0.05),
             (MinCheck(self.macd.getSignal, 0), 0.05),
-            (MinCheck(self.stoch.percD, 50), 0.15),
+            (MinCheck(self.stoch.percD, 50.0), 0.15),
             (CompareLessThan(self.parabSAR.getSAR, self.dayval.close), 0.20)
         ]
 
@@ -72,13 +72,13 @@ class HardStrategy(Strategy):
 
     def nextAction(self, day: int, stock: Stock) -> Action:
 
-        conf = self.conf.confidence()
+        conf = self.conf.check()
         out = Action(stock, ActionEnum.Hold)
 
         pos = stock.status()
 
         if pos == StockStatus.OutMarket:
-            if conf > 0.65:
+            if conf:
                 self.nextUpdateDay = day + self.stopUpdatePeriod
                 stock.setNextStopDate(self.stopUpdatePeriod)
                 stopPrice = self.getNewStop()
@@ -93,7 +93,7 @@ class HardStrategy(Strategy):
                              )
 
         elif pos == StockStatus.InMarket:
-            if conf < 0.45:
+            if not conf:
                 self.nextUpdateDay = None
                 self.oldStopPrice = None
 

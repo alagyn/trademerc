@@ -43,7 +43,7 @@ class Indicator:
         IndicatorManager().register(self, symbol)
         return self
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         raise NotImplementedError
 
     def setupTime(self) -> int:

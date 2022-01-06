@@ -15,7 +15,7 @@ class AverageTrueRange(Indicator):
 
         self.atr_smma = SoloSMMA(self.p)
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         if self.prevClose is None:
             self.prevClose = close
             return

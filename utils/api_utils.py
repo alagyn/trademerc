@@ -46,6 +46,9 @@ def loadAPI(apiCfg, liveRun: bool = False):
 
 def calcSetupStartDate(endDay: datetime.datetime, setupTime):
     out = endDay
+    while out.weekday() >= 5:
+        out -= datetime.timedelta(1)
+
     while setupTime >= 0 or out.weekday() >= 5:
         out -= datetime.timedelta(1)
         if out.weekday() < 5:
@@ -66,11 +69,7 @@ def getSetupBars(api: alpaca.REST, setupTime: int, syms: List[str], endSetupDay=
     setupBars = {}
 
     if endSetupDay is None:
-        endSetupDay = datetime.datetime.today()
-
-        # if market is open, only get up to yesterday
-        if api.get_clock().is_open:
-            endSetupDay -= datetime.timedelta(1)
+        endSetupDay = datetime.datetime.today() - datetime.timedelta(1)
 
     startSetupDay = calcSetupStartDate(endSetupDay, setupTime)
 
@@ -81,6 +80,7 @@ def getSetupBars(api: alpaca.REST, setupTime: int, syms: List[str], endSetupDay=
     for x in syms:
         setupBars[x] = getBars(api, x, startSetupStr, endSetupStr)
         actualLen = len(setupBars[x])
+
 
     if actualLen < setupTime:
         raise cmErrors.CMError(f'DEV ERR: Not enough setup days, expected: {setupTime}, actual: {actualLen}')

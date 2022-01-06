@@ -14,6 +14,9 @@ class _WeightedCheck:
     def weight(self) -> float:
         return self._w
 
+    def __str__(self):
+        return str(self._c)
+
 
 class ConfidenceCheck(Check):
 
@@ -27,6 +30,7 @@ class ConfidenceCheck(Check):
         if checks is not None:
             for x in checks:
                 self.addCheck(*x)
+
 
     @classmethod
     def factory(cls, valFuncs, checks, args):
@@ -48,8 +52,10 @@ class ConfidenceCheck(Check):
     def confidence(self):
         out = 0
         for c in self._checks:
-            if c.check():
+            val = c.check()
+            if val:
                 out += c.weight()
+            print(c, val)
 
         return out / self._totalWeight
 

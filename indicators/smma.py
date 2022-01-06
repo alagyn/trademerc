@@ -34,7 +34,7 @@ class SMMA(Indicator):
         self._value = value
         self._smma = SoloSMMA(period)
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         if self._value == 'c':
             data = close
         elif self._value == 'l':

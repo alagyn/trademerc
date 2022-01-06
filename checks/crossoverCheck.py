@@ -14,30 +14,31 @@ class CrossoverCheck(Check):
     def __init__(self, i1, i2, direct: str):
         self.direct = True if direct == 'up' else False
         self.i1 = i1
-        self.prev1 = None
         self.i2 = i2
-        self.prev2 = None
+
+        self.prevDiff = None
 
     def check(self) -> bool:
-        if self.prev1 is None:
-            self.prev1 = self.i1()
-            self.prev2 = self.i2()
+        if self.prevDiff is None:
+            self.prevDiff = self.i1() - self.i2()
             return False
 
-        new1 = self.i1()
-        new2 = self.i2()
         out = False
 
-        # cross up
-        if self.direct:
-            if self.prev1 < self.prev2 and new1 > new2:
-                out = True
-        # cross down
-        else:
-            if self.prev1 > self.prev2 and new1 < new2:
-                out = True
+        diff = self.i1() - self.i2()
 
-        self.prev1 = new1
-        self.prev2 = new2
+        upcross = 1 if self.prevDiff < 0 and diff > 0 else 0
+        downcross = 1 if self.prevDiff > 0 and diff < 0 else 0
+
+        cross = upcross - downcross
+
+        # cross up
+        if self.direct and cross > 0:
+            out = True
+        # cross down
+        elif not self.direct and cross < 0:
+            out = True
+
+        self.prevDiff = diff
 
         return out

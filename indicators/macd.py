@@ -19,7 +19,7 @@ class MACD(Indicator):
 
         self.macd = 0
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         self.fastEMA.next(close)
         self.slowEMA.next(close)
 

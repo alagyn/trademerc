@@ -19,5 +19,5 @@ class MaxCheck(Check):
         val = self.i()
         if val is None:
             raise NotSetupError
-        return self.i() <= self.maxVal
+        return val <= self.maxVal
 

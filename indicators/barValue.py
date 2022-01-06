@@ -9,7 +9,7 @@ class BarValue(Indicator):
         self.closeVal = 0
         self.hi = 0
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         self.lo = low
         self.closeVal = close
         self.hi = high

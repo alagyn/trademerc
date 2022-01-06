@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timedelta
 import math
 import numpy as np
@@ -33,30 +34,208 @@ class Stats:
             self.winList.append(delta)
 
 
-def calcSQN(stats: Stats) -> float:
+def calcSQN(tradeList) -> float:
     """
     Calculates the System Quality Number
     Should be reliable if stats.numTrades >= 30
-
-    :param stats: The trade statistics
-    :return: The SQN
     """
-    # get list of every trade
-    totalProfits = stats.winList.copy()
-    totalProfits.extend(stats.lossList)
-    tp = np.array(totalProfits)
 
-    a = math.sqrt(stats.numTrades)
+    arr = np.array(tradeList)
+
+    a = math.sqrt(len(tradeList))
     # avg profit
-    b = np.average(tp)
+    b = np.average(arr)
     # profit std
-    c = np.std(tp)
+    c = np.std(arr)
 
     return a * b / c
 
 
-def backtest(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDate: datetime, startingVal=10000,
+def setupBacktest(api: REST, symbols, startDate: datetime, endDate: datetime):
+    iManage = IndicatorManager()
+    setupTime = iManage.getSetupTime()
+
+    setupStart = calcSetupStartDate(startDate - timedelta(1), setupTime)
+
+    startstr = setupStart.strftime(DATE_FMT)
+    endstr = endDate.strftime(DATE_FMT)
+
+    # load bars and setup indicators
+    length = 0
+    allBars = {}
+    for sym in symbols:
+        b = getBars(api, sym, startstr, endstr)
+        allBars[sym] = b
+        lo = b['low']
+        c = b['close']
+        hi = b['high']
+        length = len(hi)
+        for i in range(setupTime):
+            iManage.addData(sym, lo[i], c[i], hi[i])
+
+    return allBars, setupTime, length
+
+
+def checkStop(stop):
+    if stop < 0:
+        raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
+
+
+def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: datetime, endDate: datetime,
+             startingVal=10000,
              outputFile: str = 'stats.json'):
+    allBars, setupTime, totalLen = setupBacktest(api, strats.keys(), startDate, endDate)
+    iManage = IndicatorManager()
+
+    totalCash = startingVal
+    stats = {}
+    stops = {}
+    qty = {}
+    stocks = {}
+
+    for sym in strats.keys():
+        stocks[sym] = Stock(sym)
+        qty[sym] = 0
+        stats[sym] = Stats(0)
+
+    try:
+        for i in range(setupTime, totalLen):
+            day = i - setupTime
+            print(f"Trade Day: {day}")
+
+            perStockBP = 0
+            for sym in strats.keys():
+                if stocks[sym].position is None:
+                    perStockBP += 1
+
+            perStockBP = 0 if perStockBP == 0 else round(totalCash / perStockBP, 2)
+
+            for sym, strat in strats.items():
+                lo = allBars[sym]['low'][i]
+                close = allBars[sym]['close'][i]
+                hi = allBars[sym]['high'][i]
+
+                iManage.addData(sym, lo, close, hi)
+
+                stock = stocks[sym]
+                stat = stats[sym]
+
+                if sym in stops and stops[sym] > lo:
+                    print(f'\t{sym}: Stop Activated')
+
+                    newCash = qty[sym] * stops[sym]
+                    totalCash += newCash
+
+                    qty[sym] = 0
+                    stops.pop(sym)
+                    stock.position = None
+
+                    stat.value = newCash
+                    stat.updateWL()
+
+                act = strat.nextAction(day, stock)
+
+                if act.action == ActionEnum.Buy:
+                    # Set position to non-None
+                    stock.position = "InMarket"
+                    # Set new stop
+                    checkStop(act.args['stopPrice'])
+                    stops[sym] = act.args['stopPrice']
+                    # Calc max whole stocks we can buy
+                    stocksToBuy = int(perStockBP / close)
+                    # update qty
+                    qty[sym] = stocksToBuy
+                    # Update value
+                    trueCost = stocksToBuy * close
+
+                    # Set initial value
+                    stat.valueBeforeBuy = trueCost
+
+                    totalCash -= trueCost
+
+                    stat.numTrades += 1
+
+                elif act.action == ActionEnum.Sell:
+                    # Clear position
+                    stock.position = None
+                    # Clear stop
+                    stops.pop(sym)
+                    # Update value
+                    soldValue = qty[sym] * close
+                    totalCash += soldValue
+
+                    qty[sym] = 0
+                    # Update win/loss
+                    stat.value = soldValue
+                    stat.updateWL()
+
+                elif act.action == ActionEnum.UpdateStop:
+                    checkStop(act.args['stopPrice'])
+                    stops[sym] = act.args['stopPrice']
+                else:
+                    # Hold, ILB
+                    pass
+
+                print("\t", act)
+
+                if totalCash < 0:
+                    print('Negative Value, Strategy Failure?')
+                    break
+    except cmErrors.BacktestError as err:
+        print(f'BACKTEST ERROR: {err}')
+        return
+
+    wins = 0
+    losses = 0
+    winTotal = 0
+    lossTotal = 0
+
+    tradeList = []
+
+    for sym, stat in stats.items():
+        wins += len(stat.winList)
+        losses += len(stat.lossList)
+        winTotal += sum(stat.winList)
+        lossTotal += sum(stat.lossList)
+
+        tradeList.extend(stat.winList)
+        tradeList.extend(stat.lossList)
+
+    numTrades = len(tradeList)
+    profit = totalCash - startingVal
+    percentGain = profit / startingVal
+
+    sqnVal = 0 if numTrades <= 1 else calcSQN(tradeList)
+    wlRatio = 1 if losses == 0 else wins / losses
+    avgGain = 0 if wins == 0 else winTotal / wins
+    avgLoss = 0 if losses == 0 else lossTotal / losses
+
+    winPercent = 0 if numTrades == 0 else wins / (wins + losses)
+
+    print(f'Start Value: ${startingVal:.2f}, End Value: ${totalCash:.2f}')
+    print(f'Profit: {profit:.2f}, Percent Gain: {percentGain:.2%}')
+    print(f'Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
+    print(f'Win %: {winPercent:.2%}')
+    print(f'Avg Gain: ${avgGain:.2f}')
+    print(f'Avg Loss: ${avgLoss:.2f}')
+    print(f'SQN: {sqnVal:.3f}')
+
+    statDict = {
+        'Strat': stratName,
+        'StartValue': startingVal,
+        'EndValue': round(totalCash, 2),
+        'Profit': round(profit, 2),
+        'PercentGain': round(percentGain, 4),
+        'SQN': round(sqnVal, 4)
+    }
+
+    with open(outputFile, mode='a') as f:
+        json.dump(statDict, f)
+        f.write('\n')
+
+
+def backtestI(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDate: datetime, startingVal=10000,
+              outputFile: str = 'stats.json', stratName='ASDF'):
     iManage = IndicatorManager()
     setupTime = iManage.getSetupTime()
 
@@ -90,12 +269,6 @@ def backtest(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDat
         ownedQty = 0
 
         try:
-
-            def checkStop(stop):
-                if stop < 0:
-                    raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
-
-
             for i in range(setupTime, len(bars)):
                 day = i - setupTime
 
@@ -119,7 +292,6 @@ def backtest(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDat
 
                 print(f'Day: {day}, [{lo:.2f}, {close:.2f}, {hi:.2f}]')
                 print(f'\t{act}')
-
 
                 if act.action == ActionEnum.Buy:
                     # Set position to non-None
@@ -168,6 +340,8 @@ def backtest(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDat
         except cmErrors.BacktestError as err:
             print(f'BACKTEST ERROR: {err}')
 
+        time.sleep(0.5)
+
         wins = len(stats.winList)
         losses = len(stats.lossList)
         winTotal = sum(stats.winList)
@@ -175,14 +349,23 @@ def backtest(api: REST, strats: Dict[str, Strategy], startDate: datetime, endDat
 
         profit = stats.value - startingVal
         percentGain = profit / startingVal
-        sqnVal = calcSQN(stats)
+
+        trades = stats.winList.copy()
+        trades.extend(stats.lossList)
+        sqnVal = 0 if len(trades) <= 1 else calcSQN(trades)
+
+        wlRatio = 1 if losses == 0 else wins / losses
+        avgGain = 0 if wins == 0 else winTotal / wins
+        avgLoss = 0 if losses == 0 else lossTotal / losses
+
+        winPercent = 0 if len(trades) == 0 else wins / (wins + losses)
 
         print(f'Start Value: ${startingVal:.2f}, End Value: ${stats.value:.2f}')
         print(f'Profit: {profit:.2f}, Percent Gain: {percentGain:.2%}')
-        print(f'Wins: {wins}, Losses: {losses}, W/L: {wins / losses:.2f}')
-        print(f'Win %: {wins / (wins + losses):.2%}')
-        print(f'Avg Gain: ${winTotal / wins:.2f}')
-        print(f'Avg Loss: ${lossTotal / losses:.2f}')
+        print(f'Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
+        print(f'Win %: {winPercent:.2%}')
+        print(f'Avg Gain: ${avgGain:.2f}')
+        print(f'Avg Loss: ${avgLoss:.2f}')
         print(f'SQN: {sqnVal:.3f}')
 
         statDict = {

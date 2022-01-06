@@ -39,7 +39,7 @@ class EMA(Indicator):
         self.ema = SoloEMA(smoothing=smoothing, period=period)
         self.avg = 0
 
-    def addData(self, *, low=None, close=None, high=None) -> float:
+    def addData(self, low, close, high) -> float:
         if self.data == 'c':
             self.avg = self.ema.next(close)
         elif self.data == 'l':

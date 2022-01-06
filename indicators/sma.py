@@ -36,7 +36,7 @@ class SMA(Indicator):
         self.sma = SoloSMA(period)
         self._p = period
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         if self.data == 'c':
             self.avg = self.sma.next(close)
         elif self.data == 'l':

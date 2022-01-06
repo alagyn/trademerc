@@ -1,4 +1,5 @@
 import datetime
+import os.path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import json
@@ -151,12 +152,10 @@ class BTGUI(tk.Frame):
 
         SYMBOL_IN_ROW = SYMBOL_BTN_ROW + 1
 
-        '''
-        tk.Label(runFrame, text='Symbol:').grid(row=SYMBOL_IN_ROW, column=0, padx=2)
+        tk.Label(runFrame, text='Symbols:').grid(row=SYMBOL_IN_ROW, column=0, padx=2)
         self.symbolVar = tk.StringVar()
-        symbolEntry = tk.Entry(runFrame, textvariable=self.symbolVar)
-        symbolEntry.grid(row=SYMBOL_IN_ROW, column=1, padx=2)
-        '''
+        symbolLabel = tk.Label(runFrame, textvariable=self.symbolVar)
+        symbolLabel.grid(row=SYMBOL_IN_ROW, column=1, padx=2)
 
         SEP1_ROW = SYMBOL_IN_ROW + 1
 
@@ -198,20 +197,16 @@ class BTGUI(tk.Frame):
         outLabel = tk.Label(runFrame, textvariable=self.outVar)
         outLabel.grid(row=OUT_BTN_ROW, column=1, padx=2)
 
-        RUN_BTN_ROW = OUT_BTN_ROW + 1
+        INDIV_TOGGLE_ROW = OUT_BTN_ROW + 1
+
+        self.indivVar = tk.BooleanVar()
+        tk.Checkbutton(runFrame, text='Individual Runs?', variable=self.indivVar).grid(row=INDIV_TOGGLE_ROW, column=0,
+                                                                                       columnspan=2)
+
+        RUN_BTN_ROW = INDIV_TOGGLE_ROW + 1
 
         runBtn = tk.Button(runFrame, text='Run Backtest', command=self.runBT)
         runBtn.grid(row=RUN_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
-
-        # STRATEGY FRAME
-        stratFrame = tk.LabelFrame(self, text="Strategy")
-        stratFrame.columnconfigure(0, weight=1)
-
-        self.stratVars = genStrategyFrame(stratFrame)
-
-        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=RUN_BTN_ROW + 1, column=0,
-                                                           columnspan=2, sticky='ew',
-                                                           pady=10)
 
         LIVE_TOGGLE_ROW = RUN_BTN_ROW + 2
         self.liveToggleVar = tk.BooleanVar(value=False)
@@ -222,6 +217,16 @@ class BTGUI(tk.Frame):
 
         liveBtn = tk.Button(runFrame, text='Run on Alpaca', command=self.runAlpaca)
         liveBtn.grid(row=RUN_LIVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
+
+        # STRATEGY FRAME
+        stratFrame = tk.LabelFrame(self, text="Strategy")
+        stratFrame.columnconfigure(0, weight=1)
+
+        self.stratVars = genStrategyFrame(stratFrame)
+
+        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=RUN_BTN_ROW + 1, column=0,
+                                                           columnspan=2, sticky='ew',
+                                                           pady=10)
 
         # GRID MAIN FRAMES
         FRAME_PAD = 5
@@ -251,6 +256,8 @@ class BTGUI(tk.Frame):
         ret = filedialog.askopenfilename(filetypes=[('.txt', '.txt')], multiple=False, initialdir='./config')
         if len(ret) > 0:
             self.stocks = loadStockFile(ret)
+            _, f = os.path.split(ret)
+            self.symbolVar.set(f)
 
     def saveStrat(self):
         strat = self.buildStrat()
@@ -274,16 +281,30 @@ class BTGUI(tk.Frame):
         endDate = self.endInput.get_date()
 
         api = loadPaperAPI()
-        strats = {}
-        for x in self.stocks:
-            strats[x] = HardStrategy(x, strat)
 
-        cm_backtester.backtest(api=api,
-                               strats=strats,
-                               startDate=startDate,
-                               endDate=endDate,
-                               outputFile=self.outVar.get(),
-                               startingVal=self.startValVar.get())
+        args = {
+            "api": api,
+            "stratName": strat['name'],
+            "startDate": startDate,
+            "endDate": endDate,
+            "outputFile": self.outVar.get(),
+            "startingVal": self.startValVar.get()
+        }
+
+        print(strat)
+
+        if not self.indivVar.get():
+            strats = {}
+            for x in self.stocks:
+                strats[x] = HardStrategy(x, strat)
+
+            cm_backtester.backtestI(**args, strats=strats)
+
+        else:
+            for x in self.stocks:
+                strats = {x: HardStrategy(x, strat)}
+                cm_backtester.backtest(**args, strats=strats)
+
 
     def runAlpaca(self):
         if self.stocks is None:
@@ -300,8 +321,6 @@ class BTGUI(tk.Frame):
         runTrader(stratVars=self.buildStrat(),
                   stocks=self.stocks,
                   liveRun=liveRun)
-
-
 
 
 if __name__ == '__main__':

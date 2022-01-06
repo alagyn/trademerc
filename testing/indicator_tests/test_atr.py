@@ -1,6 +1,6 @@
 import unittest
 from indicators.averageTrueRange import AverageTrueRange
-from .test_consts import TEST_DATA
+from .data import TEST_DATA
 
 
 class ATRTest(unittest.TestCase):

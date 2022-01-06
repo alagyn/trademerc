@@ -27,23 +27,22 @@ class Stochastic(Indicator):
         self.lows = deque()
         self.highs = deque()
 
-    def addData(self, *, low=None, close=None, high=None) -> None:
+    def addData(self, low, close, high) -> None:
         self.lows.append(low)
         self.highs.append(high)
         if len(self.lows) > self._kp:
             self.lows.popleft()
             self.highs.popleft()
 
-        low = min(self.lows)
-        high = max(self.highs)
+        lowest = min(self.lows)
+        highest = max(self.highs)
 
-        self._percK = 100 * (close - low) / (high - low)
-        self._percDfast.next(self._percK)
+        self._percK = 100 * (close - lowest) / (highest - lowest)
+        self._percD = self._percDfast.next(self._percK)
 
         if self.slow:
-            self._percD = self._percDslow.next(self._percDfast.getValue())
-        else:
-            self._percD = self._percDfast.getValue()
+            self._percD = self._percDslow.next(self._percD)
+
 
     @ValueFunc(key='percentK')
     def percK(self) -> float:

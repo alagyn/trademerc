@@ -18,4 +18,4 @@ class MinCheck(Check):
         val = self.i()
         if val is None:
             raise NotSetupError
-        return self.i() >= self.minVal
+        return val >= self.minVal

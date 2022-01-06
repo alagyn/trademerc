@@ -1,5 +1,5 @@
 import unittest
-from .test_consts import S_TEST_DATA
+from .data import S_TEST_DATA
 
 from indicators.ema import SoloEMA
 

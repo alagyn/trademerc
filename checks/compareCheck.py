@@ -43,4 +43,4 @@ class CompareGreaterThan(Check):
         if len(valFuncs) != 2:
             raise CheckError('Len of value funcs is not 2')
 
-        return CompareLessThan(*valFuncs)
+        return CompareGreaterThan(*valFuncs)
