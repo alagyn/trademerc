@@ -28,7 +28,7 @@ class MACD(Indicator):
         fastVal = self._fastEMA.getValue()
         slowVal = self._slowEMA.getValue()
 
-        newMACD = slowVal - fastVal
+        newMACD = fastVal - slowVal
         self.macd.set(newMACD)
 
         newSignal = self._sigEMA.next(newMACD)

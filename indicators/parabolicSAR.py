@@ -81,9 +81,5 @@ class ParabolicSAR(Indicator):
         self._prevLow = low
         self._prevHigh = high
 
-    # @ValueFunc(key='psar')
-    def getSAR(self):
-        return self.psar
-
     def setupTime(self) -> int:
         return 2

@@ -21,3 +21,5 @@ class MaxCheck(Check):
             raise NotSetupError
         return val <= self.maxVal
 
+    def update(self) -> bool:
+        return self.check()

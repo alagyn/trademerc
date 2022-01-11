@@ -249,6 +249,27 @@ class Buy_and_hold_with_stop(bt.Strategy):
         # self.log()
 
 
+stats = {
+    "emafast": [],
+    "emaslow": [],
+    "emalong": [],
+    'dates': [],
+    'closes': [],
+    'macd': [],
+    'macdSig': [],
+    'psar': [],
+    'stochK': [],
+    'stochDF': [],
+    'stochDS': [],
+    'co1U': [],
+    'co1D': [],
+    'co2U': [],
+    'co2D': [],
+    'conf': [],
+    'checks': []
+}
+
+
 # Standard trading strategy for trend trading, see commented section above for sudo code
 class Strategy(bt.Strategy):
     # Parameters for the different indicators
@@ -294,29 +315,24 @@ class Strategy(bt.Strategy):
         self.macd = btI.MACD(period_me1=self.params.macdfast, period_me2=self.params.macdslow,
                              period_signal=self.params.macdsignal, plot=plots)
         self.macdX = btI.CrossOver(self.macd.macd, self.macd.signal, plot=plots)
-        self.stoch = btI.Stochastic(period=self.params.stochp, period_dfast=self.params.stochfast,
-                                    period_dslow=self.params.stochslow, plot=plots)
-        self.stochX = btI.CrossOver(self.stoch.percK, self.stoch.percD, plot=plots)
+        self.stoch = btI.StochasticFull(period=self.params.stochp, period_dfast=self.params.stochfast,
+                                        period_dslow=self.params.stochslow, plot=plots)
+        self.stochX = btI.CrossOver(self.stoch.percD, self.stoch.percDSlow, plot=plots)
         self.parabolic = btI.ParabolicSAR(af=self.params.parabolicaf, afmax=self.params.parabolicafmax, plot=plots)
         self.atr = btI.AverageTrueRange(period=self.params.atr, plot=plots)
 
     # Logs the information
     def log(self):
         # Prints the date, action, and closing price
-        print('%s, %s, $%.2f, %.0f%%, Value:$%.2f, Stop date:%s, Stop price:$%.2f' % (self.datas[0].datetime.date(0),
-                                                                                      self.action,
-                                                                                      self.dataclose[0],
-                                                                                      self.confidence * 100,
-                                                                                      self.broker.getvalue(),
-                                                                                      self.stop_date,
-                                                                                      self.stop_price,
-                                                                                      ))
+        print(f'{self.datas[0].datetime.date(0)}, {self.action}, ${self.dataclose[0]:.2f}, {self.confidence * 100:.0%},'
+              f' Value: ${self.broker.getvalue():.2f}, Stop date: {self.stop_date}, Stop price:${self.stop_price:.2f}')
 
     # Orders status needs to be determined
     def notify_order(self, order):
         # If order has been submitted or accepted, do nothing.
         if order.status in [order.Submitted, order.Accepted]:
-            return
+            pass
+            # return
 
         if not order.alive():
             self.order = None  # indicate no order is pending
@@ -325,15 +341,20 @@ class Strategy(bt.Strategy):
         if order.status == order.Completed:
             if order.isbuy():
                 self.buy_price = order.executed.price
-                print('%s, Buy created at $%.2f' % (self.datas[0].datetime.date(0), order.executed.price))
+                print('\t%s, Buy created at $%.2f' % (self.datas[0].datetime.date(0), order.executed.price))
 
             else:  # Sell
-                print('%s, Sell created at $%.2f' % (self.datas[0].datetime.date(0), order.executed.price))
+                print('\t%s, Sell created at $%.2f' % (self.datas[0].datetime.date(0), order.executed.price))
 
-        elif order.status in [order.Canceled]:
-            print('Order Canceled')
-        elif order.status in [order.Rejected]:
-            print('Order Rejected')
+        elif order.status == order.Canceled:
+            print(f'\tOrder Canceled, ref: {order.ref}, Type:{order.ordtypename()}')
+            # print(order)
+        elif order.status == order.Rejected:
+            print('\tOrder Rejected')
+
+        elif order.status == order.Margin:
+            print(f"Other, ref: {order.ref}, status: {order.getstatusname()}")
+            print(order)
 
         # Write down: no pending order
         self.order = None
@@ -350,6 +371,10 @@ class Strategy(bt.Strategy):
 
     # Main section of the strategy, to run on each instance of data feed (essentially a loop)
     def next(self):
+
+        # Confidence logic
+        self.confidence = 0
+
         # Logic test weights
         w1 = 0.35
         w2 = 0.05
@@ -359,7 +384,51 @@ class Strategy(bt.Strategy):
         w6 = 0.05
         w7 = 0.20
 
+        stats['emafast'].append(round(self.emafast[0], 2))
+        stats['emaslow'].append(round(self.emaslow[0], 2))
+        stats['emalong'].append(round(self.emalong[0], 2))
+        stats['dates'].append(str(self.datas[0].datetime.date(0)))
+        stats['closes'].append(round(self.data.close[0], 2))
+        stats['macd'].append(round(self.macd[0], 2))
+        stats['macdSig'].append(round(self.macd.signal[0], 2))
+        stats['psar'].append(round(self.parabolic[0], 2))
+        stats['stochK'].append(round(self.stoch.percK[0], 2))
+        stats['stochDF'].append(round(self.stoch.percD[0], 2))
+        stats['stochDS'].append(round(self.stoch.percDSlow[0], 2))
+
+        c1 = self.emafast[0] > self.emaslow[0]
+        c2 = self.emafast[0] > self.emalong[0]
+        c3a = self.macdX[0] > 0
+        c3b = self.macdX[0] < 0
+        c4 = self.macd[0] > 0
+        c5 = self.stoch.percDSlow[0] > 50
+        c6a = self.stochX[0] > 0
+        c6b = self.stochX[0] < 0
+        c7 = self.parabolic < self.data.close[0]
+
+        stats['co1U'].append(c3a)
+        stats['co1D'].append(c3b)
+        stats['co2U'].append(c6a)
+        stats['co2D'].append(c6b)
+
+        self.confidence += w1 if c1 else -w1
+        self.confidence += w2 if c2 else -w2
+        self.confidence += w3 if c3a else 0
+        self.confidence -= w3 if c3b else 0
+        self.confidence += w4 if c4 else -w4
+        self.confidence += w5 if c5 else -w5
+        self.confidence += w6 if c6a else 0
+        self.confidence -= w6 if c6b else 0
+        self.confidence += w7 if c7 else -w7
+
+        stats['conf'].append(self.confidence)
+        stats['checks'].append([c1, c2, c3a, c3b, c4, c5, c6a, c6b, c7])
+        # print(c1, c2, self.macdX > 0, self.macdX < 0, c4, c5, self.stochX > 0, self.stochX < 0, c7)
+        # print(self.confidence)
+        # exit()
+        """
         # Confidence logic
+
         if self.emafast > self.emaslow:
             self.confidence += w1
         if self.emafast < self.emaslow:
@@ -394,10 +463,12 @@ class Strategy(bt.Strategy):
             self.confidence += w7
         if self.parabolic > self.data.close[0]:
             self.confidence -= w7
+        """
 
         # Checks to see if an order is pending. If it is, function is closed, to wait for order to finish
-        if self.order:
-            return
+        if self.order is not None:
+            if self.order.status in [bt.Order.Created, bt.Order.Submitted, bt.Order.Accepted]:
+                return
 
         # NOT IN MARKET
         if not self.position:
@@ -417,15 +488,19 @@ class Strategy(bt.Strategy):
 
                     # Stop loss order
                     self.stop_loss_order = self.sell(price=self.stop_price,
+                                                     size=self.order.size,
                                                      exectype=bt.Order.Stop,
                                                      transmit=True,
                                                      parent=self.order)
+
+                    print(f'\tCreating Buy, main: {self.order.ref}, stop: {self.stop_loss_order.ref}')
                     self.stop_date = self.datas[0].datetime.date(0)
                     self.action = 'Buy'
 
         # IN MARKET
         else:
             if self.confidence < 0.45:  # If this condition is met sell
+                print('\tCancelling stop')
                 self.broker.cancel(self.stop_loss_order)
                 self.stop_date = None
                 self.stop_price = 0
@@ -442,6 +517,7 @@ class Strategy(bt.Strategy):
                     self.new_stop_price = self.dataclose[0] - (self.atr[0] * self.params.safety_factor)
                     # print("It's 15 days later, the new stop price would be: " + str(round(self.new_stop_price,2)))
                     if self.new_stop_price > self.stop_price:
+                        print('\tUpdating stop')
                         self.broker.cancel(self.stop_loss_order)
                         self.stop_loss_order = self.sell(price=self.new_stop_price,
                                                          exectype=bt.Order.Stop,
@@ -466,7 +542,7 @@ cerebro.addstrategy(Strategy)
 
 def add_broker():
     cerebro.broker.setcash(10000)  # Sets initial portfolio amount
-    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)  # Sets the amount willing to risk per trade
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=90)  # Sets the amount willing to risk per trade
 
 
 """ ***** ANALYZERS ***** """
@@ -478,7 +554,7 @@ def TradeAnalysis(analyzer):
     global win
     tt = analyzer.won.total + analyzer.lost.total
     win = round((analyzer.won.total / (analyzer.won.total + analyzer.lost.total)), 2)
-
+    print(f"Wins: {analyzer.won.total}, Losses: {analyzer.lost.total}")
     print('Total Trades: %s' % (analyzer.won.total + analyzer.lost.total))
     # print('Win percentage: %.2f' % (analyzer.won.total / (analyzer.won.total + analyzer.lost.total) * 100) + '%')
     # print('Won: %s' % analyzer.won.total)
@@ -525,8 +601,12 @@ def record():
 """ ***** MAIN***** """
 if __name__ == "__main__":
     add_broker()
-    start_date = datetime(2018, 1, 1)
+    # start_date = datetime(2018, 1, 1)
+    start_date = datetime(2017, 10, 6)
     end_date = datetime.today()
+
+    with open('temp_conf.txt', mode='w') as f:
+        f.write('')
 
     stocks = [
         ['QQQ'],
@@ -544,8 +624,8 @@ if __name__ == "__main__":
     ]
 
     # with open('../data/Stock list2.txt') as stock_symbols:
-        # stock_list = csv.reader(stock_symbols, delimiter=',')
-        # Switch list between "stocks" or "stock_list" to reference local list or external txt file
+    # stock_list = csv.reader(stock_symbols, delimiter=',')
+    # Switch list between "stocks" or "stock_list" to reference local list or external txt file
     for stock in stocks:
         print(stock[0])
         # Try statement is if stock doesn't work
@@ -558,10 +638,11 @@ if __name__ == "__main__":
                                      )
                                      """
         import yfinance as yf
+
         fmt = '%Y-%m-%d'
         sd = start_date.strftime(fmt)
         ed = end_date.strftime(fmt)
-        data = bt.feeds.PandasData(dataname=yf.download(stock, sd, ed, auto_adjust=True))
+        data = bt.feeds.PandasData(dataname=yf.download(stock, sd, ed, auto_adjust=False))
         # Add the Data Feed to Cerebro
         cerebro.adddata(data)
 
@@ -588,6 +669,11 @@ if __name__ == "__main__":
         cerebro.plot()
         # record()
         print("")
+
+        import json
+
+        with open('bt_stats.json', mode='w') as f:
+            json.dump(stats, f)
 
         # except:
         #    print("Stock doesn't work")

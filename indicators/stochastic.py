@@ -18,7 +18,8 @@ class Stochastic(Indicator):
         self.slow = self._sp > 0
 
         self.percK = ValueFunc('percentK')
-        self.percD = ValueFunc('percentD')
+        self.percDFast = ValueFunc('percentDFast')
+        self.percDSlow = ValueFunc('percentDSlow')
 
         self._percDfast = SoloSMA(dPeriod)
         self._percDslow = SoloSMA(slowPeriod)
@@ -42,11 +43,14 @@ class Stochastic(Indicator):
         self.percK.set(newPercK)
 
         newPerD = self._percDfast.next(newPercK)
+        self.percDFast.set(newPerD)
 
         if self.slow:
-            newPerD = self._percDslow.next(newPerD)
+            newPerDSlow = self._percDslow.next(newPerD)
+            self.percDSlow.set(newPerDSlow)
 
-        self.percD.set(newPerD)
+
+
 
     def setupTime(self) -> int:
         return self._kp + self._dp + self._sp

@@ -7,6 +7,26 @@ from objects.action import *
 
 STOP_LIMIT_MARGIN = 0.9
 
+stats = {
+    'emafast': [],
+    'emaslow': [],
+    'emalong': [],
+    'dates': [],
+    'closes': [],
+    'macd': [],
+    'macdSig': [],
+    'psar': [],
+    'stochK': [],
+    'stochDF': [],
+    'stochDS': [],
+    'co1U': [],
+    'co1D': [],
+    'co2U': [],
+    'co2D': [],
+    'conf': [],
+    'checks': []
+}
+
 
 class HardStrategy(Strategy):
 
@@ -48,19 +68,26 @@ class HardStrategy(Strategy):
         self.dayval = BarValue().set(self.symbol)
 
         self.macdX = CrossoverCheck(self.macd.macd, self.macd.signal, 'up')
-        self.stochX = CrossoverCheck(self.stoch.percK, self.stoch.percD, 'up')
+        self.macdX2 = CrossoverCheck(self.macd.macd, self.macd.signal, 'down')
+        self.stochX = CrossoverCheck(self.stoch.percDFast, self.stoch.percDSlow, 'up')
+        self.stochX2 = CrossoverCheck(self.stoch.percDFast, self.stoch.percDSlow, 'down')
 
         checks = [
-            (self.macdX, 0.15),
-            (self.stochX, 0.05),
             (CompareGreaterThan(self.emaFast.avg, self.emaSlow.avg), 0.35),
             (CompareGreaterThan(self.emaFast.avg, self.emaLong.avg), 0.05),
-            (MinCheck(self.macd.signal, 0), 0.05),
-            (MinCheck(self.stoch.percD, 50.0), 0.15),
+            (self.macdX, 0.075),
+            (self.macdX2, -0.075),
+
+            (MinCheck(self.macd.macd, 0), 0.05),
+            (MinCheck(self.stoch.percDSlow, 50.0), 0.15),
+
+            (self.stochX, 0.025),
+            (self.stochX2, -0.025),
+
             (CompareLessThan(self.parabSAR.psar, self.dayval.close), 0.20)
         ]
 
-        self.conf = ConfidenceCheck(0.5, checks=checks)
+        self.conf = ConfidenceCheck(0.65, checks=checks)
 
         self.stopUpdatePeriod = int(getVar('days_to_update'))
         self.safteyFac = float(getVar('safety'))
@@ -70,15 +97,41 @@ class HardStrategy(Strategy):
     def getNewStop(self):
         return round(self.dayval.close() - (self.atr.atr() * self.safteyFac), 2)
 
+    def dryRun(self) -> None:
+        self.conf.update()
+
     def nextAction(self, day: int, stock: Stock) -> Action:
 
-        conf = self.conf.check()
+        self.conf.update()
+
+        stats['emafast'].append(round(self.emaFast.avg(), 2))
+        stats['emaslow'].append(round(self.emaSlow.avg(), 2))
+        stats['emalong'].append(round(self.emaLong.avg(), 2))
+        stats['closes'].append(round(self.dayval.close(), 2))
+        stats['macd'].append(round(self.macd.macd(), 2))
+        stats['macdSig'].append(round(self.macd.signal(), 2))
+        stats['psar'].append(round(self.parabSAR.psar(), 2))
+        stats['stochK'].append(round(self.stoch.percK(), 2))
+        stats['stochDF'].append(round(self.stoch.percDFast(), 2))
+        stats['stochDS'].append(round(self.stoch.percDSlow(), 2))
+        stats['co1U'].append(bool(self.macdX.check()))
+        stats['co1D'].append(bool(self.macdX2.check()))
+        stats['co2U'].append(bool(self.stochX.check()))
+        stats['co2D'].append(bool(self.stochX2.check()))
+
+
+        conf, checks = self.conf.confidence()
+
+        stats['checks'].append(checks)
+
+        stats['conf'].append(conf)
+
         out = Action(stock, ActionEnum.Hold)
 
         pos = stock.status()
 
         if pos == StockStatus.OutMarket:
-            if conf:
+            if conf > 0.65:
                 self.nextUpdateDay = day + self.stopUpdatePeriod
                 stock.setNextStopDate(self.stopUpdatePeriod)
                 stopPrice = self.getNewStop()
@@ -93,7 +146,7 @@ class HardStrategy(Strategy):
                              )
 
         elif pos == StockStatus.InMarket:
-            if not conf:
+            if conf < 0.45:
                 self.nextUpdateDay = None
                 self.oldStopPrice = None
 

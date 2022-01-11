@@ -2,8 +2,10 @@ import time
 from datetime import datetime, timedelta
 import math
 import numpy as np
+import matplotlib as mpl
+from matplotlib.figure import Figure, Axes
 
-from alpaca_trade_api.rest import REST
+import yfinance as yf
 
 import cmErrors
 from indicators.indicator import IndicatorManager
@@ -16,19 +18,31 @@ from consts import DATE_FMT
 from typing import Dict
 import json
 
+# TODO remove
+from strategies.hardStrategy import stats as STATS, HardStrategy
+import json
+
+from utils.file_utils import loadStratFile
+
 
 class Stats:
-    def __init__(self, startingValue):
-        self.value = startingValue
-        self.valueBeforeBuy = 0
+    def __init__(self):
+        self.startingVal = 0
         self.lossList = []
         self.winList = []
-        self.numTrades = 0
+        self.buys = []
+        self.sells = []
 
-    def updateWL(self):
-        delta = self.value - self.valueBeforeBuy
+    def addBuy(self, day, value):
+        self.startingVal = value
+        self.buys.append((day, value))
 
-        if self.value < self.valueBeforeBuy:
+    def addSell(self, day, value):
+
+        self.sells.append((day, value))
+        delta = value - self.startingVal
+
+        if delta < 0:
             self.lossList.append(delta)
         else:
             self.winList.append(delta)
@@ -51,27 +65,32 @@ def calcSQN(tradeList) -> float:
     return a * b / c
 
 
-def setupBacktest(api: REST, symbols, startDate: datetime, endDate: datetime):
+def setupBacktest(strats: Dict[str, Strategy], startDate: datetime, endDate: datetime):
     iManage = IndicatorManager()
     setupTime = iManage.getSetupTime()
 
     setupStart = calcSetupStartDate(startDate - timedelta(1), setupTime)
 
     startstr = setupStart.strftime(DATE_FMT)
+
     endstr = endDate.strftime(DATE_FMT)
 
     # load bars and setup indicators
     length = 0
     allBars = {}
-    for sym in symbols:
-        b = getBars(api, sym, startstr, endstr)
+    for sym, strat in strats.items():
+        b = yf.download(sym, startstr, endstr)
         allBars[sym] = b
-        lo = b['low']
-        c = b['close']
-        hi = b['high']
+        lo = b['Low']
+        c = b['Close']
+        hi = b['High']
         length = len(hi)
         for i in range(setupTime):
             iManage.addData(sym, lo[i], c[i], hi[i])
+            try:
+                strat.dryRun()
+            except cmErrors.NotSetupError:
+                pass
 
     return allBars, setupTime, length
 
@@ -81,12 +100,13 @@ def checkStop(stop):
         raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
 
 
-def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: datetime, endDate: datetime,
-             startingVal=10000,
-             outputFile: str = 'stats.json'):
-    allBars, setupTime, totalLen = setupBacktest(api, strats.keys(), startDate, endDate)
+def backtest(stratName: str, strats: Dict[str, Strategy],
+             masterAxes: Axes, symAxes: Dict[str, Axes],
+             startDate: datetime, endDate: datetime,
+             startingVal=10000, outputFile: str = 'stats.json',
+             ):
+    allBars, setupTime, totalLen = setupBacktest(strats, startDate, endDate)
     iManage = IndicatorManager()
-
 
     totalCash = startingVal
     stats = {}
@@ -94,19 +114,30 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
     qty = {}
     stocks = {}
 
+    runtime = totalLen - setupTime
+
+    portfolio_cash = np.array([0.0] * runtime)
+    portfolio_value = np.array([0.0] * runtime)
+
+    # need to track:
+    #   total equity per day
+    #   trades
+    #   indicators can register?
+
     for sym in strats.keys():
         stocks[sym] = Stock(sym)
         qty[sym] = 0
-        stats[sym] = Stats(0)
+        stats[sym] = Stats()
 
     try:
         for i in range(setupTime, totalLen):
             day = i - setupTime
             print(f"Trade Day: {day}")
 
+            # check for activated stops and calculates the number of stocks that are OOM
             perStockBP = 0
             for sym in strats.keys():
-                if sym in stops and stops[sym] > allBars[sym]['low'][i]:
+                if sym in stops and stops[sym] > allBars[sym]['Low'][i]:
                     print(f'\t{sym}: Stop Activated')
 
                     newCash = qty[sym] * stops[sym]
@@ -116,22 +147,28 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
                     stops.pop(sym)
                     stocks[sym].position = None
 
-                    stats[sym].value = newCash
-                    stats[sym].updateWL()
+                    stats[sym].addSell(day, newCash)
 
                 if stocks[sym].position is None:
                     perStockBP += 1
 
             perStockBP = 0 if perStockBP == 0 else round(totalCash / perStockBP, 2)
 
+            inMarketEquity = 0
+
             for sym, strat in strats.items():
-                lo = allBars[sym]['low'][i]
-                close = allBars[sym]['close'][i]
-                hi = allBars[sym]['high'][i]
+                lo = allBars[sym]['Low'][i]
+                close = allBars[sym]['Close'][i]
+                hi = allBars[sym]['High'][i]
+
+                # TODO remove
+                tempdate = allBars[sym].index[i].strftime(DATE_FMT)
+                STATS['dates'].append(tempdate)
 
                 iManage.addData(sym, lo, close, hi)
 
                 stock = stocks[sym]
+
                 stat = stats[sym]
 
                 act = strat.nextAction(day, stock)
@@ -149,12 +186,10 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
                     # Update value
                     trueCost = stocksToBuy * close
 
-                    # Set initial value
-                    stat.valueBeforeBuy = trueCost
+                    stat.addBuy(day, trueCost)
 
                     totalCash -= trueCost
 
-                    stat.numTrades += 1
 
                 elif act.action == ActionEnum.Sell:
                     # Clear position
@@ -167,8 +202,7 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
 
                     qty[sym] = 0
                     # Update win/loss
-                    stat.value = soldValue
-                    stat.updateWL()
+                    stat.addSell(day, soldValue)
 
                 elif act.action == ActionEnum.UpdateStop:
                     checkStop(act.args['stopPrice'])
@@ -177,19 +211,27 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
                     # Hold, ILB
                     pass
 
-                print("\t", act)
+                print(f"\t{act}")
+
+                if qty[sym] > 0:
+                    inMarketEquity += qty[sym] * close
 
                 if totalCash < 0:
                     raise cmErrors.BacktestError('Negative Value, Strategy Failure?')
+            # END symbol action loop
+
+            # update graph logs
+            portfolio_cash[day] = round(totalCash, 2)
+            portfolio_value[day] = round(inMarketEquity, 2)
+            print(f"\tTotal Value: ${totalCash + inMarketEquity: .2f}")
+
         # END Main for loop
 
         # clear out any remaining positions
         for sym, q in qty.items():
             if q > 0:
-                newCash = q * allBars[sym]['close'][-1]
-                stats[sym].value = newCash
-                stats[sym].updateWL()
-
+                newCash = q * allBars[sym]['Close'][-1]
+                stats[sym].addSell(runtime, newCash)
                 totalCash += newCash
 
     except cmErrors.BacktestError as err:
@@ -225,7 +267,7 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
 
     print(f'Start Value: ${startingVal:.2f}, End Value: ${totalCash:.2f}')
     print(f'Profit: {profit:.2f}, Percent Gain: {percentGain:.2%}')
-    print(f'Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
+    print(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
     print(f'Win %: {winPercent:.2%}')
     print(f'Avg Gain: ${avgGain:.2f}')
     print(f'Avg Loss: ${avgLoss:.2f}')
@@ -243,3 +285,43 @@ def backtest(api: REST, stratName: str, strats: Dict[str, Strategy], startDate: 
     with open(outputFile, mode='a') as f:
         json.dump(statDict, f)
         f.write('\n')
+
+    # print("Plotting")
+    # masterAxes.plot(range(len(portfolio_cash)), portfolio_cash, label='Cash')
+    # masterAxes.plot(range(len(portfolio_value)), portfolio_value, label='Value')
+
+    with open("temp.txt", mode='w') as f:
+
+        out = {
+            "cash": portfolio_cash.tolist(),
+            "value": portfolio_value.tolist()
+        }
+        json.dump(out, f)
+
+    with open("cm_lines.json", mode='w') as f:
+        json.dump(STATS, f)
+
+
+def _main():
+    parser = ArgumentParser()
+
+    parser.add_argument(
+        '--strategy', '-str',
+        required=True,
+        type=str
+    )
+
+    args = parser.parse_args()
+    strat = loadStratFile(args.strategy)
+
+    start_date = datetime(2018, 1, 1)
+    end_date = datetime.today()
+
+    backtest('TEST', strats={'QQQ': HardStrategy('QQQ', strat)}, masterAxes=None, symAxes=None,
+             startDate=start_date, endDate=end_date)
+
+
+if __name__ == '__main__':
+    from argparse import ArgumentParser
+
+    _main()

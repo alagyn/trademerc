@@ -138,7 +138,7 @@ def main():
     end_date = datetime.today().strftime(DATE_FMT)
 
     try:
-        backtest(args.stock, strat, start_date, end_date)
+        backtest(args.stock, strat, start_date, end_date, outputFile='temp.json')
     except StrategyError as err:
         print(err)
 

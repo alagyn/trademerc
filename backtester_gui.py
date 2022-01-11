@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import json
 from tkcalendar import DateEntry
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 import cm_backtester
 from indicators.indicator import IndicatorManager
@@ -281,15 +283,16 @@ class BTGUI(tk.Frame):
         startDate = self.startInput.get_date()
         endDate = self.endInput.get_date()
 
-        api = loadPaperAPI()
+        fig, ax = plt.subplots()
 
         args = {
-            "api": api,
             "stratName": strat['name'],
             "startDate": startDate,
             "endDate": endDate,
             "outputFile": self.outVar.get(),
-            "startingVal": self.startValVar.get()
+            "startingVal": self.startValVar.get(),
+            "masterAxes": ax,
+            "symAxes": {}
         }
 
         # print(strat)

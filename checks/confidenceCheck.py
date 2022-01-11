@@ -6,13 +6,13 @@ from cmErrors import CheckError
 class _WeightedCheck:
     def __init__(self, check: Check, weight: float):
         self._c = check
-        self._w = weight
+        self.w = weight
 
     def check(self) -> bool:
         return self._c.check()
 
-    def weight(self) -> float:
-        return self._w
+    def update(self) -> bool:
+        return self._c.update()
 
     def __str__(self):
         return str(self._c)
@@ -31,7 +31,6 @@ class ConfidenceCheck(Check):
             for x in checks:
                 self.addCheck(*x)
 
-
     @classmethod
     def factory(cls, valFuncs, checks, args):
         confs = args['confs']
@@ -47,17 +46,43 @@ class ConfidenceCheck(Check):
 
     def addCheck(self, check: Check, weight: float):
         self._checks.append(_WeightedCheck(check, weight))
-        self._totalWeight += weight
+
+        # Allow for negative weights, but they don't contribute to total
+        if weight > 0:
+            self._totalWeight += weight
+
+    def update(self) -> bool:
+        for c in self._checks:
+            c.update()
+
+        return self.check()
 
     def confidence(self):
         out = 0
-        for c in self._checks:
-            val = c.check()
-            if val:
-                out += c.weight()
-            # print(c, val)
 
-        return out / self._totalWeight
+        # TODO remove templist
+        templist = []
+
+        for c in self._checks:
+            val = bool(c.check())
+            # print(c, val)
+            # if check is good add weight (both pos and neg)
+            if val:
+                # print(f'Adding: {c.w}')
+                out += c.w
+            # if check is bad and weight is pos, sub weight
+            if not val:
+                # print(f'Subbing: {c.w}')
+                out -= c.w
+
+            templist.append(val)
+
+        # print(f'Sum: {out}, TotalW: {self._totalWeight}')
+        # out /= self._totalWeight
+        # print(f'Final: {out}')
+        # exit()
+        return out, templist
 
     def check(self) -> bool:
-        return self._minConf <= self.confidence() <= self._maxConf
+        c, _ = self.confidence()
+        return self._minConf <= c <= self._maxConf

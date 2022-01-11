@@ -12,3 +12,6 @@ class Strategy:
 
     def nextAction(self, day: int, stock: Stock) -> Action:
         raise NotImplementedError
+
+    def dryRun(self) -> None:
+        raise NotImplementedError

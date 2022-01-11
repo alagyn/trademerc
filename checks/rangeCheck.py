@@ -21,3 +21,6 @@ class RangeCheck(Check):
             raise NotSetupError
 
         return self.minVal <= self.i() <= self.maxVal
+
+    def update(self) -> bool:
+        return self.check()

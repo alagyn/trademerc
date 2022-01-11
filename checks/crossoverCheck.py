@@ -10,35 +10,26 @@ class CrossoverCheck(Check):
 
         return CrossoverCheck(valFuncs[0], valFuncs[1], args['direct'])
 
-
     def __init__(self, i1, i2, direct: str):
         self.direct = True if direct == 'up' else False
         self.i1 = i1
         self.i2 = i2
 
         self.prevDiff = None
+        self.curDiff = None
 
-    def check(self) -> bool:
-        if self.prevDiff is None:
-            self.prevDiff = self.i1() - self.i2()
+    def update(self) -> bool:
+        if self.curDiff is None:
+            self.curDiff = self.i1() - self.i2()
             return False
 
-        out = False
+        self.prevDiff = self.curDiff
+        self.curDiff = self.i1() - self.i2()
 
-        diff = self.i1() - self.i2()
+        return self.check()
 
-        upcross = 1 if self.prevDiff < 0 and diff > 0 else 0
-        downcross = 1 if self.prevDiff > 0 and diff < 0 else 0
+    def check(self) -> bool:
+        upcross = self.prevDiff < 0 < self.curDiff
+        downcross = self.prevDiff > 0 > self.curDiff
 
-        cross = upcross - downcross
-
-        # cross up
-        if self.direct and cross > 0:
-            out = True
-        # cross down
-        elif not self.direct and cross < 0:
-            out = True
-
-        self.prevDiff = diff
-
-        return out
+        return (self.direct and upcross) or (not self.direct and downcross)

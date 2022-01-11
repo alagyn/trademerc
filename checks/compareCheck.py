@@ -16,6 +16,9 @@ class CompareLessThan(Check):
 
         return val1 < val2
 
+    def update(self) -> bool:
+        return self.check()
+
     @classmethod
     def factory(cls, valFuncs, checks, args):
         if len(valFuncs) != 2:
@@ -37,6 +40,9 @@ class CompareGreaterThan(Check):
             raise NotSetupError
 
         return val1 > val2
+
+    def update(self) -> bool:
+        return self.check()
 
     @classmethod
     def factory(cls, valFuncs, checks, args):
