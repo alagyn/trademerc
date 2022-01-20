@@ -1,5 +1,6 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
+from indicators.indicator import Indicator, ValueFunc
 from cmErrors import IndicatorError
+from indicators.indicatorManager import HIGH_PRIORITY
 
 
 class SoloEMA:
@@ -32,12 +33,12 @@ class EMA(Indicator):
     """
 
 
-    def __init__(self, period: int, smoothing: int = 2, data='c'):
+    def __init__(self, period: int, smoothing: int = 2, data='c', logging: bool = False):
         self._data = data
         self._ema = SoloEMA(smoothing=smoothing, period=period)
         self.avg = ValueFunc('ema')
 
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, logging)
 
     def addData(self, low, close, high):
         if self._data == 'c':

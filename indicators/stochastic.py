@@ -1,10 +1,11 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
+from indicators.indicator import Indicator, ValueFunc
+from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.sma import SoloSMA
 from collections import deque
 
 
 class Stochastic(Indicator):
-    def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0):
+    def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0, logging: bool = False):
         """
         Stochastic Oscillator Indicator
         :param kPeriod: The period of the percK calculations
@@ -27,7 +28,7 @@ class Stochastic(Indicator):
         self.lows = deque()
         self.highs = deque()
 
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, logging)
 
     def addData(self, low, close, high) -> None:
         self.lows.append(low)

@@ -14,7 +14,6 @@ import time
 import cmErrors
 from utils.file_utils import loadStratFile, loadStockFile
 from utils.api_utils import loadAPI, getSetupBars
-from indicators.indicator import IndicatorManager
 from objects.action import *
 from objects.stock import *
 from strategies.strategy import *
@@ -54,8 +53,6 @@ class Trader:
         # Close all positions?
         # self.api.close_all_positions()
 
-        self.iManage = IndicatorManager()
-
         # setup initial buying power
         self.buyPwr = 0
         self.updateBuyPwr()
@@ -73,12 +70,13 @@ class Trader:
         for x in self.strats.keys():
             self.stocks[x] = Stock(x)
 
-        setupTime = self.iManage.getSetupTime()
+        setupTime = max([x.getSetupTime() for x in strats.values()])
 
         setupBars = getSetupBars(self.api, setupTime, list(self.strats.keys()))
 
         # Setup Indicators
-        self.iManage.setupIndicators(setupBars)
+        for sym, strat in strats.items():
+            strat.setupIndicators(setupBars[sym])
 
         # If market is closed, get current day
         if not self.api.get_clock().is_open:
@@ -158,7 +156,7 @@ class Trader:
         for sym, stk in self.stocks.items():
             stk.updateBar(snaps[sym].daily_bar)
             bar = stk.bar
-            self.iManage.addData(sym, bar.l, bar.c, bar.h)
+            self.strats[sym].addData(bar.l, bar.c, bar.h)
 
     def updateTrades(self):
         filled = []

@@ -35,10 +35,14 @@ class StopCalculation:
 
 
 class CustomStrategy(Strategy):
-    def __init__(self, name: str, symbol: str, enterCond: Check, exitCond: Check,
+    def dryRun(self) -> None:
+        # TODO
+        pass
+
+    def __init__(self, name: str, symbol: str, indicators: List[Indicator], enterCond: Check, exitCond: Check,
                  stopCalc: StopCalculation = None, stopUpdatePeriod=0):
 
-        super().__init__(symbol, name)
+        super().__init__(symbol, name, IndicatorManager(indicators))
 
         self.enterCond = enterCond
         self.exitCond = exitCond
@@ -75,10 +79,10 @@ class CustomStrategy(Strategy):
 def makeCustomStrategy(stratvars, symbol: str) -> CustomStrategy:
     # TODO json error catching
 
-    all_inds = []
+    all_inds: List[Indicator] = []
 
     for i in stratvars['indicators']:
-        newind = INDICATORS[i['class']](**i['args']).set
+        newind = INDICATORS[i['class']](**i['args'])
         all_inds.append(newind)
 
     all_checks = []
@@ -115,9 +119,9 @@ def makeCustomStrategy(stratvars, symbol: str) -> CustomStrategy:
     return CustomStrategy(
         name=stratvars['name'],
         symbol=symbol,
+        indicators=all_inds,
         enterCond=all_checks[enterCondIdx],
         exitCond=all_checks[exitCondIdx],
         stopCalc=stopCalc,
         stopUpdatePeriod=stratvars['daysToUpdateStop']
     )
-

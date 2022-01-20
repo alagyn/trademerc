@@ -3,12 +3,13 @@ from datetime import datetime, timedelta
 import math
 import numpy as np
 import matplotlib as mpl
+import matplotlib.dates as mplDates
+from matplotlib.dates import ConciseDateFormatter
 from matplotlib.figure import Figure, Axes
 
 import yfinance as yf
 
 import cmErrors
-from indicators.indicator import IndicatorManager
 from strategies.strategy import Strategy
 from objects.stock import Stock
 from objects.action import ActionEnum
@@ -24,23 +25,34 @@ import json
 
 from utils.file_utils import loadStratFile
 
+CLOSE = 'Close'
+LOW = 'Low'
+HIGH = 'High'
+
 
 class Stats:
     def __init__(self):
         self.startingVal = 0
         self.lossList = []
         self.winList = []
-        self.buys = []
-        self.sells = []
 
-    def addBuy(self, day, value):
+        self.buyDays = []
+        self.buyPrices = []
+
+        self.sellDays = []
+        self.sellPrices = []
+        self.sellDeltas = []
+
+    def addBuy(self, day, value, unitCost):
         self.startingVal = value
-        self.buys.append((day, value))
+        self.buyDays.append(day)
+        self.buyPrices.append(unitCost)
 
-    def addSell(self, day, value):
-
-        self.sells.append((day, value))
+    def addSell(self, day, value, unitSell):
         delta = value - self.startingVal
+        self.sellDays.append(day)
+        self.sellPrices.append(unitSell)
+        self.sellDeltas.append(delta)
 
         if delta < 0:
             self.lossList.append(delta)
@@ -66,8 +78,7 @@ def calcSQN(tradeList) -> float:
 
 
 def setupBacktest(strats: Dict[str, Strategy], startDate: datetime, endDate: datetime):
-    iManage = IndicatorManager()
-    setupTime = iManage.getSetupTime()
+    setupTime = max([x.getSetupTime() for x in strats.values()])
 
     setupStart = calcSetupStartDate(startDate - timedelta(1), setupTime)
 
@@ -86,7 +97,7 @@ def setupBacktest(strats: Dict[str, Strategy], startDate: datetime, endDate: dat
         hi = b['High']
         length = len(hi)
         for i in range(setupTime):
-            iManage.addData(sym, lo[i], c[i], hi[i])
+            strat.addData(lo[i], c[i], hi[i])
             try:
                 strat.dryRun()
             except cmErrors.NotSetupError:
@@ -101,12 +112,11 @@ def checkStop(stop):
 
 
 def backtest(stratName: str, strats: Dict[str, Strategy],
-             masterAxes: Axes, symAxes: Dict[str, Axes],
+             masterFigure: Figure, symFigs: Dict[str, Figure],
              startDate: datetime, endDate: datetime,
              startingVal=10000, outputFile: str = 'stats.json',
              ):
     allBars, setupTime, totalLen = setupBacktest(strats, startDate, endDate)
-    iManage = IndicatorManager()
 
     totalCash = startingVal
     stats = {}
@@ -115,6 +125,10 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
     stocks = {}
 
     runtime = totalLen - setupTime
+
+
+    datekey = list(strats.keys())[0]
+    dates = []
 
     portfolio_cash = np.array([0.0] * runtime)
     portfolio_value = np.array([0.0] * runtime)
@@ -134,20 +148,22 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             day = i - setupTime
             print(f"Trade Day: {day}")
 
+            dates.append(allBars[datekey].index[i])
+
             # check for activated stops and calculates the number of stocks that are OOM
             perStockBP = 0
             for sym in strats.keys():
-                if sym in stops and stops[sym] > allBars[sym]['Low'][i]:
+                if sym in stops and stops[sym] > allBars[sym][LOW][i]:
                     print(f'\t{sym}: Stop Activated')
 
                     newCash = qty[sym] * stops[sym]
                     totalCash += newCash
 
+                    stats[sym].addSell(day, newCash, stops[sym])
+
                     qty[sym] = 0
                     stops.pop(sym)
                     stocks[sym].position = None
-
-                    stats[sym].addSell(day, newCash)
 
                 if stocks[sym].position is None:
                     perStockBP += 1
@@ -157,15 +173,11 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             inMarketEquity = 0
 
             for sym, strat in strats.items():
-                lo = allBars[sym]['Low'][i]
-                close = allBars[sym]['Close'][i]
-                hi = allBars[sym]['High'][i]
+                lo = allBars[sym][LOW][i]
+                close = allBars[sym][CLOSE][i]
+                hi = allBars[sym][HIGH][i]
 
-                # TODO remove
-                tempdate = allBars[sym].index[i].strftime(DATE_FMT)
-                STATS['dates'].append(tempdate)
-
-                iManage.addData(sym, lo, close, hi)
+                strat.addData(lo, close, hi)
 
                 stock = stocks[sym]
 
@@ -186,7 +198,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
                     # Update value
                     trueCost = stocksToBuy * close
 
-                    stat.addBuy(day, trueCost)
+                    stat.addBuy(day, trueCost, close)
 
                     totalCash -= trueCost
 
@@ -202,7 +214,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
                     qty[sym] = 0
                     # Update win/loss
-                    stat.addSell(day, soldValue)
+                    stat.addSell(day, soldValue, close)
 
                 elif act.action == ActionEnum.UpdateStop:
                     checkStop(act.args['stopPrice'])
@@ -230,8 +242,9 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         # clear out any remaining positions
         for sym, q in qty.items():
             if q > 0:
-                newCash = q * allBars[sym]['Close'][-1]
-                stats[sym].addSell(runtime, newCash)
+                sellPrice = allBars[sym][CLOSE][-1]
+                newCash = q * sellPrice
+                stats[sym].addSell(runtime, newCash, sellPrice)
                 totalCash += newCash
 
     except cmErrors.BacktestError as err:
@@ -286,20 +299,57 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         json.dump(statDict, f)
         f.write('\n')
 
-    # print("Plotting")
-    # masterAxes.plot(range(len(portfolio_cash)), portfolio_cash, label='Cash')
-    # masterAxes.plot(range(len(portfolio_value)), portfolio_value, label='Value')
+    print("Plotting")
+    if masterFigure is not None:
+        masterAxes = masterFigure.add_subplot()
+        r = range(len(portfolio_cash))
 
-    with open("temp.txt", mode='w') as f:
+        portfolio_total = np.add(portfolio_cash, portfolio_value)
 
-        out = {
-            "cash": portfolio_cash.tolist(),
-            "value": portfolio_value.tolist()
-        }
-        json.dump(out, f)
+        masterAxes.bar(dates, portfolio_cash, label='Cash', color='C1', width=1, align='edge')
+        masterAxes.plot(dates, portfolio_total, label='Value')
 
-    with open("cm_lines.json", mode='w') as f:
-        json.dump(STATS, f)
+        dateformat = ConciseDateFormatter(masterAxes.xaxis.get_major_locator())
+        masterAxes.xaxis.set_major_formatter(dateformat)
+        masterAxes.xaxis.set_major_locator(mplDates.MonthLocator(bymonth=1, interval=1))
+
+        masterAxes.grid(True)
+        masterAxes.legend()
+
+        for sym in strats.keys():
+            axes = symFigs[sym].subplot_mosaic([['top'],
+                                                ['bot'],
+                                                ['bot']], sharex=True)
+
+            topPlot = axes['top']
+            botPlot = axes['bot']
+
+            closes = allBars[sym][CLOSE][setupTime:]
+
+            botPlot.plot(dates, closes, label=sym, color=(0, 0, 0))
+
+            stat = stats[sym]
+
+            buyDays = [dates[x] for x in stat.buyDays]
+            sellDays = [dates[x] for x in stat.sellDays]
+
+            botPlot.scatter(buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
+            botPlot.scatter(sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
+
+            dateformat = ConciseDateFormatter(botPlot.xaxis.get_major_locator())
+            botPlot.xaxis.set_major_formatter(dateformat)
+            botPlot.xaxis.set_major_locator(mplDates.MonthLocator(bymonth=1))
+
+            botPlot.legend()
+            botPlot.grid(True)
+
+            color = ['g' if x > 0 else 'r' for x in stat.sellDeltas]
+
+            topPlot.scatter(sellDays, stat.sellDeltas, color=color, label='Profit/Loss')
+            topPlot.set_yticks([0])
+            topPlot.grid(True)
+
+            topPlot.legend()
 
 
 def _main():

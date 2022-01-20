@@ -1,5 +1,5 @@
 from typing import Dict, List
-import functools
+from .logWrapper import LogWrapper
 
 _ID_GEN = 1
 
@@ -17,9 +17,10 @@ class ValueFunc:
 
 
 class Indicator:
-    def __init__(self, priority: int):
+    def __init__(self, priority: int, logging: bool):
         global _ID_GEN
 
+        self.logging = logging
         self.priority = priority
         self._id = _ID_GEN
         _ID_GEN += 1
@@ -31,9 +32,10 @@ class Indicator:
                 if isinstance(x, ValueFunc):
                     self._values[x.key] = x
 
-    def set(self, symbol: str):
-        IndicatorManager().register(self, symbol)
-        return self
+
+    def addLog(self, logs: LogWrapper) -> None:
+        for name, v in self._values.values():
+            logs[name] = v()
 
     def addData(self, low, close, high) -> None:
         raise NotImplementedError
@@ -58,68 +60,3 @@ class Indicator:
         return self._id
 
 
-LOW_PRIORITY = 2
-MED_PRIORITY = 1
-HIGH_PRIORITY = 0
-
-_PRIORITIES = [HIGH_PRIORITY, MED_PRIORITY, LOW_PRIORITY]
-
-
-class IndicatorManager:
-    _inst = None
-
-    def __new__(cls):
-        if cls._inst is None:
-            cls._inst = super().__new__(cls)
-
-            # symbol -> priority -> list indicators
-            cls._inst._indicators = {}
-
-        return cls._inst
-
-    def register(self, i: Indicator, symbol: str):
-        if symbol not in self._indicators:
-            newsymb = {i.priority: [i]}
-            self._indicators[symbol] = newsymb
-        else:
-            symb = self._indicators[symbol]
-            if i.priority in symb:
-                symb[i.priority].append(i)
-            else:
-                symb[i.priority] = [i]
-
-    def addData(self, symbol: str, low: float, close: float, high: float) -> None:
-        if symbol not in self._indicators:
-            return
-
-        for p in _PRIORITIES:
-            try:
-                for i in self._indicators[symbol][p]:
-                    i.addData(low=low, close=close, high=high)
-            except KeyError:
-                pass
-
-    def getSetupTime(self) -> int:
-        """
-        Calculates the min setup time for every created indicator to be properly setup
-        :return: The min setup time required
-        """
-        out = 0
-        for symb, ps in self._indicators.items():
-            for p, l in ps.items():
-                for i in l:
-                    out = max(out, i.setupTime())
-
-        return out
-
-    def clearIndicators(self):
-        self._indicators.clear()
-
-    def setupIndicators(self, bars):
-        for i in range(len(bars)):
-            for x in bars:
-                low = bars[x]['low'][i]
-                close = bars[x]['close'][i]
-                high = bars[x]['high'][i]
-
-                self.addData(x, low, close, high)

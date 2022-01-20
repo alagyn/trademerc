@@ -1,4 +1,5 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
+from indicators.indicator import Indicator, ValueFunc
+from indicators.indicatorManager import HIGH_PRIORITY
 
 
 class BarValue(Indicator):
@@ -8,7 +9,7 @@ class BarValue(Indicator):
         self.close = ValueFunc('close')
         self.high = ValueFunc('high')
 
-        super(BarValue, self).__init__(HIGH_PRIORITY)
+        super(BarValue, self).__init__(HIGH_PRIORITY, False)
 
 
     def addData(self, low, close, high) -> None:

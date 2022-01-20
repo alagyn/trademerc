@@ -6,9 +6,11 @@ import json
 from tkcalendar import DateEntry
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
 
 import cm_backtester
-from indicators.indicator import IndicatorManager
 from utils.file_utils import loadStratFile, loadStockFile
 from utils.api_utils import loadPaperAPI
 from consts import STRAT_FORMAT, DATE_FMT
@@ -103,6 +105,7 @@ class BTGUI(tk.Frame):
         self.root.title("Backtester")
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
+        self.root.columnconfigure(1, weight=2)
 
         self.grid(column=0, row=0, sticky='nesw')
         for x in range(3):
@@ -234,7 +237,21 @@ class BTGUI(tk.Frame):
         # GRID MAIN FRAMES
         FRAME_PAD = 5
 
+        # GRAPH FRAME
+        mainGraphFrame = tk.Frame(self)
+        mainGraphFrame.columnconfigure(0, weight=1)
+        mainGraphFrame.rowconfigure(0, weight=1)
+
+        self.notebook = ttk.Notebook(mainGraphFrame)
+        self.notebook.grid(row=0, column=0, sticky='nesw')
+
+        self.masterFigure = None
+        self.nbFrames = []
+        self.figures = {}
+        self.canvases = []
+
         runFrame.grid(row=0, column=0, sticky='nsew', padx=FRAME_PAD)
+        mainGraphFrame.grid(row=0, column=1, sticky='news', padx=FRAME_PAD)
         # stratFrame.grid(row=0, column=1, sticky='nsew', padx=FRAME_PAD)
 
     def closeWindow(self):
@@ -262,6 +279,8 @@ class BTGUI(tk.Frame):
             _, f = os.path.split(ret)
             self.symbolVar.set(f)
 
+            self.genGraphs()
+
     def saveStrat(self):
         strat = self.buildStrat()
 
@@ -272,18 +291,59 @@ class BTGUI(tk.Frame):
             with open(ret, mode='w') as f:
                 json.dump(strat, f)
 
+    def createPlotCanvas(self, text) -> Figure:
+        frame = ttk.Frame(self.notebook)
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=2)
+        frame.rowconfigure(1, weight=1)
+
+        self.notebook.add(frame, text=text, sticky='nesw')
+        self.nbFrames.append(frame)
+        fig = Figure()
+        canvas = FigureCanvasTkAgg(fig, master=frame)
+
+        self.canvases.append(canvas)
+
+        canvas.draw()
+
+        toolbar = NavigationToolbar2Tk(canvas, frame, pack_toolbar=False)
+        toolbar.update()
+
+        canvas.mpl_connect(
+            "key_press_event", key_press_handler
+        )
+
+        canvas.get_tk_widget().grid(row=0, column=0, sticky='nesw')
+        toolbar.grid(row=1, column=0, sticky='ews')
+
+        return fig
+
+    def genGraphs(self):
+        for x in self.notebook.tabs():
+            self.notebook.forget(x)
+
+        self.nbFrames = []
+        self.figures = {}
+        self.canvases = []
+
+        self.masterFigure = self.createPlotCanvas("Portfolio")
+
+        for sym in self.stocks:
+            self.figures[sym] = self.createPlotCanvas(sym)
+
     def buildStrat(self):
         strat = {}
         recursBuildStrat(self.stratVars, strat)
         return strat
 
     def runBT(self):
+        if len(self.stocks) <= 0:
+            return
+
         strat = self.buildStrat()
 
         startDate = self.startInput.get_date()
         endDate = self.endInput.get_date()
-
-        fig, ax = plt.subplots()
 
         args = {
             "stratName": strat['name'],
@@ -291,12 +351,11 @@ class BTGUI(tk.Frame):
             "endDate": endDate,
             "outputFile": self.outVar.get(),
             "startingVal": self.startValVar.get(),
-            "masterAxes": ax,
-            "symAxes": {}
+            "masterFigure": self.masterFigure,
+            "symFigs": self.figures
         }
 
         # print(strat)
-        IndicatorManager().clearIndicators()
 
         if not self.indivVar.get():
             strats = {}
@@ -310,6 +369,8 @@ class BTGUI(tk.Frame):
                 strats = {x: HardStrategy(x, strat)}
                 cm_backtester.backtest(**args, strats=strats)
 
+        for c in self.canvases:
+            c.draw()
 
     def runAlpaca(self):
         if self.stocks is None:

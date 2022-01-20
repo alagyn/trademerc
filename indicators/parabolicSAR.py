@@ -1,11 +1,12 @@
-from indicators.indicator import Indicator, HIGH_PRIORITY, ValueFunc
+from indicators.indicator import Indicator, ValueFunc
+from indicators.indicatorManager import HIGH_PRIORITY
 
 AF_INC = 0.02
 
 
 class ParabolicSAR(Indicator):
 
-    def __init__(self, af: float = 0.02, afMax: float = 0.2):
+    def __init__(self, af: float = 0.02, afMax: float = 0.2, logging: bool = False):
         self._afStart = af
         self._af = af
         self._afMax = afMax
@@ -17,7 +18,7 @@ class ParabolicSAR(Indicator):
         self._prevHigh = None
         self._prevLow = None
 
-        super().__init__(HIGH_PRIORITY)
+        super().__init__(HIGH_PRIORITY, logging)
 
     def addData(self, low, close, high) -> None:
         # Start case, takes 2 iterations to setup

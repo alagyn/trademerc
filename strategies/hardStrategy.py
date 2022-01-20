@@ -31,8 +31,6 @@ stats = {
 class HardStrategy(Strategy):
 
     def __init__(self, symbol, jsonStrat):
-        super(HardStrategy, self).__init__(symbol, jsonStrat['name'])
-
         def getVar(*path):
             cur = jsonStrat['variables']
             try:
@@ -48,24 +46,24 @@ class HardStrategy(Strategy):
 
                 raise StrategyError(f'Missing Strategy Variable: {p}')
 
-        self.emaFast = EMA(period=int(getVar('ema', 'fast'))).set(self.symbol)
-        self.emaSlow = EMA(period=int(getVar('ema', 'slow'))).set(self.symbol)
-        self.emaLong = EMA(period=int(getVar('ema', 'long'))).set(self.symbol)
+        self.emaFast = EMA(period=int(getVar('ema', 'fast')))
+        self.emaSlow = EMA(period=int(getVar('ema', 'slow')))
+        self.emaLong = EMA(period=int(getVar('ema', 'long')))
 
         self.macd = MACD(fastPeriod=int(getVar('macd', 'fast')),
                          slowPeriod=int(getVar('macd', 'slow')),
-                         sigPeriod=int(getVar('macd', 'signal'))).set(self.symbol)
+                         sigPeriod=int(getVar('macd', 'signal')))
 
         self.stoch = Stochastic(kPeriod=int(getVar('stoch', 'p')),
                                 dPeriod=int(getVar('stoch', 'fast')),
-                                slowPeriod=int(getVar('stoch', 'slow'))).set(self.symbol)
+                                slowPeriod=int(getVar('stoch', 'slow')))
 
         self.parabSAR = ParabolicSAR(af=float(getVar('parabolic', 'af')),
-                                     afMax=float(getVar('parabolic', 'afmax'))).set(self.symbol)
+                                     afMax=float(getVar('parabolic', 'afmax')))
 
-        self.atr = AverageTrueRange(period=int(getVar('atr'))).set(self.symbol)
+        self.atr = AverageTrueRange(period=int(getVar('atr')))
 
-        self.dayval = BarValue().set(self.symbol)
+        self.dayval = BarValue()
 
         self.macdX = CrossoverCheck(self.macd.macd, self.macd.signal, 'up')
         self.macdX2 = CrossoverCheck(self.macd.macd, self.macd.signal, 'down')
@@ -93,6 +91,13 @@ class HardStrategy(Strategy):
         self.safteyFac = float(getVar('safety'))
         self.nextUpdateDay = None
         self.oldStopPrice = None
+
+        iManage = IndicatorManager([
+            self.emaSlow, self.emaLong, self.emaFast, self.macd, self.stoch, self.parabSAR,
+            self.atr, self.dayval
+        ])
+
+        super(HardStrategy, self).__init__(symbol, jsonStrat['name'], iManage)
 
     def getNewStop(self):
         return round(self.dayval.close() - (self.atr.atr() * self.safteyFac), 2)
