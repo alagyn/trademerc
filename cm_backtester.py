@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta
 import math
 import numpy as np
@@ -20,8 +19,8 @@ from typing import Dict
 import json
 
 # TODO remove
-from strategies.hardStrategy import stats as STATS, HardStrategy
-import json
+from strategies.hardStrategy import HardStrategy
+
 
 from utils.file_utils import loadStratFile
 
