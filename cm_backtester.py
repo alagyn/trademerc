@@ -308,9 +308,10 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         masterAxes.bar(dates, portfolio_cash, label='Cash', color='C1', width=1, align='edge')
         masterAxes.plot(dates, portfolio_total, label='Value')
 
-        dateformat = ConciseDateFormatter(masterAxes.xaxis.get_major_locator())
+        locator = mplDates.AutoDateLocator(minticks=5, maxticks=10)
+        dateformat = ConciseDateFormatter(locator)
+        masterAxes.xaxis.set_major_locator(locator)
         masterAxes.xaxis.set_major_formatter(dateformat)
-        masterAxes.xaxis.set_major_locator(mplDates.MonthLocator(bymonth=1, interval=1))
 
         masterAxes.grid(True)
         masterAxes.legend()
@@ -335,9 +336,8 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             botPlot.scatter(buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
             botPlot.scatter(sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
 
-            dateformat = ConciseDateFormatter(botPlot.xaxis.get_major_locator())
+            botPlot.xaxis.set_major_locator(locator)
             botPlot.xaxis.set_major_formatter(dateformat)
-            botPlot.xaxis.set_major_locator(mplDates.MonthLocator(bymonth=1))
 
             botPlot.legend()
             botPlot.grid(True)
