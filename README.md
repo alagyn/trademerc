@@ -23,12 +23,12 @@ Running LIVE trading:
 
 ### PROJECT TODO:
 1) Backtester
-	1.1) Graph to display results, similiar to backtrader.	[BEN]
-	1.2) toggle option to test individual stocks or multiple in a single test from a list.	[BEN]
+   1) ...?
 2) Paper Trading
-	2.1) Using the cormac7717@gmail.com account have system running on raspberry pi.	[JOHN]
+   1) Using the cormac7717@gmail.com account have system running on raspberry pi.	[JOHN]
 3) Reporting
-   3.1) Daily reporting (changing to weekly later) following format of "Report Example.txt"	[BEN]
+   1) Test...
+   2) Add config for interval
 4) Setup GUI to create strategies
-	4.1) Create structure similar to TrendSpidy that has "Entry" and "Exit" conditions. Multiple conditions can be included with and/or statement.	[BEN]
-	4.2) Determine list of necessary indicators to use when setting up a procedure to test.	[JOHN]
+   1) Create structure similar to TrendSpidy that has "Entry" and "Exit" conditions. Multiple conditions can be included with and/or statement.	[BEN]
+   2) Determine list of necessary indicators to use when setting up a procedure to test.	[JOHN]

@@ -1,11 +1,20 @@
-from indicators.indicator import Indicator, ValueFunc
+from indicators.indicator import Indicator, ValueFunc, IParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.sma import SoloSMA
 from collections import deque
 
+_PERCK = 'Percent K'
+_PERCD = 'Percent D'
+_PERCDSLOW = 'Percent D slow'
+
 
 class Stochastic(Indicator):
-    def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0, logging: bool = False):
+    params = {'kPeriod': IParam(int, 5),
+              'dPeriod': IParam(int, 5),
+              'slowPeriod': IParam(int, 0)}
+    outputs = [_PERCK, _PERCD, _PERCDSLOW]
+
+    def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0):
         """
         Stochastic Oscillator Indicator
         :param kPeriod: The period of the percK calculations
@@ -18,9 +27,9 @@ class Stochastic(Indicator):
         self._sp = slowPeriod
         self.slow = self._sp > 0
 
-        self.percK = ValueFunc('percentK')
-        self.percDFast = ValueFunc('percentDFast')
-        self.percDSlow = ValueFunc('percentDSlow')
+        self.percK = ValueFunc(_PERCK)
+        self.percDFast = ValueFunc(_PERCD)
+        self.percDSlow = ValueFunc(_PERCDSLOW)
 
         self._percDfast = SoloSMA(dPeriod)
         self._percDslow = SoloSMA(slowPeriod)
@@ -28,7 +37,7 @@ class Stochastic(Indicator):
         self.lows = deque()
         self.highs = deque()
 
-        super().__init__(HIGH_PRIORITY, logging)
+        super().__init__(HIGH_PRIORITY)
 
     def addData(self, low, close, high) -> None:
         self.lows.append(low)

@@ -1,6 +1,9 @@
-from indicators.indicator import Indicator, ValueFunc
+from indicators.indicator import Indicator, ValueFunc, IParam
 from indicators.ema import SoloEMA
 from indicators.indicatorManager import HIGH_PRIORITY
+
+_MACD = 'MACD'
+_SIGNAL = 'Signal'
 
 
 class MACD(Indicator):
@@ -8,7 +11,12 @@ class MACD(Indicator):
     Moving Average Convergence Divergence
     """
 
-    def __init__(self, fastPeriod: int, slowPeriod: int, sigPeriod: int, logging: bool = False):
+    params = {'fastPeriod': IParam(int, 5),
+              'slowPeriod': IParam(int, 10),
+              'sigPeriod': IParam(int, 10)}
+    outputs = [_MACD, _SIGNAL]
+
+    def __init__(self, fastPeriod: int, slowPeriod: int, sigPeriod: int):
         self._fp = fastPeriod
         self._sp = slowPeriod
         self._sigP = sigPeriod
@@ -17,10 +25,10 @@ class MACD(Indicator):
         self._slowEMA = SoloEMA(period=slowPeriod)
         self._sigEMA = SoloEMA(period=sigPeriod)
 
-        self.macd = ValueFunc('macd')
-        self.signal = ValueFunc('signal')
+        self.macd = ValueFunc(_MACD)
+        self.signal = ValueFunc(_SIGNAL)
 
-        super().__init__(HIGH_PRIORITY, logging)
+        super().__init__(HIGH_PRIORITY)
 
     def addData(self, low, close, high) -> None:
         self._fastEMA.next(close)

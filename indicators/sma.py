@@ -1,4 +1,4 @@
-from indicators.indicator import Indicator, ValueFunc
+from indicators.indicator import Indicator, ValueFunc, IParam, DataSelector
 from indicators.indicatorManager import HIGH_PRIORITY
 from collections import deque
 
@@ -23,18 +23,25 @@ class SoloSMA:
         return self.avg
 
 
+_SMA = 'SMA'
+
+
 class SMA(Indicator):
     """
     Simple Moving Average
     """
 
-    def __init__(self, period: int, data='c', logging: bool = False):
-        self.avg = ValueFunc('sma')
+    params = {'period': IParam(int, 5),
+              'data': DataSelector()}
+    outputs = [_SMA]
+
+    def __init__(self, period: int, data='c'):
+        self.avg = ValueFunc(_SMA)
         self._data = data
         self._sma = SoloSMA(period)
         self._p = period
 
-        super().__init__(HIGH_PRIORITY, logging)
+        super().__init__(HIGH_PRIORITY)
 
     def addData(self, low, close, high) -> None:
         if self._data == 'c':

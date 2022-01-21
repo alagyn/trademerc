@@ -1,4 +1,4 @@
-from indicators.indicator import Indicator, ValueFunc
+from indicators.indicator import Indicator, ValueFunc, IParam, DataSelector
 from cmErrors import IndicatorError
 from indicators.indicatorManager import HIGH_PRIORITY
 
@@ -26,19 +26,24 @@ class SoloEMA:
         return self._avg
 
 
+_EMA = 'EMA'
+
 
 class EMA(Indicator):
     """
     Exponential Moving Average
     """
+    params = {'period': IParam(int, 5),
+              'smoothing': IParam(int, 2),
+              'data': DataSelector()}
 
 
-    def __init__(self, period: int, smoothing: int = 2, data='c', logging: bool = False):
+    def __init__(self, period: int, smoothing: int = 2, data='c'):
         self._data = data
         self._ema = SoloEMA(smoothing=smoothing, period=period)
-        self.avg = ValueFunc('ema')
+        self.avg = ValueFunc(_EMA)
 
-        super().__init__(HIGH_PRIORITY, logging)
+        super().__init__(HIGH_PRIORITY)
 
     def addData(self, low, close, high):
         if self._data == 'c':

@@ -62,7 +62,7 @@ class Stats:
 def calcSQN(tradeList) -> float:
     """
     Calculates the System Quality Number
-    Should be reliable if stats.numTrades >= 30
+    Should be reliable if stats.numTrades >= 3.0
     """
 
     arr = np.array(tradeList)

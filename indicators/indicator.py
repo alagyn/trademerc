@@ -1,5 +1,6 @@
 from typing import Dict, List
 from .logWrapper import LogWrapper
+from cmErrors import IndicatorError
 
 _ID_GEN = 1
 
@@ -16,11 +17,37 @@ class ValueFunc:
         self.val = val
 
 
+class IParam:
+    def __init__(self, datatype: type, default):
+        self.datatype = datatype
+        if not isinstance(default, datatype):
+            raise IndicatorError("DEVERR: Defualt indicator param value is wrong type"
+                                 f"Expected: {datatype.__name__}, got {type(default)}: '{default}'")
+        self.default = default
+
+
+class DataSelector(IParam):
+    def __init__(self):
+        super().__init__(str, 'c')
+
+
+class IndicatorIO:
+    def __init__(self, construct: type, params: Dict[str, IParam], outputs: List[str]):
+        self.construct = construct
+        self.params = params
+        self.outputs = outputs
+
+    def __str__(self) -> str:
+        return f'{self.construct.__name__}, Params: {self.params}, Outputs: {self.outputs}'
+
+
 class Indicator:
-    def __init__(self, priority: int, logging: bool):
+    params: Dict[str, IParam] = {"INVALID": None}
+    outputs: List[str] = ["INVALID"]
+
+    def __init__(self, priority: int):
         global _ID_GEN
 
-        self.logging = logging
         self.priority = priority
         self._id = _ID_GEN
         _ID_GEN += 1
@@ -31,7 +58,6 @@ class Indicator:
                 x = getattr(self, name)
                 if isinstance(x, ValueFunc):
                     self._values[x.key] = x
-
 
     def addLog(self, logs: LogWrapper) -> None:
         for name, v in self._values.values():
@@ -58,5 +84,3 @@ class Indicator:
 
     def __hash__(self):
         return self._id
-
-
