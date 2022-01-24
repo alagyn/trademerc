@@ -1,4 +1,4 @@
-from indicators.indicator import Indicator, ValueFunc, IParam, DataSelector
+from indicators.indicator import Indicator, ValueFunc, DataSelector, NumberParam
 from cmErrors import IndicatorError
 from indicators.indicatorManager import HIGH_PRIORITY
 
@@ -33,8 +33,8 @@ class EMA(Indicator):
     """
     Exponential Moving Average
     """
-    params = {'period': IParam(int, 5),
-              'smoothing': IParam(int, 2),
+    params = {'period': NumberParam(int, 5),
+              'smoothing': NumberParam(int, 2),
               'data': DataSelector()}
 
 

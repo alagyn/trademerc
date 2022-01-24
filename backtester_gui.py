@@ -93,8 +93,8 @@ def recursBuildStrat(textvars: dict, out):
 
 
 class BTGUI(tk.Frame):
-    def __init__(self):
-        self.root = tk.Tk()
+    def __init__(self, root):
+        self.root = root
         super().__init__(self.root)
 
         self.root.protocol("WM_DELETE_WINDOW", self.closeWindow)
@@ -105,11 +105,11 @@ class BTGUI(tk.Frame):
         self.root.title("Backtester")
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
-        self.root.columnconfigure(1, weight=2)
 
         self.grid(column=0, row=0, sticky='nesw')
-        for x in range(3):
-            self.columnconfigure(x, weight=1)
+
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=2)
 
         self.rowconfigure(0, weight=1)
 
@@ -390,5 +390,5 @@ class BTGUI(tk.Frame):
 
 
 if __name__ == '__main__':
-    app = BTGUI()
+    app = BTGUI(tk.Tk())
     app.mainloop()

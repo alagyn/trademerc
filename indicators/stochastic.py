@@ -1,4 +1,4 @@
-from indicators.indicator import Indicator, ValueFunc, IParam
+from indicators.indicator import Indicator, ValueFunc, NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.sma import SoloSMA
 from collections import deque
@@ -9,9 +9,9 @@ _PERCDSLOW = 'Percent D slow'
 
 
 class Stochastic(Indicator):
-    params = {'kPeriod': IParam(int, 5),
-              'dPeriod': IParam(int, 5),
-              'slowPeriod': IParam(int, 0)}
+    params = {'kPeriod': NumberParam(int, 5),
+              'dPeriod': NumberParam(int, 5),
+              'slowPeriod': NumberParam(int, 0)}
     outputs = [_PERCK, _PERCD, _PERCDSLOW]
 
     def __init__(self, kPeriod: int, dPeriod: int, slowPeriod: int = 0):

@@ -17,7 +17,7 @@ class ValueFunc:
         self.val = val
 
 
-class IParam:
+class _IParam:
     def __init__(self, datatype: type, default):
         self.datatype = datatype
         if not isinstance(default, datatype):
@@ -26,13 +26,18 @@ class IParam:
         self.default = default
 
 
-class DataSelector(IParam):
+class NumberParam(_IParam):
+    def __init__(self, datatype: type, default):
+        super().__init__(datatype, default)
+
+
+class DataSelector(_IParam):
     def __init__(self):
         super().__init__(str, 'c')
 
 
 class IndicatorIO:
-    def __init__(self, construct: type, params: Dict[str, IParam], outputs: List[str]):
+    def __init__(self, construct: type, params: Dict[str, _IParam], outputs: List[str]):
         self.construct = construct
         self.params = params
         self.outputs = outputs
@@ -42,7 +47,7 @@ class IndicatorIO:
 
 
 class Indicator:
-    params: Dict[str, IParam] = {"INVALID": None}
+    params: Dict[str, _IParam] = {"INVALID": None}
     outputs: List[str] = ["INVALID"]
 
     def __init__(self, priority: int):

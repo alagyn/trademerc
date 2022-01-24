@@ -9,7 +9,8 @@ from .sma import SMA
 from .stochastic import Stochastic
 
 from .indicator import Indicator, IndicatorIO
+from typing import Dict
 
 # INDICATORS = {x.__name__: x for x in Indicator.__subclasses__()}
-INDICATORS = {x.__name__: IndicatorIO(x, x.params, x.outputs) for x in Indicator.__subclasses__()}
-
+indicator_data: Dict[str, IndicatorIO] = {x.__name__: IndicatorIO(x, x.params, x.outputs) for x in
+                                          Indicator.__subclasses__()}
