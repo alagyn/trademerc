@@ -29,8 +29,8 @@ class IndicatorManager:
             try:
                 for i in self._indicators[p]:
                     i.addData(low=low, close=close, high=high)
-                    if i.logging:
-                        i.addLog(self.logs)
+                    # if i.logging:
+                    # i.addLog(self.logs)
             except KeyError:
                 pass
 
