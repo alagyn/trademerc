@@ -1,52 +1,45 @@
+from objects.strategy_params import ComboSelector
 from .check import Check
 from cmErrors import NotSetupError, CheckError
+from operator import lt, gt
 
 
-class CompareLessThan(Check):
-    def __init__(self, i1, i2):
+class Compare(Check):
+    numValFuncs = 2
+    params = [ComboSelector('op', 'Direction', ['<', '>'], '<')]
+
+    def __init__(self, i1, i2, op: str):
         self.i1 = i1
         self.i2 = i2
 
-    def check(self) -> bool:
+        if op == '<':
+            self.op = lt
+        else:
+            self.op = gt
+
+        self.val1 = None
+        self.val2 = None
+
+    def update(self) -> bool:
         val1 = self.i1()
         val2 = self.i2()
 
         if val1 is None or val2 is None:
             raise NotSetupError
 
-        return val1 < val2
-
-    def update(self) -> bool:
         return self.check()
-
-    @classmethod
-    def factory(cls, valFuncs, checks, args):
-        if len(valFuncs) != 2:
-            raise CheckError('Len of value funcs is not 2')
-
-        return CompareLessThan(*valFuncs)
-
-
-class CompareGreaterThan(Check):
-    def __init__(self, i1, i2):
-        self.i1 = i1
-        self.i2 = i2
 
     def check(self) -> bool:
-        val1 = self.i1()
-        val2 = self.i2()
-
-        if val1 is None or val2 is None:
-            raise NotSetupError
-
-        return val1 > val2
-
-    def update(self) -> bool:
-        return self.check()
+        return self.op(self.val1, self.val2)
 
     @classmethod
     def factory(cls, valFuncs, checks, args):
         if len(valFuncs) != 2:
             raise CheckError('Len of value funcs is not 2')
 
-        return CompareGreaterThan(*valFuncs)
+        if 'op' not in args:
+            raise CheckError('Missing operator param')
+
+        op = args['op']
+        if op == '<' or op == '>':
+            return Compare(*valFuncs, op)

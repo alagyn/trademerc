@@ -1,4 +1,5 @@
-from indicators.indicator import Indicator, ValueFunc, NumberParam
+from indicators.indicator import Indicator, ValueFunc
+from objects.strategy_params import NumberParam
 from indicators.ema import SoloEMA
 from indicators.indicatorManager import HIGH_PRIORITY
 
@@ -11,9 +12,9 @@ class MACD(Indicator):
     Moving Average Convergence Divergence
     """
 
-    params = {'fastPeriod': NumberParam(int, 5),
-              'slowPeriod': NumberParam(int, 10),
-              'sigPeriod': NumberParam(int, 10)}
+    params = [NumberParam('fastPeriod', "Fast Period", int, 5),
+              NumberParam('slowPeriod', "Slow Period", int, 10),
+              NumberParam('sigPeriod', "Signal Period", int, 10)]
     outputs = [_MACD, _SIGNAL]
 
     def __init__(self, fastPeriod: int, slowPeriod: int, sigPeriod: int):

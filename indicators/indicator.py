@@ -1,6 +1,7 @@
 from typing import Dict, List
+
+from objects.strategy_params import Param
 from .logWrapper import LogWrapper
-from cmErrors import IndicatorError
 
 _ID_GEN = 1
 
@@ -17,37 +18,9 @@ class ValueFunc:
         self.val = val
 
 
-class _IParam:
-    def __init__(self, datatype: type, default):
-        self.datatype = datatype
-        if not isinstance(default, datatype):
-            raise IndicatorError("DEVERR: Defualt indicator param value is wrong type"
-                                 f"Expected: {datatype.__name__}, got {type(default)}: '{default}'")
-        self.default = default
-
-
-class NumberParam(_IParam):
-    def __init__(self, datatype: type, default):
-        super().__init__(datatype, default)
-
-
-class DataSelector(_IParam):
-    def __init__(self):
-        super().__init__(str, 'c')
-
-
-class IndicatorIO:
-    def __init__(self, construct: type, params: Dict[str, _IParam], outputs: List[str]):
-        self.construct = construct
-        self.params = params
-        self.outputs = outputs
-
-    def __str__(self) -> str:
-        return f'{self.construct.__name__}, Params: {self.params}, Outputs: {self.outputs}'
-
 
 class Indicator:
-    params: Dict[str, _IParam] = {"INVALID": None}
+    params: List[Param] = []
     outputs: List[str] = ["INVALID"]
 
     def __init__(self, priority: int):

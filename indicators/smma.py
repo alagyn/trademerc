@@ -1,4 +1,5 @@
-from indicators.indicator import Indicator, ValueFunc, DataSelector, NumberParam
+from indicators.indicator import Indicator, ValueFunc
+from objects.strategy_params import DataSelector, NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.ema import SoloEMA
 
@@ -29,8 +30,8 @@ _SMMA = 'SMMA'
 class SMMA(Indicator):
     """Smoothing Moving Average"""
 
-    params = {'period': NumberParam(int, 5),
-              'data': DataSelector()}
+    params = [NumberParam('period', "Period", int, 5),
+              DataSelector()]
     outputs = [_SMMA]
 
     def __init__(self, period: int, data='c'):

@@ -1,10 +1,11 @@
-from indicators.indicator import Indicator, ValueFunc, NumberParam
+from indicators.indicator import Indicator, ValueFunc
+from objects.strategy_params import NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.smma import SoloSMMA
 
 
 class AverageTrueRange(Indicator):
-    params = {"period": NumberParam(int, 5)}
+    params = [NumberParam("period", "Period", int, 5)]
     outputs = ['tr', 'atr']
 
     def __init__(self, period: int):

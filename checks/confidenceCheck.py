@@ -19,6 +19,8 @@ class _WeightedCheck:
 
 
 class ConfidenceCheck(Check):
+    # TODO conf check params
+
 
     def __init__(self, minConf, maxConf=1.0, checks: List[Tuple[Check, float]] = None):
         self._checks: List[_WeightedCheck] = []

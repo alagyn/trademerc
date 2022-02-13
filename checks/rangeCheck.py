@@ -1,8 +1,13 @@
 from checks.check import Check
 from cmErrors import NotSetupError, CheckError
+from objects.strategy_params import NumberParam
 
 
 class RangeCheck(Check):
+    numValFuncs = 1
+    params = [NumberParam('minVal', 'Min', float, 1.0),
+              NumberParam('maxVal', 'Max', float, 1.0)]
+
     @classmethod
     def factory(cls, valFuncs, checks, args):
         if len(valFuncs) != 1:
@@ -14,13 +19,14 @@ class RangeCheck(Check):
         self.i = i
         self.minVal = minVal
         self.maxVal = maxVal
+        self.val = None
 
     def check(self) -> bool:
-        val = self.i()
-        if val is None:
-            raise NotSetupError
-
-        return self.minVal <= self.i() <= self.maxVal
+        return self.minVal <= self.val <= self.maxVal
 
     def update(self) -> bool:
+        self.val = self.i()
+        if self.val is None:
+            raise NotSetupError
+
         return self.check()

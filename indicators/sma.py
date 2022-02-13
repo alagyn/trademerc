@@ -1,4 +1,5 @@
-from indicators.indicator import Indicator, ValueFunc, DataSelector, NumberParam
+from indicators.indicator import Indicator, ValueFunc
+from objects.strategy_params import DataSelector, NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from collections import deque
 
@@ -31,8 +32,8 @@ class SMA(Indicator):
     Simple Moving Average
     """
 
-    params = {'period': NumberParam(int, 5),
-              'data': DataSelector()}
+    params = [NumberParam('period', "Period", int, 5),
+              DataSelector()]
     outputs = [_SMA]
 
     def __init__(self, period: int, data='c'):

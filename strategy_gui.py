@@ -1,11 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from typing import List
+from typing import List, Dict
 
 from checks import check_data
-from indicators import indicator_data
-from indicators.indicator import NumberParam, DataSelector
-from strategies import customStrategy as cStrat
+from indicators import INDICATORS
 
 
 class IndicatorSerial:
@@ -19,7 +17,11 @@ class CheckSerial:
     def __init__(self, name, classname):
         self.name = name
         self.classname = classname
-        # TODO
+        self.indics = []
+        self.checks = []
+        self.params = {}
+
+
 
 
 class GridDialog(tk.Toplevel):
@@ -87,6 +89,7 @@ class SelectDialog(GridDialog):
         self.outidx = -1
         self.vals = vals
         self.numvals = [f'{i + 1}: {x}' for i, x in enumerate(vals)]
+        # noinspection PyTypeChecker
         self.var = tk.StringVar(value=self.numvals)
         super().__init__(parent, title=title, bindCancel=True)
 
@@ -123,25 +126,28 @@ class SelectDialog(GridDialog):
             raise IndexError()
 
 
-indicator_names = sorted(list(indicator_data.keys()))
+indicator_names = sorted(list(INDICATORS.keys()))
 check_names = sorted(list(check_data.keys()))
 
 INDIC = 0
 CHECK = 1
 
-SELECT_GRID_LEN = 4
+SELECT_GRID_LEN = 3
+SELECT_PAD = 5
 
 
-class StrategyGUI(tk.LabelFrame):
+class StrategyGUI(tk.Frame):
     def __init__(self, root):
         self.root = root
-        super().__init__(root, text='ASDF')
+        super().__init__(root)
 
         self.indicList: List[IndicatorSerial] = []
         self.checkList: List[CheckSerial] = []
 
         self.curSelecType = -1
         self.selection = None
+
+        self.ignoreTrace = False
 
         # ROOT
         self.root.title("Strategy Designer")
@@ -162,6 +168,8 @@ class StrategyGUI(tk.LabelFrame):
 
         # INDICATORS
         indicatorFrame = tk.LabelFrame(self, text='Indicators')
+        indicatorFrame.rowconfigure(1, weight=1)
+        indicatorFrame.columnconfigure('all', weight=1)
 
         tk.Button(indicatorFrame, text='Add', command=self.addIndic) \
             .grid(row=0, column=0, sticky='ewn')
@@ -183,6 +191,8 @@ class StrategyGUI(tk.LabelFrame):
 
         # CHECKS
         checkFrame = tk.LabelFrame(self, text='Checks')
+        checkFrame.rowconfigure(1, weight=1)
+        checkFrame.columnconfigure('all', weight=1)
 
         tk.Button(checkFrame, text='Add', command=self.addCheck) \
             .grid(row=0, column=0, sticky='new')
@@ -231,12 +241,14 @@ class StrategyGUI(tk.LabelFrame):
 
         style.layout('Tabless.TNotebook.Tab', [])
 
-        self.nbTabIDs = {}
-        self.iParamDicts = {}
-        self.cParamDicts = {}
+        self.nbTabIDs: Dict[str, int] = {}
+        # noinspection PyTypeChecker
+        self.iParamDicts: Dict[str, Dict[str, tk.Variable]] = {}
+        # noinspection PyTypeChecker
+        self.cParamDicts: Dict[str, Dict[str, tk.Variable]] = {}
 
         self.selectionNB = ttk.Notebook(selectionFrame,
-                                        # style='Tabless.TNotebook'
+                                        style='Tabless.TNotebook'
                                         )
         self.selectionNB.grid(row=0, column=1)
 
@@ -247,14 +259,13 @@ class StrategyGUI(tk.LabelFrame):
         self.genISelectFrames()
         self.genCSelectFrames()
 
-        # TODO have hidden notebook for different selection types?
         # TODO bind ComboboxSelected to change params
 
         # MAIN GRIDDING
         indicatorFrame.grid(row=0, column=0, sticky='wnse')
         checkFrame.grid(row=0, column=1, sticky='wnse')
         stratFrame.grid(row=0, column=2, sticky='wnse')
-        selectionFrame.grid(row=1, column=0, columnspan=3, sticky='ew')
+        selectionFrame.grid(row=1, column=0, columnspan=3, sticky='ewns')
 
     def selectIndicator(self):
         s = self.indicListBox.curselection()
@@ -269,8 +280,11 @@ class StrategyGUI(tk.LabelFrame):
             self.curSelecType = -1
             self.selectionNameVar.set(self.selection.name)
             self.checkListBox.selection_clear(0, self.checkListBox.size())
-            # TODO change selection frame per indic type?
+            self.showSelectionTab(self.selection.classname)
             self.curSelecType = INDIC
+
+    def showSelectionTab(self, classname: str):
+        self.selectionNB.select(self.nbTabIDs[classname])
 
     def selectCheck(self):
         s = self.checkListBox.curselection()
@@ -283,7 +297,7 @@ class StrategyGUI(tk.LabelFrame):
             self.curSelecType = -1
             self.selectionNameVar.set(self.selection.name)
             self.indicListBox.selection_clear(0, self.indicListBox.size())
-            # TODO update selection frame
+            self.showSelectionTab(self.selection.classname)
             self.curSelecType = CHECK
 
     def updateSelection(self):
@@ -299,35 +313,41 @@ class StrategyGUI(tk.LabelFrame):
         tabID = self.nbTabIDs[self.selection.classname]
         self.selectionNB.select(tabID)
 
+    def indicModified(self, var: str, _b, _c):
+        if self.ignoreTrace:
+            return
+
+        cn, param = var.split('_')
+        try:
+            newVal = self.iParamDicts[cn][param].get()
+        except tk.TclError:
+            # TODO error?
+            return
+
+        print(f'CN: {cn}, P:{param}, new: {newVal}')
+        self.selection.params[param] = newVal
+
     def genISelectFrames(self):
-        for cn, iType in indicator_data.items():
+        for cn, iType in INDICATORS.items():
             nextID = len(self.nbTabIDs)
-            frame = tk.LabelFrame(self.selectionNB)
+            frame = tk.LabelFrame(self.selectionNB, text=cn)
 
             self.nbTabIDs[cn] = nextID
             self.selectionNB.add(frame)
 
-            params = {}
+            params: Dict[str, tk.Variable] = {}
             self.iParamDicts[cn] = params
             x = 0
             y = 0
 
-            for name, paramdata in iType.params.items():
-                var = None
-                trueX = x * 2
-                tk.Label(frame, text=f'{name}:').grid(row=y, column=trueX)
+            for paramdata in iType.params:
+                f = tk.Frame(frame)
+                f.grid(row=y, column=x, sticky='nesw')
 
-                if isinstance(paramdata, NumberParam):
-                    if paramdata.datatype == int:
-                        var = tk.IntVar(value=paramdata.default)
-                    elif paramdata.datatype == float:
-                        var = tk.DoubleVar(value=paramdata.default)
+                var = paramdata.render(f)
+                var.trace_add('write', self.indicModified)
 
-                    tk.Spinbox(frame, textvariable=var).grid(row=y, column=trueX + 1)
-                elif isinstance(paramdata, DataSelector):
-                    # TODO
-                    pass
-                params[name] = var
+                params[paramdata.paramName] = var
 
                 x += 1
                 if x >= SELECT_GRID_LEN:
@@ -335,6 +355,7 @@ class StrategyGUI(tk.LabelFrame):
                     y += 1
 
     def genCSelectFrames(self):
+        # TODO
         pass
 
     def updateSelectedName(self, _1, _2, _3):
@@ -349,17 +370,26 @@ class StrategyGUI(tk.LabelFrame):
         self.updateSelectionFrame()
 
     def updateCurrentIndicator(self):
+        self.ignoreTrace = True
+
         s = self.indicListBox.curselection()
         if len(s) == 1:
             i = self.indicList[s[0]]
             i.name = self.selectionNameVar.get()
 
+            for name, var in self.iParamDicts[i.classname].values():
+                i.params[name] = var.get()
+
         self.updateIndicList()
 
+        self.ignoreTrace = False
+
     def updateCurrentCheck(self):
+        # TODO
         pass
 
     def updateIndicList(self):
+        # noinspection PyTypeChecker
         self.indicListVar.set([x.name for x in self.indicList])
 
     def addIndic(self):
@@ -385,6 +415,7 @@ class StrategyGUI(tk.LabelFrame):
             self.updateCheckList()
 
     def updateCheckList(self):
+        # noinspection PyTypeChecker
         self.checkListVar.set([x.name for x in self.checkList])
 
 

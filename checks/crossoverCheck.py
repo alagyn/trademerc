@@ -1,8 +1,12 @@
+from objects.strategy_params import ComboSelector
 from .check import Check
 from cmErrors import CheckError
 
 
 class CrossoverCheck(Check):
+    numValFuncs = 2
+    params = [ComboSelector('direct', 'Direction', ['up', 'down'], 'up')]
+
     @classmethod
     def factory(cls, valFuncs, checks, args):
         if len(valFuncs) != 2:

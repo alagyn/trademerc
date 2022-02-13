@@ -4,7 +4,6 @@ from typing import List
 from configparser import ConfigParser
 
 from consts import DATE_FMT, LIVE_ENDPOINT, PAPER_ENDPOINT
-from objects.stock import Stock
 import cmErrors
 
 import alpaca_trade_api as alpaca

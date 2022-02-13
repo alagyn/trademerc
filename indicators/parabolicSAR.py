@@ -1,4 +1,5 @@
-from indicators.indicator import Indicator, ValueFunc, NumberParam
+from indicators.indicator import Indicator, ValueFunc
+from objects.strategy_params import NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 
 AF_INC = 0.02
@@ -7,8 +8,8 @@ _PSAR = 'PSAR'
 
 
 class ParabolicSAR(Indicator):
-    params = {'af': NumberParam(float, 0.02),
-              'afMax': NumberParam(float, 0.2)}
+    params = [NumberParam('af', "AF Start", float, 0.02),
+              NumberParam('afMax', "AF Max", float, 0.2)]
     outputs = [_PSAR]
 
     def __init__(self, af: float = 0.02, afMax: float = 0.2):
