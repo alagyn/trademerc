@@ -2,7 +2,7 @@ from .check import Check
 from .maxCheck import MaxCheck
 from .minCheck import MinCheck
 from .rangeCheck import RangeCheck
-from .compareCheck import CompareLessThan, CompareGreaterThan
+from .compareCheck import Compare
 from .confidenceCheck import ConfidenceCheck
 from .crossoverCheck import CrossoverCheck
 

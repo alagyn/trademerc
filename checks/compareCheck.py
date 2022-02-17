@@ -21,10 +21,10 @@ class Compare(Check):
         self.val2 = None
 
     def update(self) -> bool:
-        val1 = self.i1()
-        val2 = self.i2()
+        self.val1 = self.i1()
+        self.val2 = self.i2()
 
-        if val1 is None or val2 is None:
+        if self.val1 is None or self.val2 is None:
             raise NotSetupError
 
         return self.check()

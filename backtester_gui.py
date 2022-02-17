@@ -3,9 +3,9 @@ import os.path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import json
+from typing import Dict
+
 from tkcalendar import DateEntry
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
@@ -237,6 +237,23 @@ class BTGUI(tk.Frame):
         # GRID MAIN FRAMES
         FRAME_PAD = 5
 
+        # STAT FRAME
+        statFrame = tk.LabelFrame(self, text='Stats')
+
+        row = 0
+
+        self.statVars: Dict[str, tk.Variable] = {}
+
+        for k, v in cm_backtester.STATS:
+            var = tk.DoubleVar(value=0)
+            self.statVars[k] = var
+
+            tk.Label(statFrame, text=v, anchor='e').grid(row=row, column=0, sticky='new')
+            tk.Label(statFrame, textvariable=var).grid(row=row, column=1, sticky='new')
+
+            row += 1
+
+
         # GRAPH FRAME
         mainGraphFrame = tk.Frame(self)
         mainGraphFrame.columnconfigure(0, weight=1)
@@ -251,18 +268,21 @@ class BTGUI(tk.Frame):
         self.canvases = []
 
         runFrame.grid(row=0, column=0, sticky='nsew', padx=FRAME_PAD)
-        mainGraphFrame.grid(row=0, column=1, sticky='news', padx=FRAME_PAD)
+        statFrame.grid(row=0, column=1, sticky='nesw', padx=FRAME_PAD)
+        mainGraphFrame.grid(row=0, column=2, sticky='news', padx=FRAME_PAD)
         # stratFrame.grid(row=0, column=1, sticky='nsew', padx=FRAME_PAD)
 
     def closeWindow(self):
         self.root.destroy()
 
     def selectOut(self):
+        # noinspection PyArgumentList
         ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False, initialdir='.')
         if len(ret) > 0:
             self.outVar.set(ret)
 
     def selectStrat(self):
+        # noinspection PyArgumentList
         ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False, initialdir='./config')
         if len(ret) > 0:
             try:
@@ -273,6 +293,7 @@ class BTGUI(tk.Frame):
                 messagebox.showerror("Strategy Error", str(err))
 
     def selectSymbolFile(self):
+        # noinspection PyArgumentList
         ret = filedialog.askopenfilename(filetypes=[('.txt', '.txt')], multiple=False, initialdir='./config')
         if len(ret) > 0:
             self.stocks = loadStockFile(ret)
@@ -362,7 +383,12 @@ class BTGUI(tk.Frame):
             for x in self.stocks:
                 strats[x] = HardStrategy(x, strat)
 
-            cm_backtester.backtest(**args, strats=strats)
+            stats = cm_backtester.backtest(**args, strats=strats)
+            for k, v in stats.items():
+                try:
+                    self.statVars[k].set(v)
+                except KeyError:
+                    pass
 
         else:
             for x in self.stocks:

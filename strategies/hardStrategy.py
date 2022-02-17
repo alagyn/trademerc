@@ -51,8 +51,8 @@ class HardStrategy(Strategy):
         self.stochX2 = CrossoverCheck(self.stoch.percDFast, self.stoch.percDSlow, 'down')
 
         checks = [
-            (CompareGreaterThan(self.emaFast.avg, self.emaSlow.avg), 0.35),
-            (CompareGreaterThan(self.emaFast.avg, self.emaLong.avg), 0.05),
+            (Compare(self.emaFast.avg, self.emaSlow.avg, '>'), 0.35),
+            (Compare(self.emaFast.avg, self.emaLong.avg, '>'), 0.05),
             (self.macdX, 0.075),
             (self.macdX2, -0.075),
 
@@ -62,7 +62,7 @@ class HardStrategy(Strategy):
             (self.stochX, 0.025),
             (self.stochX2, -0.025),
 
-            (CompareLessThan(self.parabSAR.psar, self.dayval.close), 0.20)
+            (Compare(self.parabSAR.psar, self.dayval.close, '<'), 0.20)
         ]
 
         self.conf = ConfidenceCheck(0.65, checks=checks)

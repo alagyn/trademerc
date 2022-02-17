@@ -21,7 +21,6 @@ import json
 # TODO remove
 from strategies.hardStrategy import HardStrategy
 
-
 from utils.file_utils import loadStratFile
 
 CLOSE = 'Close'
@@ -110,6 +109,21 @@ def checkStop(stop):
         raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
 
 
+STATS = [
+    ('EndValue', 'End Value $:'),
+    ('Profit', 'Profit $:'),
+    ('PercentGain', 'Percent Gain:'),
+    ('SQN', 'SQN:'),
+    ('trades', 'Num Trades:'),
+    ('wins', 'Num Wins:'),
+    ('losses', 'Num Losses:'),
+    ('wl', 'W/L:'),
+    ('winPerc', 'Win %:'),
+    ('avgGain', 'Avg Gain:'),
+    ('avgLoss', 'Avg Loss:'),
+]
+
+
 def backtest(stratName: str, strats: Dict[str, Strategy],
              masterFigure: Figure, symFigs: Dict[str, Figure],
              startDate: datetime, endDate: datetime,
@@ -124,7 +138,6 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
     stocks = {}
 
     runtime = totalLen - setupTime
-
 
     datekey = list(strats.keys())[0]
     dates = []
@@ -291,7 +304,14 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         'EndValue': round(totalCash, 2),
         'Profit': round(profit, 2),
         'PercentGain': round(percentGain, 4),
-        'SQN': round(sqnVal, 4)
+        'SQN': round(sqnVal, 4),
+        'trades': numTrades,
+        'wins': wins,
+        'losses': losses,
+        'wl': round(wlRatio, 2),
+        'winPerc': round(winPercent, 2),
+        'avgGain': round(avgGain, 2),
+        'avgLoss': round(avgLoss, 2)
     }
 
     with open(outputFile, mode='a') as f:
@@ -349,6 +369,8 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             topPlot.grid(True)
 
             topPlot.legend()
+
+        return statDict
 
 
 def _main():
