@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from typing import List, Dict
+from typing import List, Dict, Tuple, Union
 
-from checks import check_data
+from checks import CHECKS
 from indicators import INDICATORS
 
 
@@ -17,11 +17,33 @@ class CheckSerial:
     def __init__(self, name, classname):
         self.name = name
         self.classname = classname
-        self.indics = []
+        self.indics: List[IndicRec] = []
         self.checks = []
         self.params = {}
 
+    def toDict(self):
+        return {
+            'name': self.name,
+            'class': self.classname,
+            'indicators': [x.toDict() for x in self.indics],
+            'params': self.params
+        }
 
+
+class IndicRec:
+    def __init__(self, idx=0, func=''):
+        self.idx = idx
+        self.func = func
+
+    def toDict(self):
+        return {'idx': self.idx, 'key': self.func}
+
+    def copy(self):
+        return IndicRec(self.idx, self.func)
+
+    def paste(self, o: 'IndicRec'):
+        self.idx = o.idx
+        self.func = o.func
 
 
 class GridDialog(tk.Toplevel):
@@ -127,7 +149,7 @@ class SelectDialog(GridDialog):
 
 
 indicator_names = sorted(list(INDICATORS.keys()))
-check_names = sorted(list(check_data.keys()))
+check_names = sorted(list(CHECKS.keys()))
 
 INDIC = 0
 CHECK = 1
@@ -145,9 +167,9 @@ class StrategyGUI(tk.Frame):
         self.checkList: List[CheckSerial] = []
 
         self.curSelecType = -1
-        self.selection = None
+        self.selection: Union[None, CheckSerial, IndicatorSerial] = None
 
-        self.ignoreTrace = False
+        self.ignoreTrace = True
 
         # ROOT
         self.root.title("Strategy Designer")
@@ -219,9 +241,11 @@ class StrategyGUI(tk.Frame):
 
         # SELECTION DETAILS
         selectionFrame = tk.LabelFrame(self, text='Selection')
+        selectionFrame.rowconfigure(0, weight=1)
+        selectionFrame.columnconfigure(1, weight=1)
 
         nameTypeFrame = tk.Frame(selectionFrame)
-        nameTypeFrame.grid(row=0, column=0)
+        nameTypeFrame.grid(row=0, column=0, sticky='nesw')
 
         tk.Label(nameTypeFrame, text='Name:').grid(row=0, column=0)
         self.selectionNameVar = tk.StringVar()
@@ -246,11 +270,20 @@ class StrategyGUI(tk.Frame):
         self.iParamDicts: Dict[str, Dict[str, tk.Variable]] = {}
         # noinspection PyTypeChecker
         self.cParamDicts: Dict[str, Dict[str, tk.Variable]] = {}
+        # noinspection PyTypeChecker
+        self.cIndicRecs: Dict[str, List[IndicRec]] = {}
+        # noinspection PyTypeChecker
+        self.cCheckDicts: Dict[str, List[List[int, str]]] = {}
+        # noinspection PyTypeChecker
+        self.cIndicCombos: Dict[str, List[ttk.Combobox]] = {}
+        self.cIndicComboVars = {}
+        # noinspection PyTypeChecker
+        self.cIndicFuncCombos: Dict[str, List[ttk.Combobox]] = {}
 
         self.selectionNB = ttk.Notebook(selectionFrame,
                                         style='Tabless.TNotebook'
                                         )
-        self.selectionNB.grid(row=0, column=1)
+        self.selectionNB.grid(row=0, column=1, sticky='nesw')
 
         emptyNBFrame = tk.Frame(self.selectionNB)
         self.nbTabIDs['__EMPTY'] = 0
@@ -265,7 +298,17 @@ class StrategyGUI(tk.Frame):
         indicatorFrame.grid(row=0, column=0, sticky='wnse')
         checkFrame.grid(row=0, column=1, sticky='wnse')
         stratFrame.grid(row=0, column=2, sticky='wnse')
+        self.grid_rowconfigure(1, minsize=200)
         selectionFrame.grid(row=1, column=0, columnspan=3, sticky='ewns')
+
+        self.ignoreTrace = False
+
+    def updateCheckIndicLists(self):
+        out = [x.name for x in self.indicList]
+
+        for cn, combos in self.cIndicCombos.items():
+            for c in combos:
+                c['values'] = out
 
     def selectIndicator(self):
         s = self.indicListBox.curselection()
@@ -276,12 +319,18 @@ class StrategyGUI(tk.Frame):
             if self.curSelecType != INDIC:
                 self.selectionTypeCombo['values'] = indicator_names
             self.selectionTypeVar.set(self.selection.classname)
-            # Invalidate to stop name trace callback
+
+            self.ignoreTrace = True
+
             self.curSelecType = -1
             self.selectionNameVar.set(self.selection.name)
             self.checkListBox.selection_clear(0, self.checkListBox.size())
             self.showSelectionTab(self.selection.classname)
             self.curSelecType = INDIC
+
+            # TODO load params
+
+            self.ignoreTrace = False
 
     def showSelectionTab(self, classname: str):
         self.selectionNB.select(self.nbTabIDs[classname])
@@ -292,13 +341,33 @@ class StrategyGUI(tk.Frame):
             if self.curSelecType != CHECK:
                 self.selectionTypeCombo['values'] = check_names
 
+            if self.selection is not None:
+                cn = self.selection.classname
+                self.selection.indics = [x.copy() for x in self.cIndicRecs[cn]]
+
             self.selection = self.checkList[s[0]]
             self.selectionTypeVar.set(self.selection.classname)
+
+            self.ignoreTrace = True
+
+            cn = self.selection.classname
+            if len(self.selection.indics) > 0:
+                for idx in range(len(self.cIndicRecs[cn])):
+                    i = self.selection.indics[idx]
+                    self.cIndicRecs[cn][idx].paste(i)
+                    self.cIndicCombos[cn][idx].current(i.idx)
+                    self.cIndicFuncCombos[cn][idx].set(i.func)
+
+            for key, val in self.selection.params.items():
+                self.cParamDicts[cn][key].set(val)
+
             self.curSelecType = -1
             self.selectionNameVar.set(self.selection.name)
             self.indicListBox.selection_clear(0, self.indicListBox.size())
             self.showSelectionTab(self.selection.classname)
             self.curSelecType = CHECK
+
+            self.ignoreTrace = False
 
     def updateSelection(self):
         if self.curSelecType < 0:
@@ -325,6 +394,47 @@ class StrategyGUI(tk.Frame):
             return
 
         print(f'CN: {cn}, P:{param}, new: {newVal}')
+        self.selection.params[param] = newVal
+
+    def checkModifiedIndic(self, var: str, _b, _c):
+        if self.ignoreTrace:
+            return
+
+        # its an indic or check
+        cn, t, idx = var.split('_')
+        idx = int(idx)
+
+        if t == 'validx':
+            combo = self.cIndicCombos[cn][idx]
+            indicIdx = combo.current()
+            self.cIndicRecs[cn][idx].idx = indicIdx
+
+            newIndic = self.indicList[indicIdx]
+
+            funcs = INDICATORS[newIndic.classname].outputs
+
+            fCombo = self.cIndicFuncCombos[cn][idx]
+            fCombo['values'] = funcs
+            fCombo['state'] = 'readonly'
+            fCombo.current(0)
+
+
+        elif t == 'valfunc':
+            newVal = self.cIndicFuncCombos[cn][idx].get()
+            self.cIndicRecs[cn][idx].func = newVal
+
+    def checkModifiedParam(self, var: str, _b, _c):
+        if self.ignoreTrace:
+            return
+
+        cn, param = var.split('_')
+
+        try:
+            newVal = self.cParamDicts[cn][param].get()
+        except tk.TclError:
+            # TODO error?
+            return
+
         self.selection.params[param] = newVal
 
     def genISelectFrames(self):
@@ -355,10 +465,83 @@ class StrategyGUI(tk.Frame):
                     y += 1
 
     def genCSelectFrames(self):
-        # TODO
-        pass
+        for cn, cType in CHECKS.items():
+            nextID = len(self.nbTabIDs)
+            frame = tk.LabelFrame(self.selectionNB, text=cn)
+
+            self.nbTabIDs[cn] = nextID
+            self.selectionNB.add(frame)
+
+            params: Dict[str, tk.Variable] = {}
+            self.cParamDicts[cn] = params
+
+            # VALS
+            valFrame = tk.LabelFrame(frame, text='Indicators')
+            valFrame.grid(row=0, column=0, sticky='nesw')
+
+            iCombos = []
+            iFuncCombos = []
+
+            indicRecs = []
+            svars = {}
+
+            for i in range(cType.numValFuncs):
+                tk.Label(valFrame, text=f'{i + 1}:').grid(row=i, column=0, sticky='nwe')
+
+                varname1 = f'{cn}_validx_{i}'
+                var1 = tk.StringVar(value='', name=varname1)
+                c1 = ttk.Combobox(valFrame, values=[], state='readonly', textvariable=var1)
+                c1.grid(row=i, column=1, sticky='nw')
+
+                iCombos.append(c1)
+
+                svars[varname1] = var1
+
+                varname2 = f'{cn}_valfunc_{i}'
+                var2 = tk.StringVar(value='', name=varname2)
+                c2 = ttk.Combobox(valFrame, values=[], state='disabled', textvariable=var2)
+                c2.grid(row=i, column=3, sticky='nw')
+
+                svars[varname2] = var2
+
+                iFuncCombos.append(c2)
+
+                indicRecs.append(IndicRec())
+
+                var1.trace('w', self.checkModifiedIndic)
+                var2.trace('w', self.checkModifiedIndic)
+
+            self.cIndicCombos[cn] = iCombos
+            self.cIndicFuncCombos[cn] = iFuncCombos
+            self.cIndicRecs[cn] = indicRecs
+            self.cIndicComboVars[cn] = svars
+
+            # PARAMS
+
+            paramFrame = tk.LabelFrame(frame, text='Parameters')
+            paramFrame.grid(row=1, column=0, sticky='nesw')
+
+            x = 0
+            y = 0
+
+            for paramdata in cType.params:
+                f = tk.Frame(paramFrame)
+                f.grid(row=y, column=x, sticky='nesw')
+
+                var = paramdata.render(f)
+                var.trace_add('write', self.checkModifiedParam)
+
+                params[paramdata.paramName] = var
+
+                x += 1
+                if x >= SELECT_GRID_LEN:
+                    x = 0
+                    y += 1
 
     def updateSelectedName(self, _1, _2, _3):
+        if self.ignoreTrace:
+            return
+
         self.selection.name = self.selectionNameVar.get()
         if self.curSelecType == INDIC:
             self.updateIndicList()
@@ -391,6 +574,7 @@ class StrategyGUI(tk.Frame):
     def updateIndicList(self):
         # noinspection PyTypeChecker
         self.indicListVar.set([x.name for x in self.indicList])
+        self.updateCheckIndicLists()
 
     def addIndic(self):
         _, name = SelectDialog(self.root, 'Select Type', indicator_names).result()

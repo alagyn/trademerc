@@ -35,8 +35,9 @@ class EMA(Indicator):
     Exponential Moving Average
     """
     params = [NumberParam('period', "Period", int, 5),
-              NumberParam('smoothing',"Smoothing", int, 2),
+              NumberParam('smoothing', "Smoothing", int, 2),
               DataSelector()]
+    outputs = [_EMA]
 
     def __init__(self, period: int, smoothing: int = 2, data='c'):
         self._data = data

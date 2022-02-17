@@ -53,8 +53,11 @@ class NumberParam(Param):
 
         tk.Label(frame, text=f'{self.displayName}:').grid(row=0, column=0, sticky='nesw')
 
-        tk.Spinbox(frame, textvariable=var, validate='key', validatecommand=(validate, '%P')).grid(row=0, column=1,
-                                                                                                   sticky='nesw')
+        tk.Spinbox(frame, textvariable=var,
+                   validate='key', validatecommand=(validate, '%P'),
+                   increment=1).grid(row=0,
+                                     column=1,
+                                     sticky='nesw')
 
         return var
 

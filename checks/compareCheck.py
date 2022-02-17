@@ -6,7 +6,7 @@ from operator import lt, gt
 
 class Compare(Check):
     numValFuncs = 2
-    params = [ComboSelector('op', 'Direction', ['<', '>'], '<')]
+    params = [ComboSelector('op', 'Type', ['<', '>'], '<')]
 
     def __init__(self, i1, i2, op: str):
         self.i1 = i1
