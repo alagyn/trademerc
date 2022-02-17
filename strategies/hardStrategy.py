@@ -1,3 +1,4 @@
+from .confidence import Confidence
 from .strategy import *
 from indicators import *
 from checks import *
@@ -65,7 +66,7 @@ class HardStrategy(Strategy):
             (Compare(self.parabSAR.psar, self.dayval.close, '<'), 0.20)
         ]
 
-        self.conf = ConfidenceCheck(0.65, checks=checks)
+        self.conf = Confidence(0.65, checks=checks)
 
         self.stopUpdatePeriod = int(getVar('days_to_update'))
         self.safteyFac = float(getVar('safety'))

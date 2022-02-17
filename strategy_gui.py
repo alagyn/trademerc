@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from typing import List, Dict, Tuple, Union
+from tkinter import ttk
+from typing import List, Dict, Union
 
 from checks import CHECKS
 from indicators import INDICATORS
@@ -11,6 +11,13 @@ class IndicatorSerial:
         self.name = name
         self.classname = classname
         self.params = {}
+
+    def toDict(self):
+        return {
+            'name': self.name,
+            'class': self.classname,
+            'params': self.params
+        }
 
 
 class CheckSerial:
@@ -301,6 +308,8 @@ class StrategyGUI(tk.Frame):
         self.grid_rowconfigure(1, minsize=200)
         selectionFrame.grid(row=1, column=0, columnspan=3, sticky='ewns')
 
+        # TODO file menu
+
         self.ignoreTrace = False
 
     def updateCheckIndicLists(self):
@@ -340,8 +349,7 @@ class StrategyGUI(tk.Frame):
         if len(s) == 1:
             if self.curSelecType != CHECK:
                 self.selectionTypeCombo['values'] = check_names
-
-            if self.selection is not None:
+            elif self.selection is not None:
                 cn = self.selection.classname
                 self.selection.indics = [x.copy() for x in self.cIndicRecs[cn]]
 
@@ -357,9 +365,19 @@ class StrategyGUI(tk.Frame):
                     self.cIndicRecs[cn][idx].paste(i)
                     self.cIndicCombos[cn][idx].current(i.idx)
                     self.cIndicFuncCombos[cn][idx].set(i.func)
+            else:
+                for idx in range(len(self.cIndicRecs[cn])):
+                    self.cIndicFuncCombos[cn][idx].set('')
+                    self.cIndicFuncCombos[cn][idx].set('')
 
-            for key, val in self.selection.params.items():
-                self.cParamDicts[cn][key].set(val)
+            for key, var in self.cParamDicts[cn].items():
+                try:
+                    var.set(self.selection.params[key])
+                except KeyError:
+                    default = CHECKS[self.selection.classname].paramDict[key].default
+                    var.set(default)
+                    self.selection.params[key] = default
+
 
             self.curSelecType = -1
             self.selectionNameVar.set(self.selection.name)
@@ -369,14 +387,6 @@ class StrategyGUI(tk.Frame):
 
             self.ignoreTrace = False
 
-    def updateSelection(self):
-        if self.curSelecType < 0:
-            return
-
-        if self.curSelecType == INDIC:
-            self.updateCurrentIndicator()
-        elif self.curSelecType == CHECK:
-            self.updateCurrentCheck()
 
     def updateSelectionFrame(self):
         tabID = self.nbTabIDs[self.selection.classname]
@@ -551,25 +561,6 @@ class StrategyGUI(tk.Frame):
     def updateSelectedType(self):
         self.selection.classname = self.selectionTypeVar.get()
         self.updateSelectionFrame()
-
-    def updateCurrentIndicator(self):
-        self.ignoreTrace = True
-
-        s = self.indicListBox.curselection()
-        if len(s) == 1:
-            i = self.indicList[s[0]]
-            i.name = self.selectionNameVar.get()
-
-            for name, var in self.iParamDicts[i.classname].values():
-                i.params[name] = var.get()
-
-        self.updateIndicList()
-
-        self.ignoreTrace = False
-
-    def updateCurrentCheck(self):
-        # TODO
-        pass
 
     def updateIndicList(self):
         # noinspection PyTypeChecker

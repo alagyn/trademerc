@@ -1,24 +1,22 @@
+import logging as log
+import math
+import os.path
+import time
+from argparse import ArgumentParser
+from configparser import ConfigParser
+from time import sleep
+from typing import Dict, List
+
 import alpaca_trade_api as alpaca
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from configparser import ConfigParser
-from argparse import ArgumentParser
-import datetime
-from time import sleep
-from typing import Dict, List
-import math
-import logging as log
-import os.path
-import time
-
 import cmErrors
-from utils.file_utils import loadStratFile, loadStockFile
-from utils.api_utils import loadAPI, getSetupBars
-from objects.action import *
 from objects.stock import *
-from strategies.strategy import *
 from strategies.hardStrategy import HardStrategy
+from strategies.strategy import *
+from utils.api_utils import loadAPI, getSetupBars
 from utils.emailer import CMEmailer
+from utils.file_utils import loadStratFile, loadStockFile
 
 
 def toTS(t):

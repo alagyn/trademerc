@@ -1,22 +1,21 @@
 import datetime
+import json
 import os.path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import json
 from typing import Dict
 
-from tkcalendar import DateEntry
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.backend_bases import key_press_handler
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
+from tkcalendar import DateEntry
 
 import cm_backtester
-from utils.file_utils import loadStratFile, loadStockFile
-from utils.api_utils import loadPaperAPI
-from consts import STRAT_FORMAT, DATE_FMT
 from cmErrors import StrategyError
-from strategies.hardStrategy import HardStrategy
+from consts import STRAT_FORMAT
 from run_alpaca import runTrader
+from strategies.hardStrategy import HardStrategy
+from utils.file_utils import loadStratFile, loadStockFile
 
 
 def makeLabelEntry(p, text, loc, vartype=str):

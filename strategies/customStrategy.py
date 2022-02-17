@@ -1,10 +1,10 @@
-import cmErrors
 from typing import List
-from .strategy import *
-from objects.stock import *
-import json
-from indicators import *
+
+import cmErrors
 from checks import *
+from indicators import *
+from objects.stock import *
+from .strategy import *
 
 
 class CheckList:
@@ -78,6 +78,7 @@ class CustomStrategy(Strategy):
 
 def makeCustomStrategy(stratvars, symbol: str) -> CustomStrategy:
     # TODO json error catching
+    # TODO warn if an indicator is not used
 
     all_inds: List[Indicator] = []
 

@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 import math
 import numpy as np
-import matplotlib as mpl
 import matplotlib.dates as mplDates
 from matplotlib.dates import ConciseDateFormatter
-from matplotlib.figure import Figure, Axes
+from matplotlib.figure import Figure
 
 import yfinance as yf
 
@@ -12,10 +11,10 @@ import cmErrors
 from strategies.strategy import Strategy
 from objects.stock import Stock
 from objects.action import ActionEnum
-from utils.api_utils import getBars, calcSetupStartDate
+from utils.api_utils import calcSetupStartDate
 from consts import DATE_FMT
 
-from typing import Dict
+from typing import Dict, Union
 import json
 
 # TODO remove
@@ -125,7 +124,7 @@ STATS = [
 
 
 def backtest(stratName: str, strats: Dict[str, Strategy],
-             masterFigure: Figure, symFigs: Dict[str, Figure],
+             masterFigure: Union[Figure, None], symFigs: Union[Dict[str, Figure], None],
              startDate: datetime, endDate: datetime,
              startingVal=10000, outputFile: str = 'stats.json',
              ):
@@ -321,7 +320,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
     print("Plotting")
     if masterFigure is not None:
         masterAxes = masterFigure.add_subplot()
-        r = range(len(portfolio_cash))
+        # r = range(len(portfolio_cash))
 
         portfolio_total = np.add(portfolio_cash, portfolio_value)
 
@@ -388,7 +387,7 @@ def _main():
     start_date = datetime(2018, 1, 1)
     end_date = datetime.today()
 
-    backtest('TEST', strats={'QQQ': HardStrategy('QQQ', strat)}, masterAxes=None, symAxes=None,
+    backtest('TEST', strats={'QQQ': HardStrategy('QQQ', strat)}, masterFigure=None, symFigs=None,
              startDate=start_date, endDate=end_date)
 
 

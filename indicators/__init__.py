@@ -14,8 +14,8 @@ from cmErrors import IndicatorError
 
 INDICATORS: Dict[str, Type[Indicator]] = {x.__name__: x for x in Indicator.__subclasses__()}
 
-for x in Indicator.__subclasses__():
-    if x.outputs[0] == 'INVALID':
-        raise IndicatorError(f'DEVERR: {x.__name__}, outputs not initialized')
-    for p in x.params:
-        p.parentName = x.__name__
+for _x in Indicator.__subclasses__():
+    if _x.outputs[0] == 'INVALID':
+        raise IndicatorError(f'DEVERR: {_x.__name__}, outputs not initialized')
+    for _p in _x.params:
+        _p.parentName = _x.__name__
