@@ -8,6 +8,7 @@ HIGH_PRIORITY = 0
 
 _PRIORITIES = [HIGH_PRIORITY, MED_PRIORITY, LOW_PRIORITY]
 
+# TOCHANGE remove priorities?
 
 class IndicatorManager:
     def __init__(self, indicators: List[Indicator]):

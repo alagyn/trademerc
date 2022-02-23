@@ -35,7 +35,7 @@ class EMA(Indicator):
     Exponential Moving Average
     """
     params = [NumberParam('period', "Period", int, 5),
-              NumberParam('smoothing', "Smoothing", int, 2),
+              NumberParam('smoothing', "Smoothing", float, 2.0),
               DataSelector()]
     outputs = [_EMA]
 

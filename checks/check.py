@@ -16,8 +16,8 @@ class Check:
         """Returns the current check without changing any state"""
         raise NotImplementedError
 
-    def update(self) -> bool:
-        """Returns the current check, possibly changing state"""
+    def update(self) -> None:
+        """Updates the current check's state state"""
         raise NotImplementedError
 
     @classmethod

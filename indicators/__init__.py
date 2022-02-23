@@ -19,3 +19,4 @@ for _x in Indicator.__subclasses__():
         raise IndicatorError(f'DEVERR: {_x.__name__}, outputs not initialized')
     for _p in _x.params:
         _p.parentName = _x.__name__
+        _x.paramDict[_p.paramName] = _p

@@ -22,8 +22,7 @@ class MinCheck(Check):
     def check(self) -> bool:
         return self.val >= self.minVal
 
-    def update(self) -> bool:
+    def update(self):
         self.val = self.i()
         if self.val is None:
             raise NotSetupError
-        return self.check()

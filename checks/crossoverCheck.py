@@ -22,7 +22,7 @@ class CrossoverCheck(Check):
         self.prevDiff = None
         self.curDiff = None
 
-    def update(self) -> bool:
+    def update(self):
         if self.curDiff is None:
             self.curDiff = self.i1() - self.i2()
             return False
@@ -30,7 +30,6 @@ class CrossoverCheck(Check):
         self.prevDiff = self.curDiff
         self.curDiff = self.i1() - self.i2()
 
-        return self.check()
 
     def check(self) -> bool:
         upcross = self.prevDiff < 0 < self.curDiff

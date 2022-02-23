@@ -21,6 +21,7 @@ class ValueFunc:
 
 class Indicator:
     params: List[Param] = []
+    paramDict: Dict[str, Param] = {}
     outputs: List[str] = ["INVALID"]
 
     def __init__(self, priority: int):

@@ -27,14 +27,14 @@ class Param:
 INT_RE = re.compile(r'-?\d*')
 
 
-def _intValidate(i: str) -> bool:
+def intValidate(i: str) -> bool:
     return INT_RE.fullmatch(i) is not None
 
 
 NUM_RE = re.compile(r'-?\d*([.]\d*)?')
 
 
-def _numValidate(i: str) -> bool:
+def numValidate(i: str) -> bool:
     return NUM_RE.fullmatch(i) is not None
 
 
@@ -46,16 +46,16 @@ class NumberParam(Param):
 
         if self.datatype == int:
             var = tk.IntVar(value=self.default, name=self.getVarName())
-            validate = frame.register(_intValidate)
+            validate = frame.register(intValidate)
         else:
             var = tk.DoubleVar(value=self.default, name=self.getVarName())
-            validate = frame.register(_numValidate)
+            validate = frame.register(numValidate)
 
         tk.Label(frame, text=f'{self.displayName}:').grid(row=0, column=0, sticky='nesw')
 
         tk.Spinbox(frame, textvariable=var,
                    validate='key', validatecommand=(validate, '%P'),
-                   increment=1).grid(row=0,
+                   increment=1, from_=-1000, to=1000).grid(row=0,
                                      column=1,
                                      sticky='nesw')
 
@@ -70,7 +70,6 @@ class ComboSelector(Param):
     def render(self, frame: tk.Frame) -> tk.Variable:
         var = tk.StringVar(value=self.default, name=self.getVarName())
 
-        # TODO label text
         tk.Label(frame, text=f'{self.displayName}:').grid(row=0, column=0, sticky='nesw')
         ttk.Combobox(frame, textvariable=var,
                      values=self.choices,

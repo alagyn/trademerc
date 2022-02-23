@@ -25,9 +25,8 @@ class MaxCheck(Check):
         return self.val <= self.maxVal
 
 
-    def update(self) -> bool:
+    def update(self):
         self.val = self.i()
         if self.val is None:
             raise NotSetupError
 
-        return self.check()

@@ -1,3 +1,4 @@
+from checks.checkManager import CheckManager
 from indicators.logWrapper import LogWrapper
 from objects.stock import Stock
 from objects.action import Action
@@ -5,16 +6,18 @@ from indicators.indicatorManager import IndicatorManager
 
 
 class Strategy:
-    def __init__(self, symbol: str, name: str, iManage: IndicatorManager):
+    def __init__(self, symbol: str, name: str, iManage: IndicatorManager, cManage: CheckManager):
         self.symbol = symbol
         self.name = name
         self.iManage = iManage
+        self.cManage = cManage
 
     def getName(self):
         return self.name
 
     def addData(self, low: float, close: float, high: float) -> None:
         self.iManage.addData(low, close, high)
+        self.cManage.update()
 
     def getSetupTime(self) -> int:
         return self.iManage.getSetupTime()
