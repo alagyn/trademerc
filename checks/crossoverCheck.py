@@ -1,6 +1,6 @@
 from objects.strategy_params import ComboSelector
 from .check import Check
-from cmErrors import CheckError
+from cmErrors import CheckError, NotSetupError
 
 
 class CrossoverCheck(Check):
@@ -8,7 +8,7 @@ class CrossoverCheck(Check):
     params = [ComboSelector('direct', 'Direction', ['up', 'down'], 'up')]
 
     @classmethod
-    def factory(cls, valFuncs, checks, args):
+    def factory(cls, valFuncs, args):
         if len(valFuncs) != 2:
             raise CheckError('Len of checks not equal to 2')
 
@@ -22,10 +22,19 @@ class CrossoverCheck(Check):
         self.prevDiff = None
         self.curDiff = None
 
-    def update(self):
+    def update(self, dry: bool):
+        val1 = self.i1()
+        val2 = self.i2()
+
+        if val1 is None or val2 is None:
+            if dry:
+                return
+
+            raise NotSetupError
+
         if self.curDiff is None:
             self.curDiff = self.i1() - self.i2()
-            return False
+            return
 
         self.prevDiff = self.curDiff
         self.curDiff = self.i1() - self.i2()

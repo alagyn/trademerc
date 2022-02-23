@@ -12,11 +12,11 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import cmErrors
 from objects.stock import *
-from strategies.hardStrategy import HardStrategy
+from strategies.customStrategy import makeCustomStrategy
 from strategies.strategy import *
 from utils.api_utils import loadAPI, getSetupBars
 from utils.emailer import CMEmailer
-from utils.file_utils import loadStratFile, loadStockFile
+from utils.file_utils import loadStockFile, loadStratFile
 
 
 def toTS(t):
@@ -421,7 +421,7 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
 
     strats = {}
     for sym in stocks:
-        strats[sym] = HardStrategy(sym, stratVars)
+        strats[sym] = makeCustomStrategy(stratVars, sym)
 
     emailer = CMEmailer(config['Email'])
 

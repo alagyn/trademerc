@@ -1,4 +1,3 @@
-from .confidence import Confidence
 from .strategy import *
 from indicators import *
 from checks import *
@@ -78,17 +77,12 @@ class HardStrategy(Strategy):
             self.atr, self.dayval
         ])
 
-        super(HardStrategy, self).__init__(symbol, jsonStrat['name'], iManage)
+        super(HardStrategy, self).__init__(symbol, jsonStrat['name'], iManage, cManage=CheckManager([self.conf]))
 
     def getNewStop(self):
         return round(self.dayval.close() - (self.atr.atr() * self.safteyFac), 2)
 
-    def dryRun(self) -> None:
-        self.conf.update()
-
     def nextAction(self, day: int, stock: Stock) -> Action:
-
-        self.conf.update()
 
         conf, checks = self.conf.confidence()
 

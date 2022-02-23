@@ -8,6 +8,8 @@ from cmErrors import CMError
 from indicators import INDICATORS
 import itertools
 
+from objects.strategy_params import numValidate
+
 
 class SerialError(CMError):
     pass
@@ -364,6 +366,7 @@ class StrategyGUI(tk.Frame):
         self.cIndicFuncCombos: Dict[str, List[ttk.Combobox]] = {}
 
         self.cWeightVar = tk.DoubleVar(value=1.0)
+        self.cWeightVar.trace_add('write', self.checkModifiedWeight)
 
         self.selectionNB = ttk.Notebook(selectionFrame,
                                         style='Tabless.TNotebook'
@@ -527,6 +530,8 @@ class StrategyGUI(tk.Frame):
                     var.set(default)
                     self.selection.params[key] = default
 
+            self.cWeightVar.set(self.selection.weight)
+
             self.curSelecType = -1
             self.selectionNameVar.set(self.selection.name)
             self.indicListBox.selection_clear(0, self.indicListBox.size())
@@ -625,6 +630,15 @@ class StrategyGUI(tk.Frame):
         self.selection.params[param] = newVal
         self.needToSave = True
 
+    def checkModifiedWeight(self, _a, _b, _c):
+        if self.ignoreTrace:
+            return
+
+        try:
+            self.selection.weight = self.cWeightVar.get()
+        except tk.TclError:
+            return
+
     def genISelectFrames(self):
         for cn, iType in INDICATORS.items():
             nextID = len(self.nbTabIDs)
@@ -667,7 +681,10 @@ class StrategyGUI(tk.Frame):
             wFrame = tk.Frame(frame)
             wFrame.grid(row=0, column=0, sticky='nesw')
             tk.Label(wFrame, text='Weight:').grid(row=0, column=0, sticky='nw')
-            tk.Spinbox(wFrame, textvariable=self.cWeightVar).grid(row=0, column=1, sticky='nw')
+            validate = frame.register(numValidate)
+            tk.Spinbox(wFrame, textvariable=self.cWeightVar,
+                       validate='key', validatecommand=(validate, '%P')
+                       ).grid(row=0, column=1, sticky='nw')
 
             # VALS
             valFrame = tk.LabelFrame(frame, text='Indicators')
@@ -891,7 +908,6 @@ class StrategyGUI(tk.Frame):
             messagebox.showwarning('Export Error', 'No exit checks defined')
             raise CancelAction
 
-
         out = {
             'name': "TEMP",
             'type': "Confidence",
@@ -947,8 +963,6 @@ class StrategyGUI(tk.Frame):
             return
 
         self.ignoreTrace = False
-
-
 
     def promptSave(self):
         ret = messagebox.askyesnocancel('Save?', 'Save Strategy?')

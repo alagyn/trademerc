@@ -20,19 +20,20 @@ class Compare(Check):
         self.val1 = None
         self.val2 = None
 
-    def update(self):
+    def update(self, dry: bool):
         self.val1 = self.i1()
         self.val2 = self.i2()
 
         if self.val1 is None or self.val2 is None:
-            raise NotSetupError
+            if not dry:
+                raise NotSetupError
 
 
     def check(self) -> bool:
         return self.op(self.val1, self.val2)
 
     @classmethod
-    def factory(cls, valFuncs, checks, args):
+    def factory(cls, valFuncs, args):
         if len(valFuncs) != 2:
             raise CheckError('Len of value funcs is not 2')
 

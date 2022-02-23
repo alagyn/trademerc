@@ -1,12 +1,12 @@
 from typing import List
 
-from checks import Check
+from checks.check import CheckParent
 
 
 class CheckManager:
-    def __init__(self, checks: List[Check]):
+    def __init__(self, checks: List[CheckParent]):
         self.checks = checks
 
-    def update(self):
+    def update(self, dry: bool):
         for x in self.checks:
-            x.update()
+            x.update(dry)

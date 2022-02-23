@@ -8,6 +8,7 @@ from matplotlib.figure import Figure
 import yfinance as yf
 
 import cmErrors
+from strategies.customStrategy import makeCustomStrategy
 from strategies.strategy import Strategy
 from objects.stock import Stock
 from objects.action import ActionEnum
@@ -19,7 +20,6 @@ import json
 
 # TODO remove
 from strategies.hardStrategy import HardStrategy
-
 from utils.file_utils import loadStratFile
 
 CLOSE = 'Close'
@@ -94,11 +94,7 @@ def setupBacktest(strats: Dict[str, Strategy], startDate: datetime, endDate: dat
         hi = b['High']
         length = len(hi)
         for i in range(setupTime):
-            strat.addData(lo[i], c[i], hi[i])
-            try:
-                strat.dryRun()
-            except cmErrors.NotSetupError:
-                pass
+            strat.addData(lo[i], c[i], hi[i], dry=True)
 
     return allBars, setupTime, length
 
@@ -196,7 +192,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
                 act = strat.nextAction(day, stock)
 
-                if act.action == ActionEnum.Buy:
+                if act.action == ActionEnum.BuyAndStop:
                     # Set position to non-None
                     stock.position = "InMarket"
                     # Set new stop
@@ -382,12 +378,12 @@ def _main():
     )
 
     args = parser.parse_args()
-    strat = loadStratFile(args.strategy)
 
+    strat = loadStratFile(args.strategy)
     start_date = datetime(2018, 1, 1)
     end_date = datetime.today()
 
-    backtest('TEST', strats={'QQQ': HardStrategy('QQQ', strat)}, masterFigure=None, symFigs=None,
+    backtest('TEST', strats={'QQQ': makeCustomStrategy(strat, 'QQQ')}, masterFigure=None, symFigs=None,
              startDate=start_date, endDate=end_date)
 
 

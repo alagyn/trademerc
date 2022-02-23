@@ -9,7 +9,7 @@ class RangeCheck(Check):
               NumberParam('maxVal', 'Max', float, 1.0)]
 
     @classmethod
-    def factory(cls, valFuncs, checks, args):
+    def factory(cls, valFuncs, args):
         if len(valFuncs) != 1:
             raise CheckError('Len of val funcs is not 1')
 
@@ -24,7 +24,7 @@ class RangeCheck(Check):
     def check(self) -> bool:
         return self.minVal <= self.val <= self.maxVal
 
-    def update(self):
+    def update(self, dry: bool):
         self.val = self.i()
-        if self.val is None:
+        if self.val is None and not dry:
             raise NotSetupError

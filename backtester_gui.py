@@ -12,84 +12,11 @@ from tkcalendar import DateEntry
 
 import cm_backtester
 from cmErrors import StrategyError
-from consts import STRAT_FORMAT
 from run_alpaca import runTrader
-from strategies.hardStrategy import HardStrategy
-from utils.file_utils import loadStratFile, loadStockFile
+from strategies.customStrategy import makeCustomStrategy
+from utils.file_utils import loadStockFile
 
-
-def makeLabelEntry(p, text, loc, vartype=str):
-    label = tk.Label(p, text=text, anchor='e')
-
-    # TODO entry validation
-
-    if vartype == str:
-        var = tk.StringVar()
-    elif vartype == int:
-        var = tk.IntVar()
-    elif vartype == float:
-        var = tk.DoubleVar()
-    else:
-        raise TypeError("Invalid vartype")
-
-    entry = tk.Entry(p, textvariable=var)
-    label.grid(column=loc[0], row=loc[1], sticky='ew')
-    entry.grid(column=loc[0] + 1, row=loc[1], sticky='ew', padx=5, pady=2)
-
-    return var
-
-
-def recursAdd(frame: tk.Frame, key: str, x, row: int, textVars):
-    FRAME_PAD = 3
-
-    if isinstance(x, dict):
-        if len(key) > 0:
-            label = tk.LabelFrame(frame, text=(key + ":"))
-            label.grid(row=row, column=0, columnspan=2, padx=FRAME_PAD, pady=FRAME_PAD, sticky='ew')
-            row += 1
-            newVars = {}
-            textVars[key] = newVars
-        else:
-            label = frame
-            newVars = textVars
-
-        for key, val in x.items():
-            row = recursAdd(label, key, val, row, newVars)
-
-        return row
-    else:
-        textVars[key] = makeLabelEntry(frame, key + ":", (0, row), type(x))
-        return row + 1
-
-
-def recurseLoadStrat(tkVars, strat):
-    for key, val in tkVars.items():
-        if isinstance(val, dict):
-            varDict = tkVars[key]
-            stratDict = strat[key]
-            recurseLoadStrat(varDict, stratDict)
-        else:
-            val.set(strat[key])
-
-
-def genStrategyFrame(frame):
-    f = open(STRAT_FORMAT, mode='r')
-    fmt = json.load(f)
-    f.close()
-    textVars = {}
-    recursAdd(frame, "", fmt, 0, textVars)
-    return textVars
-
-
-def recursBuildStrat(textvars: dict, out):
-    for key, val in textvars.items():
-        if isinstance(val, dict):
-            newDict = {}
-            out[key] = newDict
-            recursBuildStrat(val, newDict)
-        else:
-            out[key] = val.get()
-
+STRAT_FT = [('Strategy', '.strat')]
 
 class BTGUI(tk.Frame):
     def __init__(self, root):
@@ -99,6 +26,7 @@ class BTGUI(tk.Frame):
         self.root.protocol("WM_DELETE_WINDOW", self.closeWindow)
 
         self.stocks = []
+        self.stratFile = ''
 
         # ROOT
         self.root.title("Backtester")
@@ -117,20 +45,14 @@ class BTGUI(tk.Frame):
         menubar = tk.Menu(self.root)
         self.root['menu'] = menubar
 
-        # RUN FRAME
+        # Run frame
+        #region
         runFrame = tk.LabelFrame(self, text="Run")
 
         LOAD_BTN_ROW = 0
 
         loadStratBtn = tk.Button(runFrame, text='Load Strategy', command=self.selectStrat)
         loadStratBtn.grid(row=LOAD_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5, pady=2)
-
-        '''
-        SAVE_BTN_ROW = LOAD_BTN_ROW + 1
-
-        saveStratBtn = tk.Button(runFrame, text='Save Strategy', command=self.saveStrat)
-        saveStratBtn.grid(row=SAVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5, pady=2)
-        '''
 
         CUR_STRAT_ROW = LOAD_BTN_ROW + 1
 
@@ -222,16 +144,7 @@ class BTGUI(tk.Frame):
 
         liveBtn = tk.Button(runFrame, text='Run on Alpaca', command=self.runAlpaca)
         liveBtn.grid(row=RUN_LIVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
-
-        # STRATEGY FRAME
-        stratFrame = tk.LabelFrame(self, text="Strategy")
-        stratFrame.columnconfigure(0, weight=1)
-
-        self.stratVars = genStrategyFrame(stratFrame)
-
-        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=RUN_BTN_ROW + 1, column=0,
-                                                           columnspan=2, sticky='ew',
-                                                           pady=10)
+        #endregion
 
         # GRID MAIN FRAMES
         FRAME_PAD = 5
@@ -282,12 +195,12 @@ class BTGUI(tk.Frame):
 
     def selectStrat(self):
         # noinspection PyArgumentList
-        ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False, initialdir='./config')
+        ret = filedialog.askopenfilename(filetypes=STRAT_FT, multiple=False, initialdir='./config')
         if len(ret) > 0:
             try:
-                strat = loadStratFile(ret)
-                recurseLoadStrat(self.stratVars, strat)
-                self.stratNameVar.set(strat['name'])
+                self.stratFile = ret
+                _, name = os.path.split(ret)
+                self.stratNameVar.set(name)
             except StrategyError as err:
                 messagebox.showerror("Strategy Error", str(err))
 
@@ -300,16 +213,6 @@ class BTGUI(tk.Frame):
             self.symbolVar.set(f)
 
             self.genGraphs()
-
-    def saveStrat(self):
-        strat = self.buildStrat()
-
-        ret = filedialog.asksaveasfilename(filetypes=[('json', 'json')], confirmoverwrite=True,
-                                           defaultextension='.json')
-
-        if len(ret) > 0:
-            with open(ret, mode='w') as f:
-                json.dump(strat, f)
 
     def createPlotCanvas(self, text) -> Figure:
         frame = ttk.Frame(self.notebook)
@@ -351,16 +254,13 @@ class BTGUI(tk.Frame):
         for sym in self.stocks:
             self.figures[sym] = self.createPlotCanvas(sym)
 
-    def buildStrat(self):
-        strat = {}
-        recursBuildStrat(self.stratVars, strat)
-        return strat
 
     def runBT(self):
-        if len(self.stocks) <= 0:
+        if len(self.stocks) <= 0 or len(self.stratFile) == 0:
             return
 
-        strat = self.buildStrat()
+        with open(self.stratFile, mode='r') as f:
+            strat = json.load(f)
 
         startDate = self.startInput.get_date()
         endDate = self.endInput.get_date()
@@ -380,7 +280,7 @@ class BTGUI(tk.Frame):
         if not self.indivVar.get():
             strats = {}
             for x in self.stocks:
-                strats[x] = HardStrategy(x, strat)
+                strats[x] = makeCustomStrategy(strat, x)
 
             stats = cm_backtester.backtest(**args, strats=strats)
             for k, v in stats.items():
@@ -391,14 +291,14 @@ class BTGUI(tk.Frame):
 
         else:
             for x in self.stocks:
-                strats = {x: HardStrategy(x, strat)}
+                strats = {x: makeCustomStrategy(strat, x)}
                 cm_backtester.backtest(**args, strats=strats)
 
         for c in self.canvases:
             c.draw()
 
     def runAlpaca(self):
-        if self.stocks is None:
+        if self.stocks is None or len(self.stocks) == 0 or len(self.stratFile) == 0:
             return
 
         liveRun = self.liveToggleVar.get()
@@ -409,7 +309,10 @@ class BTGUI(tk.Frame):
                 print('Cancelling Run')
                 return
 
-        runTrader(stratVars=self.buildStrat(),
+        with open(self.stratFile, mode='r') as f:
+            strat = json.load(f)
+
+        runTrader(stratVars=strat,
                   stocks=self.stocks,
                   liveRun=liveRun)
 

@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Tuple
 
-import cmErrors
+from checks.check import CheckParent
 from checks import *
 from indicators import *
 from objects.stock import *
@@ -8,10 +8,10 @@ from .strategy import *
 
 
 class CheckList:
-    def __init__(self, checks: List[Check] = None):
-        self._checks: List[Check] = [] if checks is None else checks
+    def __init__(self, checks: List[CheckParent] = None):
+        self._checks: List[CheckParent] = [] if checks is None else checks
 
-    def addCheck(self, c: Check):
+    def addCheck(self, c: CheckParent):
         self._checks.append(c)
 
     def check(self) -> bool:
@@ -29,20 +29,18 @@ class StopCalculation:
         self._scale = scale
         self._lscale = limitScale
 
-    def __call__(self):
-        stop = self._valF() * self._scale
+    def __call__(self, close):
+        stop = close - (self._valF() * self._scale)
         return stop, stop * self._lscale
 
 
 class CustomStrategy(Strategy):
-    def dryRun(self) -> None:
-        # TODO
-        pass
-
-    def __init__(self, name: str, symbol: str, indicators: List[Indicator], enterCond: Check, exitCond: Check,
+    def __init__(self, name: str, symbol: str, iManage: IndicatorManager, cManage: CheckManager,
+                 enterCond: CheckParent,
+                 exitCond: CheckParent,
                  stopCalc: StopCalculation = None, stopUpdatePeriod=0):
 
-        super().__init__(symbol, name, IndicatorManager(indicators))
+        super().__init__(symbol, name, iManage, cManage)
 
         self.enterCond = enterCond
         self.exitCond = exitCond
@@ -60,7 +58,7 @@ class CustomStrategy(Strategy):
 
             if self.stopCalc is not None and day >= self.nextStop:
                 self.nextStop = day + self.stopPeriod
-                stop, limit = self.stopCalc()
+                stop, limit = self.stopCalc(self.bar.close)
                 return stock.updateStop(stop, limit)
 
         # Out Market
@@ -68,7 +66,7 @@ class CustomStrategy(Strategy):
             if self.enterCond.check():
                 self.nextStop = day + self.stopPeriod
                 if self.stopCalc is not None:
-                    stop, limit = self.stopCalc()
+                    stop, limit = self.stopCalc(self.bar.close)
                     return stock.buyAndStop(stop, limit)
                 else:
                     return stock.buy()
@@ -83,46 +81,53 @@ def makeCustomStrategy(stratvars, symbol: str) -> CustomStrategy:
     all_inds: List[Indicator] = []
 
     for i in stratvars['indicators']:
-        newind = INDICATORS[i['class']](**i['args'])
+        newind = INDICATORS[i['classname']](**i['params'])
         all_inds.append(newind)
 
-    all_checks = []
+    def iterChecks(l: Dict) -> List[Tuple[CheckParent, float]]:
+        out = []
+        for c_idx, c in enumerate(l):
+            valFuncs = []
+            for _i in c['indicators']:
+                idx = _i['idx']
+                key = _i['key']
+                valFuncs.append(all_inds[idx][key])
 
-    for c_idx, c in enumerate(stratvars['checks']):
-        valFuncs = []
-        for i in c['indicators']:
-            idx = i['idx']
-            key = i['key']
-            valFuncs.append(all_inds[idx][key])
+            newcheck = CHECKS[c['classname']].factory(valFuncs, c['params'])
+            out.append((newcheck, float(c['weight'])))
 
-        checks = []
+        return out
 
-        for i in c['checks']:
-            if i >= c_idx:
-                raise cmErrors.StrategyError('Invalid Check Idx')
-            checks.append(all_checks[i])
+    entryChecks = iterChecks(stratvars['entryChecks'])
+    exitChecks = iterChecks(stratvars['exitChecks'])
 
-        newcheck = CHECKS[c['class']].factory(valFuncs, checks, c['args'])
-        all_checks.append(newcheck)
-
-    enterCondIdx = stratvars['enterCond']
-    exitCondIdx = stratvars['exitCond']
-
-    stopCalcIdx = stratvars['stopCalc']['indicator']
-    stopCalcKey = stratvars['stopCalc']['key']
+    stopCalcIdx = stratvars['stop']['indicator']
+    stopCalcKey = stratvars['stop']['key']
 
     stopCalcVal = all_inds[stopCalcIdx][stopCalcKey]
-    stopScale = stratvars['stopCalc']['scale']
-    stopLimitScale = stratvars['stopCalc']['limitScale']
+    stopScale = stratvars['stop']['scale']
+    stopLimitScale = stratvars['stop']['limitScale']
 
     stopCalc = StopCalculation(stopCalcVal, stopScale, stopLimitScale)
+
+    entryConf = Confidence(
+        minConf=stratvars['enterConf'],
+        checks=entryChecks
+    )
+
+    exitConf = Confidence(
+        minConf=stratvars['exitConf'],
+        checks=exitChecks
+    )
 
     return CustomStrategy(
         name=stratvars['name'],
         symbol=symbol,
-        indicators=all_inds,
-        enterCond=all_checks[enterCondIdx],
-        exitCond=all_checks[exitCondIdx],
+        iManage=IndicatorManager(all_inds),
+        # only use these as their updates will update children
+        cManage=CheckManager([entryConf, exitConf]),
+        enterCond=entryConf,
+        exitCond=exitConf,
         stopCalc=stopCalc,
-        stopUpdatePeriod=stratvars['daysToUpdateStop']
+        stopUpdatePeriod=stratvars['stop']['daysToUpdateStop']
     )

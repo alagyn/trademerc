@@ -1,25 +1,32 @@
+from abc import ABC
 from typing import List, Dict
 
 from objects.strategy_params import Param
 
-
-class Check:
+class CheckParent:
     numChecks: int = 0
     numValFuncs: int = 0
     params: List[Param] = []
-    paramDict:  Dict[str, Param] = {}
+    paramDict: Dict[str, Param] = {}
 
     """
     Base Class for checks that look at indicators
+    Extending from this class will not register the check in the
+    constructible list for the strategy gui
     """
+
     def check(self) -> bool:
         """Returns the current check without changing any state"""
         raise NotImplementedError
 
-    def update(self) -> None:
+    def update(self, dry: bool) -> None:
         """Updates the current check's state state"""
         raise NotImplementedError
 
+
+class Check(CheckParent, ABC):
     @classmethod
-    def factory(cls, valFuncs, checks, args):
+    def factory(cls, valFuncs, args) -> CheckParent:
         raise NotImplementedError
+
+

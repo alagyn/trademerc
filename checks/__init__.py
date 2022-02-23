@@ -4,6 +4,7 @@ from .minCheck import MinCheck
 from .rangeCheck import RangeCheck
 from .compareCheck import Compare
 from .crossoverCheck import CrossoverCheck
+from .confidence import Confidence
 from typing import Dict
 
 CHECKS: Dict[str, Check] = {x.__name__: x for x in Check.__subclasses__()}
