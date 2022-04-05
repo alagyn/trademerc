@@ -1,1 +1,1 @@
-venv/bin/python backtester_gui.py
+venv/bin/python "backtester_gui.py"
