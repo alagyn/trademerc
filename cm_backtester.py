@@ -155,7 +155,8 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             day = i - setupTime
             print(f"Trade Day: {day}")
 
-            dates.append(allBars[datekey].index[i])
+            curDate = allBars[datekey].index[i]
+            dates.append(curDate)
 
             # check for activated stops and calculates the number of stocks that are OOM
             perStockBP = 0
@@ -166,7 +167,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
                     newCash = qty[sym] * stops[sym]
                     totalCash += newCash
 
-                    stats[sym].addSell(day, newCash, stops[sym])
+                    stats[sym].addSell(curDate, newCash, stops[sym])
 
                     qty[sym] = 0
                     stops.pop(sym)
@@ -205,7 +206,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
                     # Update value
                     trueCost = stocksToBuy * close
 
-                    stat.addBuy(day, trueCost, close)
+                    stat.addBuy(curDate, trueCost, close)
 
                     totalCash -= trueCost
 
@@ -221,7 +222,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
                     qty[sym] = 0
                     # Update win/loss
-                    stat.addSell(day, soldValue, close)
+                    stat.addSell(curDate, soldValue, close)
 
                 elif act.action == ActionEnum.UpdateStop:
                     checkStop(act.args['stopPrice'])
@@ -251,7 +252,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             if q > 0:
                 sellPrice = allBars[sym][CLOSE][-1]
                 newCash = q * sellPrice
-                stats[sym].addSell(runtime, newCash, sellPrice)
+                stats[sym].addSell(curDate, newCash, sellPrice)
                 totalCash += newCash
 
     except cmErrors.BacktestError as err:
@@ -345,11 +346,8 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
             stat = stats[sym]
 
-            buyDays = [dates[x] for x in stat.buyDays]
-            sellDays = [dates[x] for x in stat.sellDays]
-
-            botPlot.scatter(buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
-            botPlot.scatter(sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
+            botPlot.scatter(stat.buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
+            botPlot.scatter(stat.sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
 
             botPlot.xaxis.set_major_locator(locator)
             botPlot.xaxis.set_major_formatter(dateformat)
@@ -359,7 +357,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
             color = ['g' if x > 0 else 'r' for x in stat.sellDeltas]
 
-            topPlot.scatter(sellDays, stat.sellDeltas, color=color, label='Profit/Loss')
+            topPlot.scatter(stat.sellDays, stat.sellDeltas, color=color, label='Profit/Loss')
             topPlot.set_yticks([0])
             topPlot.grid(True)
 
