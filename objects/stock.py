@@ -1,8 +1,11 @@
 from enum import IntEnum
 import enum
+from typing import Union
+
 from .action import Action, ActionEnum
 import datetime
 from consts import DATE_FMT
+from objects.order import Order
 
 
 class StockStatus(IntEnum):
@@ -14,8 +17,8 @@ class StockStatus(IntEnum):
 class Stock:
     def __init__(self, symbol: str):
         self.symbol: str = symbol
-        self.order = None
-        self.stopOrder = None
+        self._order: Union[Order, None] = None
+        self._stopOrder: Union[Order, None] = None
         self.buyDate = ''
 
         self.activeOrder = None
@@ -30,6 +33,18 @@ class Stock:
 
     def updateBar(self, bar):
         self.bar = bar
+
+    def order(self, o: Order = None) -> Order:
+        if o is not None:
+            self._order = o
+
+        return self._order
+
+    def stopOrder(self, so: Order = None) -> Order:
+        if so is not None:
+            self._stopOrder = so
+
+        return self._stopOrder
 
     def status(self) -> StockStatus:
         if self.position is None:

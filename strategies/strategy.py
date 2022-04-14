@@ -17,10 +17,10 @@ class Strategy:
     def getName(self):
         return self.name
 
-    def addData(self, low: float, close: float, high: float, dry: bool = False) -> None:
-        self.iManage.addData(low, close, high)
+    def addData(self, bar: Bar, dry: bool = False) -> None:
+        self.iManage.addData(bar.lo, bar.close, bar.hi)
         self.cManage.update(dry)
-        self.bar = Bar(low, close, high)
+        self.bar = bar
 
     def getSetupTime(self) -> int:
         return self.iManage.getSetupTime()

@@ -1,5 +1,6 @@
 from enum import IntEnum
 import enum
+from .stock import Stock
 
 
 class ActionEnum(IntEnum):
@@ -11,7 +12,7 @@ class ActionEnum(IntEnum):
 
 
 class Action:
-    def __init__(self, stock, action: ActionEnum, **kwargs):
+    def __init__(self, stock: Stock, action: ActionEnum, **kwargs):
         self.stock = stock
         self.action = action
         self.args = kwargs
