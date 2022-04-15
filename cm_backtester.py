@@ -2,6 +2,7 @@ from typing import Dict, Optional
 from datetime import datetime
 
 from utils.run_utils import runTradeBroker, setupStrategies
+from utils.log_utils import logInfo as _logInfo, logDbg
 from strategies.strategy import Strategy
 from trading.brokers.backtest_broker import BacktestBroker
 from trading.cm_trader import Trader
@@ -10,7 +11,7 @@ from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
 from matplotlib.dates import ConciseDateFormatter
 import json
-import logging
+
 import numpy as np
 
 STATS = [
@@ -27,9 +28,15 @@ STATS = [
     ('avgLoss', 'Avg Loss:'),
 ]
 
+_MODULE = "Backtest"
 
-def logInfo(m: str) -> None:
-    logging.info(f"Backtest: {m}")
+
+def logInfo(m) -> None:
+    _logInfo(_MODULE, m)
+
+
+def logPlot(m):
+    logDbg("Plot", m)
 
 
 def backtest(stratName: str, strats: Dict[str, Strategy],
@@ -50,6 +57,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
     runTradeBroker(trader, broker)
 
     logInfo("Calculating Stats")
+    # TODO param
     runStats = broker.getRunStats(True)
     runStats["Strat"] = stratName
 
@@ -70,7 +78,9 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
         portfolio_total = np.add(broker.portfolio_cash, broker.portfolio_value)
 
+        logPlot("Dates vs Portfolio_cash")
         masterAxes.bar(dates, broker.portfolio_cash, label='Cash', color='C1', width=1, align='edge')
+        logPlot("Dates vs Portfolio_total")
         masterAxes.plot(dates, portfolio_total, label='Value')
 
         locator = mplDates.AutoDateLocator(minticks=5, maxticks=10)
@@ -89,13 +99,17 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             topPlot = axes['top']
             botPlot = axes['bot']
 
+            dates = [x.date for x in bars[sym][startIdx:]]
             closes = [x.close for x in bars[sym][startIdx:]]
 
+            logPlot(f"{sym}: Dates vs Closes")
             botPlot.plot(dates, closes, label=sym, color=(0, 0, 0))
 
             stat = broker.stats[sym]
 
+            logPlot(f"{sym}: Buy prices")
             botPlot.scatter(stat.buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
+            logPlot(f"{sym}: Sell prices")
             botPlot.scatter(stat.sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
 
             botPlot.xaxis.set_major_locator(locator)
@@ -106,6 +120,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
             color = ['g' if x > 0 else 'r' for x in stat.sellDeltas]
 
+            logPlot(f"{sym}: Sell deltas")
             topPlot.scatter(stat.sellDays, stat.sellDeltas, color=color, label='Profit/Loss')
             topPlot.set_yticks([0])
             topPlot.grid(True)
@@ -119,9 +134,9 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     from strategies.customStrategy import makeCustomStrategy
     from utils.file_utils import loadStratFile
-    from utils.log_utils import setupLogger
+    from utils.run_utils import loadSystem
 
-    setupLogger()
+    loadSystem()
 
 
     def _main():
@@ -139,7 +154,12 @@ if __name__ == "__main__":
         start_date = datetime(2018, 1, 1)
         end_date = datetime.today()
 
-        backtest('TEST', strats={'QQQ': makeCustomStrategy(strat, 'QQQ')}, masterFigure=None, symFigs=None,
+        strats = {
+            'QQQ': makeCustomStrategy(strat, 'QQQ'),
+            'DIA': makeCustomStrategy(strat, 'DIA'),
+        }
+
+        backtest('TEST', strats=strats, masterFigure=None, symFigs=None,
                  startDate=start_date, endDate=end_date)
 
 

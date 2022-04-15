@@ -1,4 +1,5 @@
-import logging
+from utils.log_utils import logInfo as _logInfo, logErr, logDbg
+
 from typing import Dict, List
 
 import math
@@ -8,8 +9,6 @@ from strategies.strategy import *
 from objects.stock import *
 from trading.brokers.broker import Broker
 
-
-
 BUY_PWR_SAFETY = 0.985
 
 
@@ -17,14 +16,16 @@ def calcQty(buyPwr: float, cost: float):
     return math.floor(buyPwr / cost)
 
 
-def logInfo(m: str):
-    logging.info(f'Trader: {m}')
+def logInfo(m):
+    _logInfo('Trader', m)
 
-def logCrit(m: str):
-    logging.critical(f"Trader: {m}")
 
-def logDebug(m: str):
-    logging.debug(f"Trader: {m}")
+def logCrit(m):
+    logErr('Trader', m)
+
+
+def logDebug(m):
+    logDbg("Trader", m)
 
 
 class Trader:
@@ -38,7 +39,6 @@ class Trader:
 
         # Dict of symb->strat
         self.strats = strats
-
 
     def trade(self):
         # Update indicators with today's values

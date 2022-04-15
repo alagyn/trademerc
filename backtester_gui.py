@@ -318,7 +318,7 @@ class BTGUI(tk.Frame):
 
 
 if __name__ == '__main__':
-    from utils.log_utils import setupLogger
-    setupLogger()
+    from utils.run_utils import loadSystem
+    loadSystem()
     app = BTGUI(tk.Tk())
     app.mainloop()

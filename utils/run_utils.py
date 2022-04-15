@@ -1,15 +1,29 @@
 import datetime
 from typing import Dict, Optional, List, Tuple
+from configparser import ConfigParser
 
 import yfinance as yf
 
-from consts import DATE_FMT
+from consts import DATE_FMT, ROOT_LOGGER
 from objects.bar import Bar
 from strategies.strategy import Strategy
 from trading.brokers.broker import Broker
 from trading.cm_trader import Trader
+from .log_utils import _setupLogger, logInfo
 
-import logging as log
+
+def loadSystem() -> ConfigParser:
+    config = ConfigParser()
+    config.read(r'config/system.cfg')
+
+    syscfg = config['System']
+
+    _setupLogger(
+        syscfg.getboolean('DEBUG'),
+        syscfg.getboolean('LogToFile'),
+        syscfg['LogDirectory'])
+
+    return config
 
 
 def calcSetupStartDate(endDay: datetime.datetime, setupTime):
@@ -23,7 +37,6 @@ def calcSetupStartDate(endDay: datetime.datetime, setupTime):
             setupTime -= 1
 
     return out
-
 
 def setupStrategies(strats: Dict[str, Strategy], afterSetupDate: datetime.datetime,
                     endDate: Optional[datetime.datetime] = None) -> Tuple[Dict[str, List[Bar]], int]:
@@ -47,23 +60,23 @@ def setupStrategies(strats: Dict[str, Strategy], afterSetupDate: datetime.dateti
 
     allBars = {}
     for sym, strat in strats.items():
-        b = yf.download(sym, startstr, endstr)
+        b = yf.download(sym, startstr, endstr, progress=False)
         bars = [Bar(b['Low'][x], b['Close'][x], b['High'][x], b.index[x]) for x in range(len(b))]
 
         allBars[sym] = bars
 
         strat.setupIndicators(bars[0:setupTime])
 
-    log.info(f"Setup: Strategies setup with {setupTime} days")
+    logInfo("Setup", f"Strategies setup with {setupTime} days")
 
     return allBars, setupTime
 
 
 def runTradeBroker(trader: Trader, broker: Broker):
-    log.info("Run: Broker Pre-run")
+    logInfo("Run", "Broker Pre-run")
     broker.preRun()
 
-    log.info("Run: Starting Loop")
+    logInfo("Run", "Starting Loop")
     while True:
         if not broker.preTrade():
             break
@@ -72,6 +85,6 @@ def runTradeBroker(trader: Trader, broker: Broker):
         broker.postTrade()
         broker.incDay()
 
-    log.info("Run: Broker Post-run")
+    logInfo("Run", "Broker Post-run")
     broker.postRun()
-    log.info("Run: Run Complete")
+    logInfo("Run", "Run Complete")

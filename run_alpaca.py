@@ -1,9 +1,5 @@
-import logging as log
 import sys
-import os.path
-import time
 from argparse import ArgumentParser
-from configparser import ConfigParser
 from typing import List
 
 from strategies.customStrategy import makeCustomStrategy
@@ -11,41 +7,25 @@ from trading.cm_trader import Trader
 from trading.notifiers.emailer import CMEmailer
 from trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
 from utils.file_utils import loadStockFile, loadStratFile
-from utils.run_utils import runTradeBroker
+from utils.run_utils import runTradeBroker, loadSystem
+from utils.log_utils import logInfo as _logInfo
 from utils.api_utils import loadLiveAPI, loadPaperAPI
+
+def logInfo(m):
+    _logInfo("Trader", m)
 
 
 def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = False,
               stocks: List[str] = None, stratVars=None):
-    config = ConfigParser()
-    config.read(r'config/system.cfg')
-
-    logname = time.strftime(r'%Y_%b_%dT%H_%M_%S')
-
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-
-    log.basicConfig(
-        filename=f'logs/{logname}.txt',
-        format='%(asctime)s %(levelname)s %(message)s',
-        datefmt=r'%Y-%m-%d %H:%M:%S',
-        filemode='w',
-        level=log.INFO
-    )
-
-    console = log.StreamHandler()
-    console.setFormatter(log.Formatter('%(message)s'))
-    console.setLevel(log.INFO)
-    log.getLogger("").addHandler(console)
-
+    config = loadSystem()
     apiCfg = config['Alpaca']
 
     if stratFile is not None:
-        log.info('Loading Strategy')
+        logInfo('Loading Strategy')
         stratVars = loadStratFile(stratFile)
 
     if stockFile is not None:
-        log.info('Loading Stocks')
+        logInfo('Loading Stocks')
         stocks = loadStockFile(stockFile)
 
     strats = {}
@@ -74,7 +54,6 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     else:
         raise RuntimeError("Invalid Timeframe type")
 
-
     broker = AlpacaBroker(api, stocks, emailer, tf)
     trader = Trader(strats, broker)
 
@@ -85,8 +64,6 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
 
 
 if __name__ == '__main__':
-    from utils.log_utils import setupLogger
-    setupLogger(True)
     def main():
         parser = ArgumentParser()
 
@@ -97,5 +74,6 @@ if __name__ == '__main__':
 
         args = parser.parse_args()
         runTrader(stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun)
+
 
     main()

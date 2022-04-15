@@ -53,7 +53,9 @@ class Stock:
 
     def buyAndStop(self, stopPrice: float, limitPrice: float):
         """Creates a buy action for this stock"""
-        return Action(self, ActionEnum.BuyAndStop, stopPrice=stopPrice, limitPrice=limitPrice)
+        return Action(self, ActionEnum.BuyAndStop,
+                      stopPrice=round(stopPrice, 2),
+                      limitPrice=round(limitPrice, 2))
 
     def buy(self):
         return Action(self, ActionEnum.Buy)
@@ -65,7 +67,9 @@ class Stock:
     def updateStop(self, stopPrice: float, limitPrice: float):
         """Creates a stop update action for this stock"""
         self.lastStopUpdate = datetime.datetime.today().strftime(DATE_FMT)
-        return Action(self, ActionEnum.UpdateStop, stopPrice=stopPrice, limitPrice=limitPrice)
+        return Action(self, ActionEnum.UpdateStop,
+                      stopPrice=round(stopPrice, 2),
+                      limitPrice=round(limitPrice, 2))
 
     def setNextStopDate(self, delta: int):
         date = datetime.datetime.today() + datetime.timedelta(delta)

@@ -1,4 +1,4 @@
-import logging as log
+
 from configparser import ConfigParser
 from typing import List
 
@@ -8,6 +8,10 @@ from alpaca_trade_api.common import URL
 
 from consts import LIVE_ENDPOINT, PAPER_ENDPOINT
 from objects.bar import Bar
+from utils.log_utils import logInfo as _logInfo
+
+def logInfo(m):
+    _logInfo("Alpaca API", m)
 
 
 def loadPaperAPI(apiCfg=None):
@@ -16,7 +20,7 @@ def loadPaperAPI(apiCfg=None):
         apiCfg.read('config/system.cfg')
         apiCfg = apiCfg['Alpaca']
 
-    log.info('Initializing Paper Account')
+    logInfo('Initializing Paper Account')
     api_key = str(apiCfg['Paper_API_Key'])
     api_secret = str(apiCfg['Paper_API_Secret'])
     endpoint = PAPER_ENDPOINT
@@ -24,7 +28,7 @@ def loadPaperAPI(apiCfg=None):
 
 
 def loadLiveAPI(apiCfg=None):
-    log.info('Initializing Live Account')
+    logInfo('Initializing Live Account')
     api_key = apiCfg['Live_API_Key']
     api_secret = apiCfg['Live_API_Secret']
     endpoint = LIVE_ENDPOINT

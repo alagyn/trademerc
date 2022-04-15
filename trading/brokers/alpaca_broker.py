@@ -1,6 +1,6 @@
 import time
 from typing import List, Union, Dict, Tuple, Optional
-import logging
+
 import datetime
 from time import sleep
 from abc import ABC
@@ -10,12 +10,13 @@ from objects.stock import Stock
 from trading.notifiers.notfier import Notifier
 from objects.order import Order, OrderStatus, OrderType
 from objects.position import Position
+from utils.log_utils import logInfo as _logInfo, logDbg
 
 import alpaca_trade_api as alpaca
 
 
-def logInfo(m: str):
-    logging.info(f"Alpaca Broker: {m}")
+def logInfo(m):
+    _logInfo("Alpaca Brkr", m)
 
 
 def toTS(t):
@@ -24,8 +25,10 @@ def toTS(t):
 
 MARKET_CLOSE_DELTA = 15 * 60
 
+
 def logTF(m):
-    logging.debug(f"Timeframe: {m}")
+    logDbg("Timeframe", m)
+
 
 class TimeFrame(ABC):
     def __init__(self, api: alpaca.REST):
@@ -82,7 +85,6 @@ class DailyTF(TimeFrame):
 
         self._secs = minoffset * 60
         self._min = f"{minoffset:.2f}min"
-
 
     def wait(self):
         clock = self._api.get_clock()
@@ -184,9 +186,6 @@ class AlpacaBroker(Broker):
         self._account = self._api.get_account()
 
         logInfo(f"Begin Trade Step: {self.tradeDay}")
-
-        clock = self._clock()
-        nextclose = toTS(clock.next_close)
 
         # Wait for the next TF cycle
         self._timeframe.wait()
