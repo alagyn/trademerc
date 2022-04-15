@@ -73,6 +73,8 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             dates = [b.date for b in bars[sym][startIdx:]]
             break
 
+        masterFigure.clear()
+
         masterAxes = masterFigure.add_subplot()
         # r = range(len(portfolio_cash))
 
@@ -83,7 +85,8 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         logPlot("Dates vs Portfolio_total")
         masterAxes.plot(dates, portfolio_total, label='Value')
 
-        locator = mplDates.AutoDateLocator(minticks=5, maxticks=10)
+        # locator = mplDates.AutoDateLocator(minticks=5, maxticks=10)
+        locator = mplDates.MonthLocator(bymonth=1)
         dateformat = ConciseDateFormatter(locator)
         masterAxes.xaxis.set_major_locator(locator)
         masterAxes.xaxis.set_major_formatter(dateformat)
@@ -92,6 +95,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         masterAxes.legend()
 
         for sym in strats.keys():
+            symFigs[sym].clear()
             axes = symFigs[sym].subplot_mosaic([['top'],
                                                 ['bot'],
                                                 ['bot']], sharex=True)
