@@ -9,7 +9,7 @@ from typing import List
 from strategies.customStrategy import makeCustomStrategy
 from trading.cm_trader import Trader
 from trading.notifiers.emailer import CMEmailer
-from trading.brokers.alpaca_broker import AlpacaBroker, SecTF
+from trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
 from utils.file_utils import loadStockFile, loadStratFile
 from utils.run_utils import runTradeBroker
 from utils.api_utils import loadLiveAPI, loadPaperAPI
@@ -64,8 +64,16 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     else:
         api = loadPaperAPI(apiCfg)
 
-    # TODO timeframes
-    tf = SecTF(api, 30)
+    tfType = apiCfg['Timeframe']
+
+    if tfType == "second":
+        tf = SecTF(api, float(apiCfg['Timeframe_value']))
+    elif tfType == "daily":
+        anchor, offset = apiCfg['Timeframe_value'].strip().split(" ")
+        tf = DailyTF(api, anchor, float(offset))
+    else:
+        raise RuntimeError("Invalid Timeframe type")
+
 
     broker = AlpacaBroker(api, stocks, emailer, tf)
     trader = Trader(strats, broker)
