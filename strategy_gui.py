@@ -975,6 +975,8 @@ class StrategyGUI(tk.Frame):
 
 
 def _main():
+    from utils.log_utils import setupLogger
+    setupLogger()
     app = StrategyGUI(tk.Tk())
     app.mainloop()
 

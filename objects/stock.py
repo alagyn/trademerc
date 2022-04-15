@@ -1,6 +1,6 @@
 from enum import IntEnum
 import enum
-from typing import Union
+from typing import Optional
 
 from .action import Action, ActionEnum
 import datetime
@@ -17,11 +17,10 @@ class StockStatus(IntEnum):
 class Stock:
     def __init__(self, symbol: str):
         self.symbol: str = symbol
-        self._order: Union[Order, None] = None
-        self._stopOrder: Union[Order, None] = None
+        self._order: Optional[Order] = None
+        self._stopOrder: Optional[Order] = None
         self.buyDate = ''
 
-        self.activeOrder = None
         self.position = None
 
         self.bar = None

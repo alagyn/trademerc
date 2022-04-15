@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import DataSelector, NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.ema import SoloEMA
@@ -41,13 +42,13 @@ class SMMA(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
+    def addData(self, bar: Bar) -> None:
         if self._data == 'c':
-            data = close
+            data = bar.close
         elif self._data == 'l':
-            data = low
+            data = bar.lo
         else:
-            data = high
+            data = bar.hi
 
         self.avg.set(self._smma.next(data))
 

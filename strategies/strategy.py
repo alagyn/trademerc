@@ -10,26 +10,27 @@ class Strategy:
     def __init__(self, symbol: str, name: str, iManage: IndicatorManager, cManage: CheckManager):
         self.symbol = symbol
         self.name = name
-        self.iManage = iManage
-        self.cManage = cManage
+        self._iManage = iManage
+        self._cManage = cManage
         self.bar = None
 
     def getName(self):
         return self.name
 
     def addData(self, bar: Bar, dry: bool = False) -> None:
-        self.iManage.addData(bar.lo, bar.close, bar.hi)
-        self.cManage.update(dry)
+        self._iManage.addData(bar)
+        self._cManage.update(dry)
         self.bar = bar
 
     def getSetupTime(self) -> int:
-        return self.iManage.getSetupTime()
+        return self._iManage.getSetupTime()
 
     def setupIndicators(self, bars):
-        self.iManage.setupIndicators(bars)
+        for b in bars:
+            self.addData(b, True)
 
     def nextAction(self, day: int, stock: Stock) -> Action:
         raise NotImplementedError
 
     def getLogs(self) -> LogWrapper:
-        return self.iManage.getLogs()
+        return self._iManage.getLogs()

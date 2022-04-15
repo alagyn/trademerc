@@ -1,5 +1,6 @@
 import unittest
 from indicators.parabolicSAR import ParabolicSAR
+from objects.bar import Bar
 
 
 class PSARTest(unittest.TestCase):
@@ -29,7 +30,8 @@ class PSARTest(unittest.TestCase):
         ]
 
         for i, x in enumerate(testvals):
-            sar.addData(x[1], (x[0] + x[1]) / 2, x[0])
+            bar = Bar(x[1], (x[0] + x[1]) / 2, x[0])
+            sar.addData(bar)
             val = sar.psar()
             if val is not None and x[2] is not None:
                 self.assertAlmostEqual(x[2], val, 2)
@@ -60,7 +62,8 @@ class PSARTest(unittest.TestCase):
         ]
 
         for i, x in enumerate(testvals):
-            sar.addData(x[1], (x[0] + x[1]) / 2, x[0])
+            bar = Bar(x[1], (x[0] + x[1]) / 2, x[0])
+            sar.addData(bar)
             val = sar.psar()
             if val is not None and x[2] is not None:
 

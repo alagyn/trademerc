@@ -1,26 +1,17 @@
-from typing import Dict, Union
-from datetime import datetime, timedelta
+from typing import Dict, Optional
+from datetime import datetime
 
-from utils.api_utils import calcSetupStartDate
-from utils.run_utils import runTradeBroker
-from consts import DATE_FMT
-from objects.bar import Bar
+from utils.run_utils import runTradeBroker, setupStrategies
 from strategies.strategy import Strategy
 from trading.brokers.backtest_broker import BacktestBroker
 from trading.cm_trader import Trader
 
-import yfinance as yf
 from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
 from matplotlib.dates import ConciseDateFormatter
 import json
-import logging as log
+import logging
 import numpy as np
-
-CLOSE = 'Close'
-LOW = 'Low'
-HIGH = 'High'
-
 
 STATS = [
     ('EndValue', 'End Value $:'),
@@ -36,55 +27,51 @@ STATS = [
     ('avgLoss', 'Avg Loss:'),
 ]
 
+
+def logInfo(m: str) -> None:
+    logging.info(f"Backtest: {m}")
+
+
 def backtest(stratName: str, strats: Dict[str, Strategy],
-             masterFigure: Union[Figure, None], symFigs: Union[Dict[str, Figure], None],
+             masterFigure: Optional[Figure], symFigs: Optional[Dict[str, Figure]],
              startDate: datetime, endDate: datetime,
              startingVal=10000, outputFile: str = 'stats.json',
+             logStatsToConsole: bool = False
              ):
-    setupTime = max([x.getSetupTime() for x in strats.values()])
+    logInfo("Setting up strategies")
+    bars, startIdx = setupStrategies(strats, startDate, endDate)
 
-    setupStart = calcSetupStartDate(startDate - timedelta(1), setupTime)
-
-    startstr = setupStart.strftime(DATE_FMT)
-
-    endstr = endDate.strftime(DATE_FMT)
-
-    # load bars and setup indicators
-    length = None
-    allBars = {}
-    dates = None
-    for sym, strat in strats.items():
-        b = yf.download(sym, startstr, endstr)
-        lo = b[LOW]
-        c = b[CLOSE]
-        hi = b[HIGH]
-        if length is None:
-            length = len(hi)
-            dates = [b[sym].index[i] for i in range(len(b[sym]))]
-        allBars[sym] = [Bar(lo[x], c[x], hi[x]) for x in range(length)]
-
-
-    broker = BacktestBroker(startingVal, list(strats.keys()), allBars, dates, setupTime, length)
+    logInfo("Initializing Broker")
+    broker = BacktestBroker(startingVal, list(strats.keys()), bars, startIdx)
+    logInfo("Initializing Trader")
     trader = Trader(strats, broker)
 
+    logInfo("Running Backtest")
     runTradeBroker(trader, broker)
 
-    stats = broker.getStats()
-    stats["Strat"] = stratName
+    logInfo("Calculating Stats")
+    runStats = broker.getRunStats(True)
+    runStats["Strat"] = stratName
 
+    logInfo("Writing stat file")
     with open(outputFile, mode='a') as f:
-        json.dump(stats, f)
+        json.dump(runStats, f)
         f.write('\n')
 
-    log.info("Plotting")
+    logInfo("Plotting")
     if masterFigure is not None:
+        dates = []
+        for sym in bars:
+            dates = [b.date for b in bars[sym][startIdx:]]
+            break
+
         masterAxes = masterFigure.add_subplot()
         # r = range(len(portfolio_cash))
 
         portfolio_total = np.add(broker.portfolio_cash, broker.portfolio_value)
 
-        masterAxes.bar(broker.dates, broker.portfolio_cash, label='Cash', color='C1', width=1, align='edge')
-        masterAxes.plot(broker.dates, portfolio_total, label='Value')
+        masterAxes.bar(dates, broker.portfolio_cash, label='Cash', color='C1', width=1, align='edge')
+        masterAxes.plot(dates, portfolio_total, label='Value')
 
         locator = mplDates.AutoDateLocator(minticks=5, maxticks=10)
         dateformat = ConciseDateFormatter(locator)
@@ -102,11 +89,11 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
             topPlot = axes['top']
             botPlot = axes['bot']
 
-            closes = [x.close for x in allBars[sym]]
+            closes = [x.close for x in bars[sym][startIdx:]]
 
-            botPlot.plot(broker.dates, closes, label=sym, color=(0, 0, 0))
+            botPlot.plot(dates, closes, label=sym, color=(0, 0, 0))
 
-            stat = stats[sym]
+            stat = broker.stats[sym]
 
             botPlot.scatter(stat.buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
             botPlot.scatter(stat.sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
@@ -125,12 +112,18 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
             topPlot.legend()
 
-        return stats
+        return runStats
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
     from strategies.customStrategy import makeCustomStrategy
     from utils.file_utils import loadStratFile
+    from utils.log_utils import setupLogger
+
+    setupLogger()
+
+
     def _main():
         parser = ArgumentParser()
 
@@ -148,5 +141,6 @@ if __name__ == "__main__":
 
         backtest('TEST', strats={'QQQ': makeCustomStrategy(strat, 'QQQ')}, masterFigure=None, symFigs=None,
                  startDate=start_date, endDate=end_date)
+
 
     _main()

@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import DataSelector, NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from collections import deque
@@ -44,13 +45,13 @@ class SMA(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
+    def addData(self, bar: Bar) -> None:
         if self._data == 'c':
-            out = self._sma.next(close)
+            out = self._sma.next(bar.close)
         elif self._data == 'l':
-            out = self._sma.next(low)
+            out = self._sma.next(bar.lo)
         else:
-            out = self._sma.next(high)
+            out = self._sma.next(bar.hi)
 
         self.avg.set(out)
 

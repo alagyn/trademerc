@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.smma import SoloSMMA
@@ -19,15 +20,15 @@ class AverageTrueRange(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
+    def addData(self, bar: Bar) -> None:
         if self._prevClose is None:
-            self._prevClose = close
+            self._prevClose = bar.close
             return
 
-        self.tr.set(max(high, self._prevClose) - min(low, self._prevClose))
+        self.tr.set(max(bar.hi, self._prevClose) - min(bar.lo, self._prevClose))
         self.atr.set(self._atr_smma.next(self.tr()))
 
-        self._prevClose = close
+        self._prevClose = bar.close
 
     def setupTime(self) -> int:
         return self._atr_smma.setupTime() + 1

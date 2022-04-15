@@ -1,14 +1,13 @@
 import logging as log
-import datetime
-from typing import List
 from configparser import ConfigParser
-
-from consts import DATE_FMT, LIVE_ENDPOINT, PAPER_ENDPOINT
-import cmErrors
+from typing import List
 
 import alpaca_trade_api as alpaca
-from alpaca_trade_api.common import URL
 from alpaca_trade_api import TimeFrame, TimeFrameUnit
+from alpaca_trade_api.common import URL
+
+from consts import LIVE_ENDPOINT, PAPER_ENDPOINT
+from objects.bar import Bar
 
 
 def loadPaperAPI(apiCfg=None):
@@ -43,45 +42,11 @@ def loadAPI(apiCfg, liveRun: bool = False):
     return loadPaperAPI()
 
 
-def calcSetupStartDate(endDay: datetime.datetime, setupTime):
-    out = endDay
-    while out.weekday() >= 5:
-        out -= datetime.timedelta(1)
-
-    while setupTime >= 0 or out.weekday() >= 5:
-        out -= datetime.timedelta(1)
-        if out.weekday() < 5:
-            setupTime -= 1
-
-    return out
-
-
-def getBars(api: alpaca.REST, sym, start, end):
-    return api.get_bars(symbol=sym,
+def getBars(api: alpaca.REST, sym, start, end) -> List[Bar]:
+    b = api.get_bars(symbol=sym,
                         timeframe=TimeFrame(1, TimeFrameUnit.Day),
                         start=start,
                         end=end,
                         adjustment='raw').df
+    return [Bar(b['low'][i], b['close'][i], b['high'][i]) for i in range(len(b))]
 
-
-def getSetupBars(api: alpaca.REST, setupTime: int, syms: List[str], endSetupDay=None):
-    setupBars = {}
-
-    if endSetupDay is None:
-        endSetupDay = datetime.datetime.today() - datetime.timedelta(1)
-
-    startSetupDay = calcSetupStartDate(endSetupDay, setupTime)
-
-    startSetupStr = startSetupDay.strftime(DATE_FMT)
-    endSetupStr = endSetupDay.strftime(DATE_FMT)
-
-    actualLen = 0
-    for x in syms:
-        setupBars[x] = getBars(api, x, startSetupStr, endSetupStr)
-        actualLen = len(setupBars[x])
-
-
-    if actualLen < setupTime:
-        raise cmErrors.CMError(f'DEV ERR: Not enough setup days, expected: {setupTime}, actual: {actualLen}')
-
-    return setupBars

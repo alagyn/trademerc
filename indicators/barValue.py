@@ -1,5 +1,6 @@
 from indicators.indicator import Indicator, ValueFunc
 from indicators.indicatorManager import HIGH_PRIORITY
+from objects.bar import Bar
 
 _LOW = 'Low'
 _CLOSE = 'Close'
@@ -17,10 +18,10 @@ class BarValue(Indicator):
 
         super(BarValue, self).__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
-        self.low.set(low)
-        self.close.set(close)
-        self.high.set(high)
+    def addData(self, bar: Bar) -> None:
+        self.low.set(bar.lo)
+        self.close.set(bar.close)
+        self.high.set(bar.hi)
 
     def setupTime(self) -> int:
         return 1

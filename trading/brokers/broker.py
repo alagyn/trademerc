@@ -1,26 +1,39 @@
 from abc import ABC
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Tuple, Iterator, Optional
 
 from objects.order import Order
-from objects.bar import Bar
-from objects.stock import Stock
 from objects.position import Position
+from objects.stock import Stock
 
 
 class Broker(ABC):
     def __init__(self, symbols: List[str]):
         self.symbols = symbols
-        self.stocks = {}
+        self._stocks = {}
 
         # Dict of symb->stock
-        self.stocks = {}
+        self._stocks: Dict[str, Stock] = {}
         for x in self.symbols:
-            self.stocks[x] = Stock(x)
+            self._stocks[x] = Stock(x)
 
         self.tradeDay = 0
 
     def incDay(self):
         self.tradeDay += 1
+
+    def __getitem__(self, symbol: str) -> Stock:
+        """
+        Returns the stock data for the passed symbol
+        :param symbol: The symbol
+        :return: The stock
+        """
+        return self._stocks[symbol]
+
+    def __contains__(self, symbol: str) -> bool:
+        return symbol in self._stocks
+
+    def __iter__(self) -> Iterator[Stock]:
+        return iter(self._stocks.values())
 
     def preRun(self):
         """
@@ -57,14 +70,6 @@ class Broker(ABC):
         """
         raise NotImplementedError
 
-    def getSetupBars(self, setupTime: int) -> Dict[str, List[Bar]]:
-        """
-        Returns stock bars for the requested setup time
-        :param setupTime: The number of days needed to setup
-        :return: The bars
-        """
-        raise NotImplementedError
-
     def cancelAllOrders(self) -> None:
         """
         Cancels all unfilled orders
@@ -94,14 +99,6 @@ class Broker(ABC):
         """
         raise NotImplementedError
 
-    def getPosition(self, symbol: str) -> Position:
-        """
-        Returns the position for the passed symbol, or None
-        :param symbol: the position or None
-        :return:
-        """
-        raise NotImplementedError
-
     def getOpenPositions(self) -> Dict[str, Position]:
         """
         Returns a dict of all open positions
@@ -110,7 +107,7 @@ class Broker(ABC):
         raise NotImplementedError
 
     def submitBuy(self, stock: Stock, qty: int,
-                  stopLimit: Union[Tuple[float, float], None] = None) -> None:
+                  stopLimit: Optional[Tuple[float, float]] = None) -> None:
         """
         Submits a buy order for the given symbol and quantity
         :param stock: The stock to buy
@@ -128,16 +125,16 @@ class Broker(ABC):
         """
         raise NotImplementedError
 
-    def submitSell(self, symbol: str, qty: int) -> Order:
+    def submitSell(self, stock: Stock, qty: int) -> Order:
         """
         Sumbits a sell order for the given symbol and quantity
-        :param symbol: The symbol
+        :param stock: The stock
         :param qty: The quantity
         :return: The sell order
         """
         raise NotImplementedError
 
-    def submitUpdateStop(self, stock: Stock, stopLimit: Union[Tuple[float, float], None]) -> None:
+    def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
         """
         Replaces an existing stop order
         :param stock: The stock

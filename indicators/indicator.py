@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+from objects.bar import Bar
 from objects.strategy_params import Param
 from .logWrapper import LogWrapper
 
@@ -42,7 +43,7 @@ class Indicator:
         for name, v in self._values.values():
             logs[name] = v()
 
-    def addData(self, low, close, high) -> None:
+    def addData(self, bar: Bar) -> None:
         raise NotImplementedError
 
     def setupTime(self) -> int:

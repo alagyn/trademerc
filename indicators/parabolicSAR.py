@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 
@@ -26,46 +27,46 @@ class ParabolicSAR(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
+    def addData(self, bar: Bar) -> None:
         # Start case, takes 2 iterations to setup
         if self._nextSAR is None:
             if self._prevLow is None:
-                self._prevLow = close
+                self._prevLow = bar.close
                 return
 
             # estimated downtrend
-            if self._prevLow < close:
+            if self._prevLow < bar.close:
                 self._trend = False
-                self._extreme = low
+                self._extreme = bar.lo
             # else uptrend
             else:
                 self._trend = True
-                self._extreme = high
+                self._extreme = bar.hi
 
-            self._nextSAR = (high + low) / 2
-            self._prevLow = low
-            self._prevHigh = high
+            self._nextSAR = (bar.hi + bar.lo) / 2
+            self._prevLow = bar.lo
+            self._prevHigh = bar.hi
             return
 
         # Update to today's SAR
         todayPSAR = self._nextSAR
 
         # Check for a trend switch
-        if (self._trend and todayPSAR >= low) or (not self._trend and todayPSAR <= high):
+        if (self._trend and todayPSAR >= bar.lo) or (not self._trend and todayPSAR <= bar.hi):
             # Reverse the trend
             self._trend = not self._trend
             todayPSAR = self._extreme
-            self._extreme = high if self._trend else low
+            self._extreme = bar.hi if self._trend else bar.lo
             self._af = self._afStart
 
         # Check for new EP, inc AF if found
         if self._trend:
-            if high > self._extreme:
-                self._extreme = high
+            if bar.hi > self._extreme:
+                self._extreme = bar.hi
                 self._af += AF_INC
         else:
-            if low < self._extreme:
-                self._extreme = low
+            if bar.lo < self._extreme:
+                self._extreme = bar.lo
                 self._af += AF_INC
 
         # limit AF to max
@@ -77,16 +78,16 @@ class ParabolicSAR(Indicator):
         # Limit tomorrow's psar using ITS prev 2 lows and highs, i.e today's and yesterday's lows
         if self._trend:
             # uptrend, sar should be below prev 2 lows
-            self._nextSAR = min(low, self._prevLow, self._nextSAR)
+            self._nextSAR = min(bar.lo, self._prevLow, self._nextSAR)
         else:
             # downtrend, sar should be above prev 2 highs
-            self._nextSAR = max(high, self._prevHigh, self._nextSAR)
+            self._nextSAR = max(bar.hi, self._prevHigh, self._nextSAR)
 
         # Set output psar
         self.psar.set(todayPSAR)
         # update prev vals
-        self._prevLow = low
-        self._prevHigh = high
+        self._prevLow = bar.lo
+        self._prevHigh = bar.hi
 
     def setupTime(self) -> int:
         return 2

@@ -1,16 +1,14 @@
 import sys
-from configparser import ConfigParser
-from typing import List, Union, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Optional
 import logging
 import datetime
 from time import sleep
 
-from broker import Broker
+from .broker import Broker
 from objects.stock import Stock
 from trading.notifiers.notfier import Notifier
 from objects.order import Order, OrderStatus, OrderType
 from objects.position import Position
-from objects.bar import Bar
 from utils.api_utils import loadLiveAPI, loadPaperAPI
 import alpaca_trade_api as alpaca
 
@@ -46,6 +44,7 @@ class AlpacaOrder(Order):
         else:
             self._status = OrderStatus.UNFILLED
 
+
     def orderType(self) -> OrderType:
         return self._type
 
@@ -69,6 +68,9 @@ class AlpacaOrder(Order):
 
     def limitPrice(self) -> Union[float, None]:
         return self._o.limit_price
+
+    def data(self, key: str) -> any:
+        return self._o[key]
 
 
 class AlpacaBroker(Broker):
@@ -99,6 +101,7 @@ class AlpacaBroker(Broker):
         self._openOrders = {}
 
     def preRun(self):
+        # TODO check for proper shutdown
         # First cancel any existing orders?
         self._api.cancel_all_orders()
         # Close all positions?
@@ -139,11 +142,12 @@ class AlpacaBroker(Broker):
 
         self._updateTrades()
 
+
         curEquity = round(float(self._account.equity), 2)
         totalPL = curEquity - self._prevEquity
 
         positions = []
-        for sym, s in self.stocks.items():
+        for sym, s in self._stocks.items():
             if s.position is not None:
                 p = {
                     'symbol': s.symbol,
@@ -152,8 +156,8 @@ class AlpacaBroker(Broker):
                     'price': s.position.current_price,
                     'value': s.position.market_value,
                     'p_value': s.position.avg_entry_price,
-                    'p_date': s.order.filled_at,
-                    'stop_price': s.stopOrder.stop_price,
+                    'p_date': s.order().data("filled_at"),
+                    'stop_price': s.stopOrder().data("stop_price"),
                     'last_stop': s.lastStopUpdate,
                     'next_stop': s.nextStopUpdate
                 }
@@ -187,15 +191,12 @@ class AlpacaBroker(Broker):
     def buyPwr(self) -> float:
         return round(float(self._account.buying_power), 2)
 
-    def getSetupBars(self, setupTime: int) -> Dict[str, List[Bar]]:
-        pass
-
     def _updateBars(self) -> None:
         snaps = self._api.get_snapshots(self.symbols)
 
         for s in self.symbols:
             db = snaps[s].daily_bar
-            self.stocks[s].updateBar(db)
+            self[s].updateBar(db)
 
     def _updatePositions(self):
         positions = self._api.list_positions()
@@ -203,11 +204,11 @@ class AlpacaBroker(Broker):
         for p in positions:
             openset.add(p.symbol)
 
-            self.stocks[p.symbol].position = p
+            self[p.symbol].position = p
 
-        closed = self.stocks.keys() - openset
+        closed = self._stocks.keys() - openset
         for s in closed:
-            self.stocks[s].position = None
+            self[s].position = None
 
     def _updateTrades(self):
         filled = []
@@ -254,7 +255,7 @@ class AlpacaBroker(Broker):
         pass
 
     def submitBuy(self, stock: Stock, qty: int,
-                  stopLimit: Union[Tuple[float, float], None] = None) -> None:
+                  stopLimit: Optional[Tuple[float, float]] = None) -> None:
 
         if stopLimit is None:
             order = self._api.submit_order(
@@ -314,7 +315,7 @@ class AlpacaBroker(Broker):
         """
         pass
 
-    def submitUpdateStop(self, stock: Stock, stopLimit: Union[Tuple[float, float], None]) -> None:
+    def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
         order = self._api.replace_order(order_id=stock.stopOrder().orderid(),
                                        stop_price=stopLimit[0],
                                        limit_price=stopLimit[1])

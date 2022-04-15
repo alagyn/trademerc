@@ -1,3 +1,4 @@
+
 from objects.strategy_params import ComboSelector
 from .check import Check
 from cmErrors import CheckError, NotSetupError
@@ -41,6 +42,9 @@ class CrossoverCheck(Check):
 
 
     def check(self) -> bool:
+        if self.prevDiff is None or self.curDiff is None:
+            raise NotSetupError
+
         upcross = self.prevDiff < 0 < self.curDiff
         downcross = self.prevDiff > 0 > self.curDiff
 

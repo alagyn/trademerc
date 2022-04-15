@@ -1,3 +1,4 @@
+from objects.bar import Bar
 from .indicator import Indicator
 from typing import List, Dict
 from .logWrapper import LogWrapper
@@ -25,11 +26,11 @@ class IndicatorManager:
 
         self._indicators[i.priority].append(i)
 
-    def addData(self, low: float, close: float, high: float) -> None:
+    def addData(self, bar: Bar) -> None:
         for p in _PRIORITIES:
             try:
                 for i in self._indicators[p]:
-                    i.addData(low=low, close=close, high=high)
+                    i.addData(bar)
                     # if i.logging:
                     # i.addLog(self.logs)
             except KeyError:
@@ -53,10 +54,3 @@ class IndicatorManager:
     def clearIndicators(self):
         self._indicators.clear()
 
-    def setupIndicators(self, bars):
-        for i in range(len(bars)):
-            low = bars['low'][i]
-            close = bars['close'][i]
-            high = bars['high'][i]
-
-            self.addData(low, close, high)

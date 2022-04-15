@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import NumberParam
 from indicators.ema import SoloEMA
 from indicators.indicatorManager import HIGH_PRIORITY
@@ -31,9 +32,9 @@ class MACD(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
-        self._fastEMA.next(close)
-        self._slowEMA.next(close)
+    def addData(self, bar: Bar) -> None:
+        self._fastEMA.next(bar.close)
+        self._slowEMA.next(bar.close)
 
         fastVal = self._fastEMA.getValue()
         slowVal = self._slowEMA.getValue()

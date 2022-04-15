@@ -8,6 +8,8 @@ from strategies.strategy import *
 from objects.stock import *
 from trading.brokers.broker import Broker
 
+
+
 BUY_PWR_SAFETY = 0.985
 
 
@@ -18,9 +20,11 @@ def calcQty(buyPwr: float, cost: float):
 def logInfo(m: str):
     logging.info(f'Trader: {m}')
 
-
 def logCrit(m: str):
     logging.critical(f"Trader: {m}")
+
+def logDebug(m: str):
+    logging.debug(f"Trader: {m}")
 
 
 class Trader:
@@ -28,7 +32,6 @@ class Trader:
 
         self.broker = broker
 
-        # TODO check for proper shutdown
         # setup initial buying power
         self.totalBuyPwr = 0
         self.updateBuyPwr()
@@ -36,35 +39,27 @@ class Trader:
         # Dict of symb->strat
         self.strats = strats
 
-        setupTime = max([x.getSetupTime() for x in strats.values()])
-
-        setupBars = broker.getSetupBars(setupTime)
-
-        # Setup Indicators
-        for sym, strat in strats.items():
-            strat.setupIndicators(setupBars[sym])
-
 
     def trade(self):
         # Update indicators with today's values
-        logInfo('Updating Indicators')
+        logDebug('Updating Indicators')
         self.updateIndicators()
 
         # Update positions and BP
-        logInfo('Updating Positions')
+        logDebug('Updating Positions')
         self.updateBuyPwr()
 
         # Calculate today's actions
-        logInfo('Calculating Daily Actions')
+        logDebug('Calculating Daily Actions')
         actions = self.getDailyActions()
 
         # Run actions
-        logInfo('Running Daily Actions')
+        logDebug('Running Daily Actions')
         self.runActions(actions)
 
     def updateIndicators(self):
-        for sym, stk in self.broker.stocks.items():
-            self.strats[sym].addData(stk.bar)
+        for sym, strat in self.strats.items():
+            strat.addData(self.broker[sym].bar)
 
     def updateBuyPwr(self):
         self.totalBuyPwr = round(self.broker.buyPwr() * BUY_PWR_SAFETY, 2)
@@ -72,18 +67,21 @@ class Trader:
     def getDailyActions(self) -> List[Action]:
         actions = []
         for sym, strat in self.strats.items():
-            stk = self.broker.stocks[sym]
+            stk = self.broker[sym]
             actions.append(strat.nextAction(self.broker.tradeDay, stk))
 
         return actions
 
     def runActions(self, actions: List[Action]):
         numOutOfMarket = 0
-        for sym, stock in self.broker.stocks.items():
+        for stock in self.broker:
             if stock.status() == StockStatus.OutMarket:
                 numOutOfMarket += 1
 
-        buyPwr = self.totalBuyPwr / numOutOfMarket
+        if numOutOfMarket > 0:
+            buyPwr = self.totalBuyPwr / numOutOfMarket
+        else:
+            buyPwr = 0
 
         for a in actions:
             if a.action == ActionEnum.Buy:
@@ -105,7 +103,7 @@ class Trader:
         self.broker.submitBuy(action.stock, qty)
 
     def submitBuyAndStop(self, action: Action, buyPwr):
-        qty = calcQty(buyPwr, action.stock.bar.c)
+        qty = calcQty(buyPwr, action.stock.bar.close)
 
         try:
             self.broker.submitBuy(action.stock, qty,

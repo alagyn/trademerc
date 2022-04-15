@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import DataSelector, NumberParam
 from cmErrors import IndicatorError
 from indicators.indicatorManager import HIGH_PRIORITY
@@ -46,13 +47,13 @@ class EMA(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high):
+    def addData(self, bar: Bar):
         if self._data == 'c':
-            out = self._ema.next(close)
+            out = self._ema.next(bar.close)
         elif self._data == 'l':
-            out = self._ema.next(low)
+            out = self._ema.next(bar.lo)
         else:
-            out = self._ema.next(high)
+            out = self._ema.next(bar.hi)
 
         self.avg.set(out)
 

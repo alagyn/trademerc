@@ -1,4 +1,5 @@
 from indicators.indicator import Indicator, ValueFunc
+from objects.bar import Bar
 from objects.strategy_params import NumberParam
 from indicators.indicatorManager import HIGH_PRIORITY
 from indicators.sma import SoloSMA
@@ -40,9 +41,9 @@ class Stochastic(Indicator):
 
         super().__init__(HIGH_PRIORITY)
 
-    def addData(self, low, close, high) -> None:
-        self.lows.append(low)
-        self.highs.append(high)
+    def addData(self, bar: Bar) -> None:
+        self.lows.append(bar.lo)
+        self.highs.append(bar.hi)
         if len(self.lows) > self._kp:
             self.lows.popleft()
             self.highs.popleft()
@@ -50,7 +51,7 @@ class Stochastic(Indicator):
         lowest = min(self.lows)
         highest = max(self.highs)
 
-        newPercK = 100 * (close - lowest) / (highest - lowest)
+        newPercK = 100 * (bar.close - lowest) / (highest - lowest)
         self.percK.set(newPercK)
 
         newPerD = self._percDfast.next(newPercK)
