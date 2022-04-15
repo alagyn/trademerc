@@ -17,4 +17,9 @@ class Action:
         self.args = kwargs
 
     def __str__(self):
-        return f'Sym: {self.stock.symbol} Action: {self.action.name}, Args: {self.args}'
+        if len(self.args) > 0:
+            a = f", Args: {self.args}"
+        else:
+            a = ""
+
+        return f'Sym: {self.stock.symbol}: {self.action.name}{a}'

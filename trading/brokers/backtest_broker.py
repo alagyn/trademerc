@@ -173,7 +173,6 @@ class BacktestBroker(Broker):
 
             self[sym].updateBar(self.bars[sym][self.barIdx])
             if sym in self.stops and self.stops[sym] > self.bars[sym][self.barIdx].lo:
-                logInfo(f"    {sym}: Stop Activated")
                 newCash = self.qty[sym] * self.stops[sym]
                 self.totalCash += newCash
 
@@ -182,6 +181,8 @@ class BacktestBroker(Broker):
                 self.qty[sym] = 0
                 self.stops.pop(sym)
                 self[sym].position = None
+
+                logInfo(f"{sym}: Stop Activated, Value: ${newCash:.2f}")
 
         return True
 
@@ -197,7 +198,7 @@ class BacktestBroker(Broker):
         # Update Graph Logs
         self.portfolio_cash[self.tradeDay] = round(self.totalCash, 2)
         self.portfolio_value[self.tradeDay] = round(inMarketEquity, 2)
-        logInfo(f"    Total Value: ${self.totalCash + inMarketEquity: .2f}")
+        logInfo(f"Total Value: ${self.totalCash + inMarketEquity: .2f}")
 
         self.barIdx += 1
 
@@ -319,8 +320,6 @@ class BacktestBroker(Broker):
         avgLoss = 0 if losses == 0 else lossTotal / losses
 
         winPercent = 0 if numTrades == 0 else wins / (wins + losses)
-
-        logDebug(self.totalCash)
 
         if logToConsole:
             logStats(f'Start Value: ${self.startingVal:.2f}, End Value: ${self.totalCash:.2f}')

@@ -42,8 +42,7 @@ def logPlot(m):
 def backtest(stratName: str, strats: Dict[str, Strategy],
              masterFigure: Optional[Figure], symFigs: Optional[Dict[str, Figure]],
              startDate: datetime, endDate: datetime,
-             startingVal=10000, outputFile: str = 'stats.json',
-             logStatsToConsole: bool = False
+             startingVal=10000, outputFile: str = 'stats.json'
              ):
     logInfo("Setting up strategies")
     bars, startIdx = setupStrategies(strats, startDate, endDate)
@@ -66,8 +65,9 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         json.dump(runStats, f)
         f.write('\n')
 
-    logInfo("Plotting")
+
     if masterFigure is not None:
+        logInfo("Plotting")
         dates = []
         for sym in bars:
             dates = [b.date for b in bars[sym][startIdx:]]
