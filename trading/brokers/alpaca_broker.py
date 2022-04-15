@@ -252,7 +252,8 @@ class AlpacaBroker(Broker):
         return self._api.get_position(symbol)
 
     def getOpenPositions(self) -> Dict[str, Position]:
-        pass
+        # TODO
+        raise NotImplementedError
 
     def submitBuy(self, stock: Stock, qty: int,
                   stopLimit: Optional[Tuple[float, float]] = None) -> None:
