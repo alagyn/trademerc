@@ -24,8 +24,8 @@ STATS = [
     ('losses', 'Num Losses:'),
     ('wl', 'W/L:'),
     ('winPerc', 'Win %:'),
-    ('avgGain', 'Avg Gain:'),
-    ('avgLoss', 'Avg Loss:'),
+    ('avgGain', 'Avg Gain $:'),
+    ('avgLoss', 'Avg Loss $:'),
 ]
 
 _MODULE = "Backtest"

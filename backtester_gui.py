@@ -157,7 +157,7 @@ class BTGUI(tk.Frame):
         self.statVars: Dict[str, tk.Variable] = {}
 
         for k, v in cm_backtester.STATS:
-            var = tk.DoubleVar(value=0)
+            var = tk.StringVar(value="0")
             self.statVars[k] = var
 
             tk.Label(statFrame, text=v, anchor='e').grid(row=row, column=0, sticky='new')

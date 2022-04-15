@@ -322,25 +322,25 @@ class BacktestBroker(Broker):
         winPercent = 0 if numTrades == 0 else wins / (wins + losses)
 
         if logToConsole:
-            logStats(f'Start Value: ${self.startingVal:.2f}, End Value: ${self.totalCash:.2f}')
-            logStats(f'Profit: {profit:.2f}, Percent Gain: {percentGain:.2%}')
+            logStats(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
+            logStats(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
             logStats(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
             logStats(f'Win %: {winPercent:.2%}')
-            logStats(f'Avg Gain: ${avgGain:.2f}')
-            logStats(f'Avg Loss: ${avgLoss:.2f}')
+            logStats(f'Avg Gain: ${avgGain:,.2f}')
+            logStats(f'Avg Loss: ${avgLoss:,.2f}')
             logStats(f'SQN: {sqnVal:.3f}')
 
         return {
-            'StartValue': self.startingVal,
-            'EndValue': round(self.totalCash, 2),
-            'Profit': round(profit, 2),
-            'PercentGain': round(percentGain, 4),
-            'SQN': round(sqnVal, 4),
-            'trades': numTrades,
-            'wins': wins,
-            'losses': losses,
-            'wl': round(wlRatio, 2),
-            'winPerc': round(winPercent, 2),
-            'avgGain': round(avgGain, 2),
-            'avgLoss': round(avgLoss, 2)
+            'StartValue': f"{self.startingVal:,.2f}",
+            'EndValue': f"{self.totalCash:,.2f}",
+            'Profit': f"{profit:,.2f}",
+            'PercentGain': f"{percentGain:.2%}",
+            'SQN': f"{sqnVal:.3f}",
+            'trades': str(numTrades),
+            'wins': str(wins),
+            'losses': str(losses),
+            'wl': f"{wlRatio:.2f}",
+            'winPerc': f"{winPercent:.2%}",
+            'avgGain': f"{avgGain:,.2f}",
+            'avgLoss': f"{avgLoss:,.2f}"
         }
