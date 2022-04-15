@@ -1,4 +1,5 @@
 import logging as log
+import sys
 import os.path
 import time
 from argparse import ArgumentParser
@@ -8,9 +9,10 @@ from typing import List
 from strategies.customStrategy import makeCustomStrategy
 from trading.cm_trader import Trader
 from trading.notifiers.emailer import CMEmailer
-from trading.brokers.alpaca_broker import AlpacaBroker
+from trading.brokers.alpaca_broker import AlpacaBroker, SecTF
 from utils.file_utils import loadStockFile, loadStratFile
 from utils.run_utils import runTradeBroker
+from utils.api_utils import loadLiveAPI, loadPaperAPI
 
 
 def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = False,
@@ -52,7 +54,20 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
 
     emailer = CMEmailer(config['Email'])
 
-    broker = AlpacaBroker(apiCfg, stocks, emailer, liveRun)
+    if liveRun:
+        x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
+        if x != 'YES':
+            sys.exit()
+        else:
+            api = loadLiveAPI(apiCfg)
+
+    else:
+        api = loadPaperAPI(apiCfg)
+
+    # TODO timeframes
+    tf = SecTF(api, 30)
+
+    broker = AlpacaBroker(api, stocks, emailer, tf)
     trader = Trader(strats, broker)
 
     try:
@@ -61,17 +76,18 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
         broker.postRun()
 
 
-def main():
-    parser = ArgumentParser()
-
-    parser.add_argument('-s', '--strat', required=True)
-    parser.add_argument('-stx', '--stocks', required=True)
-    parser.add_argument('--liveRun', action='store_true')
-    # parser.add_argument('-c', '--cashOnly', action='store_true')
-
-    args = parser.parse_args()
-    runTrader(stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun)
-
-
 if __name__ == '__main__':
+    from utils.log_utils import setupLogger
+    setupLogger(True)
+    def main():
+        parser = ArgumentParser()
+
+        parser.add_argument('-s', '--strat', required=True)
+        parser.add_argument('-stx', '--stocks', required=True)
+        parser.add_argument('--liveRun', action='store_true')
+        # parser.add_argument('-c', '--cashOnly', action='store_true')
+
+        args = parser.parse_args()
+        runTrader(stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun)
+
     main()

@@ -1,15 +1,16 @@
-import sys
+import time
 from typing import List, Union, Dict, Tuple, Optional
 import logging
 import datetime
 from time import sleep
+from abc import ABC
 
 from .broker import Broker
 from objects.stock import Stock
 from trading.notifiers.notfier import Notifier
 from objects.order import Order, OrderStatus, OrderType
 from objects.position import Position
-from utils.api_utils import loadLiveAPI, loadPaperAPI
+
 import alpaca_trade_api as alpaca
 
 
@@ -22,6 +23,78 @@ def toTS(t):
 
 
 MARKET_CLOSE_DELTA = 15 * 60
+
+def logTF(m):
+    logging.debug(f"Timeframe: {m}")
+
+class TimeFrame(ABC):
+    def __init__(self, api: alpaca.REST):
+        self._api = api
+
+    def wait(self) -> None:
+        raise NotImplementedError
+
+    def _waitForTS(self, ts):
+        """Utility to wait until timestamp"""
+
+        while True:
+            clock = self._api.get_clock()
+            diff = ts - toTS(clock.timestamp)
+            if diff <= 0:
+                return
+
+            if diff > 6:
+                logTF(f'Sleeping {diff / 60:.2f}min')
+                timeToSleep = diff - 5
+                sleep(timeToSleep)
+            else:
+                sleep(2)
+
+
+class SecTF(TimeFrame):
+    def __init__(self, api: alpaca.REST, secs: float):
+        super().__init__(api)
+        self.secs = secs
+
+    def wait(self) -> None:
+        clock = self._api.get_clock()
+        timeToClose = toTS(clock.next_close)
+        timeToOpen = toTS(clock.next_open)
+        now = toTS(clock.timestamp)
+
+        if not clock.is_open or now + self.secs + 0.5 > timeToClose:
+            logTF(f"Sleeping until market opens")
+            self._waitForTS(timeToOpen + 1)
+        else:
+            logTF(f"Sleeping {self.secs}sec")
+            time.sleep(self.secs)
+
+
+class DailyTF(TimeFrame):
+    def __init__(self, api: alpaca.REST, anchor: str, minoffset: float):
+        super(DailyTF, self).__init__(api)
+        if anchor == "open":
+            self.anchorStart = True
+        elif anchor == "close":
+            self.anchorStart = False
+        else:
+            raise RuntimeError(f"Invalid anchor: {anchor}")
+
+        self._secs = minoffset * 60
+        self._min = f"{minoffset:.2f}min"
+
+
+    def wait(self):
+        clock = self._api.get_clock()
+
+        if self.anchorStart:
+            logTF(f"Sleeping until {self._min} after Open")
+            timeToOpen = toTS(clock.next_open)
+            self._waitForTS(timeToOpen + self._secs)
+        else:
+            logTF(f"Sleeping until {self._min} before close")
+            timeToClose = toTS(clock.next_close)
+            self._waitForTS(timeToClose - self._secs)
 
 
 class AlpacaOrder(Order):
@@ -43,7 +116,6 @@ class AlpacaOrder(Order):
             self._status = OrderStatus.CANCELED
         else:
             self._status = OrderStatus.UNFILLED
-
 
     def orderType(self) -> OrderType:
         return self._type
@@ -75,19 +147,13 @@ class AlpacaOrder(Order):
 
 class AlpacaBroker(Broker):
 
-    def __init__(self, apiCfg, symbols: List[str], notifier: Notifier, liveRun=False):
+    def __init__(self, api: alpaca.REST, symbols: List[str], notifier: Notifier, timeframe: TimeFrame):
         super().__init__(symbols)
-        if liveRun:
-            x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
-            if x != 'YES':
-                sys.exit()
-            else:
-                self._api = loadLiveAPI(apiCfg)
-
-        else:
-            self._api = loadPaperAPI(apiCfg)
 
         self._notif = notifier
+
+        self._api = api
+        self._timeframe = timeframe
 
         self._account = self._api.get_account()
         self._buyPower: float = 0.0
@@ -117,31 +183,25 @@ class AlpacaBroker(Broker):
     def preTrade(self) -> bool:
         self._account = self._api.get_account()
 
-        logInfo(f"Begin Trade Day: {self.tradeDay}")
+        logInfo(f"Begin Trade Step: {self.tradeDay}")
 
         clock = self._clock()
         nextclose = toTS(clock.next_close)
 
-        # wait for 15min before close
-        logInfo('Waiting for 15min before close')
-        self._waitForTS(nextclose - MARKET_CLOSE_DELTA)
+        # Wait for the next TF cycle
+        self._timeframe.wait()
 
         self._updateBars()
 
         return True
 
     def postTrade(self) -> None:
-        # Force wait till morning
-        logInfo('Waiting until next open')
-        nextOpen = toTS(self._clock().next_open)
-        self._waitForTS(nextOpen + 60)
 
         logInfo('Sending Update')
 
         self._account = self._api.get_account()
 
         self._updateTrades()
-
 
         curEquity = round(float(self._account.equity), 2)
         totalPL = curEquity - self._prevEquity
@@ -167,22 +227,6 @@ class AlpacaBroker(Broker):
 
         self._prevEquity = curEquity
         self._trades = []
-
-    def _waitForTS(self, ts):
-        """Utility to wait until timestamp"""
-
-        while True:
-            clock = self._clock()
-            diff = ts - toTS(clock.timestamp)
-            if diff <= 0:
-                return
-
-            if diff > 6:
-                logInfo(f'Waiting {diff / 60:.2f}min')
-                timeToSleep = diff - 5
-                sleep(timeToSleep)
-            else:
-                sleep(2)
 
     def _clock(self) -> alpaca.rest.Clock:
         """Shorcut to get the API clock"""
@@ -242,8 +286,8 @@ class AlpacaBroker(Broker):
     def closeAllPositions(self) -> None:
         self._api.close_all_positions()
 
-    def getOrder(self, orderid: any) -> Order:
-        return AlpacaOrder(self._api.get_order(orderid))
+    def getOrder(self, orderid) -> Order:
+        return AlpacaOrder(self._api.get_order(str(orderid)))
 
     def getAllOrders(self) -> List[Order]:
         return [AlpacaOrder(x) for x in self._api.list_orders()]
@@ -290,7 +334,6 @@ class AlpacaBroker(Broker):
         stock.order(AlpacaOrder(order))
         self._openOrders[order.id] = order
 
-
     def closePosition(self, stock: Stock) -> None:
         order = self._api.close_position(symbol=stock.symbol)
         stock.order = None
@@ -318,8 +361,7 @@ class AlpacaBroker(Broker):
 
     def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
         order = self._api.replace_order(order_id=stock.stopOrder().orderid(),
-                                       stop_price=stopLimit[0],
-                                       limit_price=stopLimit[1])
+                                        stop_price=f"{stopLimit[0]:.2f}",
+                                        limit_price=f"{stopLimit[1]:.2f}")
 
         stock.stopOrder(AlpacaOrder(order))
-

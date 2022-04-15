@@ -19,7 +19,7 @@ class Order(ABC):
     def __init__(self, orderid: any):
         self._orderid = orderid
 
-    def orderid(self) -> int:
+    def orderid(self) -> any:
         """
         Returns this order's id
         :return: the id
