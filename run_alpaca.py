@@ -1,3 +1,4 @@
+import datetime
 import sys
 from argparse import ArgumentParser
 from typing import List
@@ -7,7 +8,7 @@ from trading.cm_trader import Trader
 from trading.notifiers.emailer import CMEmailer
 from trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
 from utils.file_utils import loadStockFile, loadStratFile
-from utils.run_utils import runTradeBroker, loadSystem
+from utils.run_utils import runTradeBroker, loadSystem, setupStrategies
 from utils.log_utils import logInfo as _logInfo
 from utils.api_utils import loadLiveAPI, loadPaperAPI
 
@@ -31,6 +32,9 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     strats = {}
     for sym in stocks:
         strats[sym] = makeCustomStrategy(stratVars, sym)
+
+    logInfo('Setting up strategies')
+    setupStrategies(strats, datetime.datetime.now())
 
     emailer = CMEmailer(config['Email'])
 

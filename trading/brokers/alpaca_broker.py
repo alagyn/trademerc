@@ -9,6 +9,7 @@ from .broker import Broker
 from objects.stock import Stock
 from trading.notifiers.notfier import Notifier
 from objects.order import Order, OrderStatus, OrderType
+from objects.bar import Bar
 from objects.position import Position
 from utils.log_utils import logInfo as _logInfo, logDbg
 
@@ -239,7 +240,7 @@ class AlpacaBroker(Broker):
 
         for s in self.symbols:
             db = snaps[s].daily_bar
-            self[s].updateBar(db)
+            self[s].updateBar(Bar(db.l, db.c, db.h))
 
     def _updatePositions(self):
         positions = self._api.list_positions()

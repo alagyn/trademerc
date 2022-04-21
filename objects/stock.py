@@ -6,6 +6,7 @@ from .action import Action, ActionEnum
 import datetime
 from consts import DATE_FMT
 from objects.order import Order
+from objects.bar import Bar
 
 
 class StockStatus(IntEnum):
@@ -23,14 +24,14 @@ class Stock:
 
         self.position = None
 
-        self.bar = None
+        self.bar: Optional[Bar] = None
 
         self.lastCloseOrder = None
 
         self.lastStopUpdate = None
         self.nextStopUpdate = None
 
-    def updateBar(self, bar):
+    def updateBar(self, bar: Bar):
         self.bar = bar
 
     def order(self, o: Order = None) -> Order:
