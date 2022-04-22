@@ -12,18 +12,25 @@ from trading.cm_trader import Trader
 from .log_utils import _setupLogger, logInfo
 
 
+_config = None
+_systemLoaded = False
+
 def loadSystem() -> ConfigParser:
-    config = ConfigParser()
-    config.read(r'config/system.cfg')
+    global _systemLoaded, _config
 
-    syscfg = config['System']
+    if not _systemLoaded:
+        _systemLoaded = True
+        _config = ConfigParser()
+        _config.read(r'config/system.cfg')
 
-    _setupLogger(
-        syscfg.getboolean('DEBUG'),
-        syscfg.getboolean('LogToFile'),
-        syscfg['LogDirectory'])
+        syscfg = _config['System']
 
-    return config
+        _setupLogger(
+            syscfg.getboolean('DEBUG'),
+            syscfg.getboolean('LogToFile'),
+            syscfg['LogDirectory'])
+
+    return _config
 
 
 def calcSetupStartDate(endDay: datetime.datetime, setupTime):
