@@ -28,7 +28,7 @@ MARKET_CLOSE_DELTA = 15 * 60
 
 
 def logTF(m):
-    logDbg("Timeframe", m)
+    _logInfo("Timeframe", m)
 
 
 class TimeFrame(ABC):
@@ -36,6 +36,9 @@ class TimeFrame(ABC):
         self._api = api
 
     def wait(self) -> None:
+        raise NotImplementedError
+
+    def postWait(self) -> None:
         raise NotImplementedError
 
     def _waitForTS(self, ts):
@@ -73,6 +76,10 @@ class SecTF(TimeFrame):
             logTF(f"Sleeping {self.secs}sec")
             time.sleep(self.secs)
 
+    def postWait(self) -> None:
+        # ILB
+        pass
+
 
 class DailyTF(TimeFrame):
     def __init__(self, api: alpaca.REST, anchor: str, minoffset: float):
@@ -98,6 +105,13 @@ class DailyTF(TimeFrame):
             logTF(f"Sleeping until {self._min} before close")
             timeToClose = toTS(clock.next_close)
             self._waitForTS(timeToClose - self._secs)
+
+    def postWait(self) -> None:
+        clock = self._api.get_clock()
+
+        logTF(f'Forcing sleep until open')
+        timeToOpen = toTS(clock.next_open)
+        self._waitForTS(timeToOpen)
 
 
 class AlpacaOrder(Order):
@@ -197,36 +211,39 @@ class AlpacaBroker(Broker):
 
     def postTrade(self) -> None:
 
-        logInfo('Sending Update')
-
         self._account = self._api.get_account()
 
         self._updateTrades()
 
         curEquity = round(float(self._account.equity), 2)
-        totalPL = curEquity - self._prevEquity
 
-        positions = []
-        for sym, s in self._stocks.items():
-            if s.position is not None:
-                p = {
-                    'symbol': s.symbol,
-                    'qty': s.position.qty,
-                    'pl': s.position.unrealized_pl,
-                    'price': s.position.current_price,
-                    'value': s.position.market_value,
-                    'p_value': s.position.avg_entry_price,
-                    'p_date': s.order().data("filled_at"),
-                    'stop_price': s.stopOrder().data("stop_price"),
-                    'last_stop': s.lastStopUpdate,
-                    'next_stop': s.nextStopUpdate
-                }
-                positions.append(p)
+        if self._notif is not None:
+            logInfo('Sending Update')
+            totalPL = curEquity - self._prevEquity
 
-        self._notif.update(self._prevEquity, curEquity, totalPL, self._trades, positions)
+            positions = []
+            for sym, s in self._stocks.items():
+                if s.position is not None:
+                    p = {
+                        'symbol': s.symbol,
+                        'qty': s.position.qty,
+                        'pl': s.position.unrealized_pl,
+                        'price': s.position.current_price,
+                        'value': s.position.market_value,
+                        'p_value': s.position.avg_entry_price,
+                        'p_date': s.order().data("filled_at"),
+                        'stop_price': s.stopOrder().data("stop_price"),
+                        'last_stop': s.lastStopUpdate,
+                        'next_stop': s.nextStopUpdate
+                    }
+                    positions.append(p)
+
+            self._notif.update(self._prevEquity, curEquity, totalPL, self._trades, positions)
 
         self._prevEquity = curEquity
         self._trades = []
+
+        self._timeframe.postWait()
 
     def _clock(self) -> alpaca.rest.Clock:
         """Shorcut to get the API clock"""

@@ -36,7 +36,10 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     logInfo('Setting up strategies')
     setupStrategies(strats, datetime.datetime.now())
 
-    emailer = CMEmailer(config['Email'])
+    if config['System'].getboolean('EnableNotify'):
+        emailer = CMEmailer(config['Email'])
+    else:
+        emailer = None
 
     if liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
