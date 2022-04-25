@@ -6,7 +6,8 @@ class ActionEnum(IntEnum):
     BuyAndStop = enum.auto()
     Buy = enum.auto()
     Sell = enum.auto()
-    Hold = enum.auto()
+    HoldInMarket = enum.auto()
+    HoldOutMarket = enum.auto()
     UpdateStop = enum.auto()
 
 

@@ -1,19 +1,18 @@
+import datetime
 import time
+from abc import ABC
+from time import sleep
 from typing import List, Union, Dict, Tuple, Optional
 
-import datetime
-from time import sleep
-from abc import ABC
+import alpaca_trade_api as alpaca
 
-from .broker import Broker
+from objects.bar import Bar
+from objects.order import Order, OrderStatus, OrderType
+from objects.position import Position
 from objects.stock import Stock
 from trading.notifiers.notfier import Notifier
-from objects.order import Order, OrderStatus, OrderType
-from objects.bar import Bar
-from objects.position import Position
-from utils.log_utils import logInfo as _logInfo, logDbg
-
-import alpaca_trade_api as alpaca
+from utils.log_utils import logInfo as _logInfo
+from .broker import Broker
 
 
 def logInfo(m):

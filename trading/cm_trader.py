@@ -92,7 +92,7 @@ class Trader:
                 self.submitSell(a)
             elif a.action == ActionEnum.UpdateStop:
                 self.submitUpdateStop(a)
-            elif a.action == ActionEnum.Hold:
+            elif a.action == ActionEnum.HoldInMarket or a.action == ActionEnum.HoldOutMarket:
                 # ILB
                 pass
 

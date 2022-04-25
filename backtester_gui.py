@@ -13,7 +13,7 @@ from tkcalendar import DateEntry
 import cm_backtester
 from cmErrors import StrategyError
 from run_alpaca import runTrader
-from strategies.customStrategy import makeCustomStrategy
+from utils.strat_utils import makeCustomStrategy
 from utils.file_utils import loadStockFile
 
 STRAT_FT = [('Strategy', '.strat')]

@@ -3,7 +3,6 @@ import sys
 from argparse import ArgumentParser
 from typing import List
 
-from strategies.customStrategy import makeCustomStrategy
 from trading.cm_trader import Trader
 from trading.notifiers.emailer import CMEmailer
 from trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
@@ -11,6 +10,7 @@ from utils.file_utils import loadStockFile, loadStratFile
 from utils.run_utils import runTradeBroker, loadSystem, setupStrategies
 from utils.log_utils import logInfo as _logInfo
 from utils.api_utils import loadLiveAPI, loadPaperAPI
+from utils.strat_utils import makeCustomStrategy
 
 def logInfo(m):
     _logInfo("Trader", m)

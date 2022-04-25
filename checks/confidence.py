@@ -45,7 +45,7 @@ class Confidence(CheckParent):
         out = 0
 
         # TODO remove templist
-        templist = []
+        # templist = []
 
         for c in self._checks:
             val = bool(c.check())
@@ -60,15 +60,17 @@ class Confidence(CheckParent):
                 # out -= c.w
                 pass
 
-            templist.append(val)
+            # templist.append(val)
 
         # print(f'Sum: {out}, TotalW: {self._totalWeight}')
         # out /= self._totalWeight
         # print(f'Final: {out}')
         # exit()
-        return out, templist
+        # return out, templist
+        return out
 
     def check(self) -> bool:
-        c, _ = self.confidence()
+        # c, _ = self.confidence()
+        c =self.confidence()
         c = round(c, 3)
         return self._minConf <= c <= self._maxConf

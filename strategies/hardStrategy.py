@@ -86,7 +86,7 @@ class HardStrategy(Strategy):
 
         conf, checks = self.conf.confidence()
 
-        out = Action(stock, ActionEnum.Hold)
+        out = Action(stock, ActionEnum.HoldOutMarket)
 
         pos = stock.status()
 
@@ -104,6 +104,8 @@ class HardStrategy(Strategy):
                              stopPrice=stopPrice,
                              limitPrice=limitPrice
                              )
+            else:
+                out = Action(stock, ActionEnum.HoldOutMarket)
 
         elif pos == StockStatus.InMarket:
             if conf < 0.45:
@@ -126,6 +128,8 @@ class HardStrategy(Strategy):
                                      limitPrice=limitPrice
                                      )
                         self.oldStopPrice = stopPrice
+            else:
+                out = Action(stock, ActionEnum.HoldInMarket)
 
         # print(f'Position: {pos.name}, Confidence: {conf:.2f}, {out}')
         return out

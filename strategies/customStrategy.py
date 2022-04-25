@@ -1,8 +1,6 @@
-from typing import List, Tuple
+from typing import List
 
 from checks.check import CheckParent
-from checks import *
-from indicators import *
 from objects.stock import *
 from .strategy import *
 
@@ -61,6 +59,8 @@ class CustomStrategy(Strategy):
                 stop, limit = self.stopCalc(self.bar.close)
                 return stock.updateStop(stop, limit)
 
+            return Action(stock, ActionEnum.HoldInMarket)
+
         # Out Market
         elif pos == StockStatus.OutMarket:
             if self.enterCond.check():
@@ -71,63 +71,4 @@ class CustomStrategy(Strategy):
                 else:
                     return stock.buy()
 
-        return Action(stock, ActionEnum.Hold)
-
-
-def makeCustomStrategy(stratvars, symbol: str) -> CustomStrategy:
-    # TODO json error catching
-    # TODO warn if an indicator is not used
-
-    all_inds: List[Indicator] = []
-
-    for i in stratvars['indicators']:
-        newind = INDICATORS[i['classname']](**i['params'])
-        all_inds.append(newind)
-
-    def iterChecks(l: Dict) -> List[Tuple[CheckParent, float]]:
-        out = []
-        for c_idx, c in enumerate(l):
-            valFuncs = []
-            for _i in c['indicators']:
-                idx = _i['idx']
-                key = _i['key']
-                valFuncs.append(all_inds[idx][key])
-
-            newcheck = CHECKS[c['classname']].factory(valFuncs, c['params'])
-            out.append((newcheck, float(c['weight'])))
-
-        return out
-
-    entryChecks = iterChecks(stratvars['entryChecks'])
-    exitChecks = iterChecks(stratvars['exitChecks'])
-
-    stopCalcIdx = stratvars['stop']['indicator']
-    stopCalcKey = stratvars['stop']['key']
-
-    stopCalcVal = all_inds[stopCalcIdx][stopCalcKey]
-    stopScale = stratvars['stop']['scale']
-    stopLimitScale = stratvars['stop']['limitScale']
-
-    stopCalc = StopCalculation(stopCalcVal, stopScale, stopLimitScale)
-
-    entryConf = Confidence(
-        minConf=stratvars['enterConf'],
-        checks=entryChecks
-    )
-
-    exitConf = Confidence(
-        minConf=stratvars['exitConf'],
-        checks=exitChecks
-    )
-
-    return CustomStrategy(
-        name=stratvars['name'],
-        symbol=symbol,
-        iManage=IndicatorManager(all_inds),
-        # only use these as their updates will update children
-        cManage=CheckManager([entryConf, exitConf]),
-        enterCond=entryConf,
-        exitCond=exitConf,
-        stopCalc=stopCalc,
-        stopUpdatePeriod=stratvars['stop']['daysToUpdateStop']
-    )
+            return Action(stock, ActionEnum.HoldOutMarket)

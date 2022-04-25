@@ -1,16 +1,15 @@
 import datetime
-from typing import Dict, Optional, List, Tuple
 from configparser import ConfigParser
+from typing import Dict, Optional, List, Tuple
 
 import yfinance as yf
 
-from consts import DATE_FMT, ROOT_LOGGER
+from consts import DATE_FMT
 from objects.bar import Bar
 from strategies.strategy import Strategy
 from trading.brokers.broker import Broker
 from trading.cm_trader import Trader
 from .log_utils import _setupLogger, logInfo
-
 
 _config = None
 _systemLoaded = False

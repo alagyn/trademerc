@@ -65,7 +65,6 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         json.dump(runStats, f)
         f.write('\n')
 
-
     if masterFigure is not None:
         logInfo("Plotting")
         dates = []
@@ -136,7 +135,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
-    from strategies.customStrategy import makeCustomStrategy
+    from utils.strat_utils import makeCustomStrategy
     from utils.file_utils import loadStratFile
     from utils.run_utils import loadSystem
 
