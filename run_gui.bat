@@ -1,4 +1,4 @@
-venv\Scripts\python.exe backtester_gui.py
+venv\Scripts\python.exe -m cash_money.backtester_gui
 
 
 cmd /k

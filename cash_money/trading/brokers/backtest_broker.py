@@ -1,0 +1,346 @@
+from typing import Union, Tuple, Dict, List, Optional
+import numpy as np
+import math
+
+from ... import cmErrors
+from cash_money.objects.bar import Bar
+from cash_money.objects.order import Order, OrderType, OrderStatus
+from cash_money.objects.position import Position
+from cash_money.objects.stock import Stock
+from .broker import Broker
+from cash_money.utils.log_utils import logInfo as _logInfo, logDbg
+
+
+class BacktestOrder(Order):
+    _ID_GEN = 0
+
+    def __init__(self, orderT: OrderType, symbol: str, qty: int, price: float,
+                 stopLimit: Optional[Tuple[float, float]] = None):
+        super().__init__(BacktestOrder._ID_GEN)
+        BacktestOrder._ID_GEN += 1
+
+        self.stat = OrderStatus.UNFILLED
+        self.price = price
+        self._sym = symbol
+        self._qty = qty
+        self._orderType = orderT
+        self._sl = stopLimit
+
+    def status(self) -> OrderStatus:
+        return self.stat
+
+    def orderType(self) -> OrderType:
+        pass
+
+    def symbol(self) -> str:
+        return self._sym
+
+    def qty(self) -> Union[int, None]:
+        return self._qty
+
+    def filledQty(self) -> int:
+        if self.stat == OrderStatus.FILLED:
+            return self._qty
+        else:
+            return 0
+
+    def filledAvgPrice(self) -> float:
+        return self.price
+
+    def stopPrice(self) -> Union[float, None]:
+        return self._sl[0]
+
+    def limitPrice(self) -> Union[float, None]:
+        return self._sl[1]
+
+    def data(self, key: str) -> any:
+        return None
+
+
+class Stats:
+    def __init__(self):
+        self.startingVal = 0
+        self.lossList = []
+        self.winList = []
+
+        self.buyDays = []
+        self.buyPrices = []
+
+        self.sellDays = []
+        self.sellPrices = []
+        self.sellDeltas = []
+
+    def addBuy(self, day, value, unitCost):
+        self.startingVal = value
+        self.buyDays.append(day)
+        self.buyPrices.append(unitCost)
+
+    def addSell(self, day, value, unitSell):
+        delta = value - self.startingVal
+        self.sellDays.append(day)
+        self.sellPrices.append(unitSell)
+        self.sellDeltas.append(delta)
+
+        if delta < 0:
+            self.lossList.append(delta)
+        else:
+            self.winList.append(delta)
+
+
+def logInfo(m):
+    _logInfo("Backtest Brkr", m)
+
+
+def logDebug(m) -> None:
+    logDbg("Backtest Brkr", m)
+
+def logStats(m):
+    _logInfo("Stats", m)
+
+def checkStop(stop):
+    if stop < 0:
+        raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
+
+
+def calcSQN(tradeList) -> float:
+    """
+    Calculates the System Quality Number
+    Should be reliable if stats.numTrades >= 3.0
+    """
+
+    arr = np.array(tradeList)
+
+    a = math.sqrt(len(tradeList))
+    # avg profit
+    b = np.average(arr)
+    # profit std
+    c = np.std(arr)
+
+    return a * b / c
+
+
+class BacktestBroker(Broker):
+    def __init__(self, startingValue: float, symbols: List[str], bars: Dict[str, List[Bar]], startIdx: int):
+        super().__init__(symbols)
+
+        self.startingVal = startingValue
+        self.totalCash = startingValue
+
+        self.qty = {}
+        self.stats = {}
+        self.stops = {}
+
+        for sym in self.symbols:
+            self.qty[sym] = 0
+            self.stats[sym] = Stats()
+
+        self.bars = bars
+        self.barIdx = startIdx
+
+        # Get the len of the bars
+        for sym in self.symbols:
+            self.endIdx = len(self.bars[sym])
+            break
+
+        self.runtime = self.endIdx - startIdx
+
+        self.portfolio_cash = np.array([0.0] * self.runtime)
+        self.portfolio_value = np.array([0.0] * self.runtime)
+
+        self.curDate = "INIT"
+        self.datekey = symbols[0]
+
+    def preRun(self):
+        pass
+
+    def preTrade(self) -> bool:
+        if self.barIdx >= self.endIdx:
+            return False
+
+        logInfo(f"Begin Trade Day: {self.tradeDay}")
+
+        self.curDate = None
+
+        # Update bars and check stops
+        for sym in self.symbols:
+            symdate = self.bars[sym][self.barIdx].date
+            # Get the current date
+            if self.curDate is None:
+                self.curDate = symdate
+
+            if symdate != self.curDate:
+                raise cmErrors.BacktestError(f"Bar Date desync, {self.curDate} != {symdate}")
+
+            self[sym].updateBar(self.bars[sym][self.barIdx])
+            if sym in self.stops and self.stops[sym] > self.bars[sym][self.barIdx].lo:
+                newCash = self.qty[sym] * self.stops[sym]
+                self.totalCash += newCash
+
+                self.stats[sym].addSell(self.curDate, newCash, self.stops[sym])
+
+                self.qty[sym] = 0
+                self.stops.pop(sym)
+                self[sym].position = None
+
+                logInfo(f"{sym}: Stop Activated, Value: ${newCash:.2f}")
+
+        return True
+
+    def postTrade(self) -> None:
+        if self.totalCash < 0:
+            raise cmErrors.BacktestError('Negative Buy Power, Strategy Failure?')
+
+        inMarketEquity = 0
+        for sym in self.symbols:
+            if self.qty[sym] > 0:
+                inMarketEquity += self.qty[sym] * self[sym].bar.close
+
+        # Update Graph Logs
+        self.portfolio_cash[self.tradeDay] = round(self.totalCash, 2)
+        self.portfolio_value[self.tradeDay] = round(inMarketEquity, 2)
+        logInfo(f"Total Value: ${self.totalCash + inMarketEquity: .2f}")
+
+        self.barIdx += 1
+
+    def postRun(self) -> None:
+        # clear out any remaining positions
+        logInfo("Closing open positions")
+        for sym, q in self.qty.items():
+            if q > 0:
+                sellPrice = self.bars[sym][-1].close
+                newCash = q * sellPrice
+                self.stats[sym].addSell(self.curDate, newCash, sellPrice)
+                self.totalCash += newCash
+                logInfo(f"    {sym}: Qty={q}, Value={newCash:.2f}")
+
+    def buyPwr(self) -> float:
+        return self.totalCash
+
+    def cancelAllOrders(self) -> None:
+        # TODO
+        raise NotImplemented
+
+    def getOrder(self, orderid: int) -> Order:
+        # TODO
+        raise NotImplementedError
+
+    def getAllOrders(self) -> List[Order]:
+        # TODO
+        raise NotImplementedError
+
+    def getPosition(self, symbol: str) -> Position:
+        # TODO
+        raise NotImplementedError
+
+    def getOpenPositions(self) -> Dict[str, Position]:
+        # TODO
+        raise NotImplementedError
+
+    def submitBuy(self, stock: Stock, qty: int, stopLimit: Optional[Tuple[float, float]] = None) -> None:
+        # Set position to non-None
+        stock.position = "InMarket"
+        if stopLimit is not None:
+            # Set new stop
+            checkStop(stopLimit[0])
+            self.stops[stock.symbol] = stopLimit[0]
+            t = OrderType.BUY_AND_STOP
+        else:
+            t = OrderType.BUY
+
+        # update qty
+        self.qty[stock.symbol] = qty
+        # Update value
+        trueCost = qty * stock.bar.close
+
+        self.stats[stock.symbol].addBuy(self.curDate, trueCost, stock.bar.close)
+
+        self.totalCash -= trueCost
+
+        o = BacktestOrder(t, stock.symbol, qty, stock.bar.close, stopLimit)
+        stock.order(o)
+
+    def closePosition(self, stock: Stock) -> None:
+        sym = stock.symbol
+        # Clear position
+        stock.position = None
+        # Clear stop
+        self.stops.pop(sym)
+        # Update value
+        soldValue = self.qty[sym] * stock.bar.close
+        self.totalCash += soldValue
+
+        self.qty[sym] = 0
+        # Update win/loss
+        self.stats[sym].addSell(self.curDate, soldValue, stock.bar.close)
+
+    def closeAllPositions(self) -> None:
+        for stock in self:
+            if self.qty[stock.symbol] > 0:
+                self.closePosition(stock)
+
+    def submitSell(self, stock: Stock, qty: int) -> None:
+        if qty >= self.qty[stock.symbol]:
+            self.closePosition(stock)
+            return
+
+        self.qty[stock.symbol] -= qty
+        soldValue = qty * stock.bar.close
+        self.totalCash += soldValue
+
+        self.stats[stock.symbol].addSell(self.curDate, soldValue, stock.bar.close)
+
+    def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
+        checkStop(stopLimit[0])
+        self.stops[stock.symbol] = stopLimit[0]
+
+    def getRunStats(self, logToConsole: bool) -> Dict[str, any]:
+        wins = 0
+        losses = 0
+        winTotal = 0
+        lossTotal = 0
+
+        tradeList = []
+
+        for sym, stat in self.stats.items():
+            wins += len(stat.winList)
+            losses += len(stat.lossList)
+            winTotal += sum(stat.winList)
+            lossTotal += sum(stat.lossList)
+
+            tradeList.extend(stat.winList)
+            tradeList.extend(stat.lossList)
+
+        numTrades = len(tradeList)
+        profit = self.totalCash - self.startingVal
+        percentGain = profit / self.startingVal
+
+        sqnVal = 0 if numTrades <= 1 else calcSQN(tradeList)
+        wlRatio = 1 if losses == 0 else wins / losses
+        avgGain = 0 if wins == 0 else winTotal / wins
+        avgLoss = 0 if losses == 0 else lossTotal / losses
+
+        winPercent = 0 if numTrades == 0 else wins / (wins + losses)
+
+        if logToConsole:
+            logStats(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
+            logStats(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
+            logStats(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
+            logStats(f'Win %: {winPercent:.2%}')
+            logStats(f'Avg Gain: ${avgGain:,.2f}')
+            logStats(f'Avg Loss: ${avgLoss:,.2f}')
+            logStats(f'SQN: {sqnVal:.3f}')
+
+        return {
+            'StartValue': f"{self.startingVal:,.2f}",
+            'EndValue': f"{self.totalCash:,.2f}",
+            'Profit': f"{profit:,.2f}",
+            'PercentGain': f"{percentGain:.2%}",
+            'SQN': f"{sqnVal:.3f}",
+            'trades': str(numTrades),
+            'wins': str(wins),
+            'losses': str(losses),
+            'wl': f"{wlRatio:.2f}",
+            'winPerc': f"{winPercent:.2%}",
+            'avgGain': f"{avgGain:,.2f}",
+            'avgLoss': f"{avgLoss:,.2f}"
+        }

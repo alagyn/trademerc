@@ -1,1 +1,1 @@
-venv\Scripts\python.exe run_alpaca.py -s config\strat1.json -stx config\stocks.txt
+venv\Scripts\python.exe -m cash_money.run_alpaca -s config\strat1.json -stx config\stocks.txt
