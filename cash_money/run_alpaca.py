@@ -4,13 +4,13 @@ from argparse import ArgumentParser
 from typing import List
 
 from cash_money.trading.cm_trader import Trader
+from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.trading.notifiers.emailer import CMEmailer
 from cash_money.trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
 from cash_money.utils.file_utils import loadStockFile, loadStratFile
 from cash_money.utils.run_utils import runTradeBroker, loadSystem, setupStrategies
 from cash_money.utils.log_utils import logInfo as _logInfo
 from cash_money.utils.api_utils import loadLiveAPI, loadPaperAPI
-from cash_money.utils.strat_utils import makeCustomStrategy
 
 def logInfo(m):
     _logInfo("Trader", m)
@@ -31,7 +31,7 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
 
     strats = {}
     for sym in stocks:
-        strats[sym] = makeCustomStrategy(stratVars, sym)
+        strats[sym] = NodeStrategy(stratVars)
 
     logInfo('Setting up strategies')
     setupStrategies(strats, datetime.datetime.now())

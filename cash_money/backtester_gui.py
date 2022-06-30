@@ -13,7 +13,7 @@ from tkcalendar import DateEntry
 from cash_money import cm_backtester
 from cash_money.cmErrors import StrategyError
 from cash_money.run_alpaca import runTrader
-from cash_money.utils.strat_utils import makeCustomStrategy
+from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.utils.file_utils import loadStockFile
 
 STRAT_FT = [('Strategy', '.strat')]
@@ -280,7 +280,7 @@ class BTGUI(tk.Frame):
         if not self.indivVar.get():
             strats = {}
             for x in self.stocks:
-                strats[x] = makeCustomStrategy(strat, x)
+                strats[x] = NodeStrategy(strat['graph'])
 
             stats = cm_backtester.backtest(**args, strats=strats)
             for k, v in stats.items():
@@ -291,7 +291,7 @@ class BTGUI(tk.Frame):
 
         else:
             for x in self.stocks:
-                strats = {x: makeCustomStrategy(strat, x)}
+                strats = {x: NodeStrategy(strat['graph'])}
                 cm_backtester.backtest(**args, strats=strats)
 
         for c in self.canvases:

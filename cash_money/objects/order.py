@@ -1,17 +1,16 @@
-import enum
 from abc import ABC
 from enum import IntEnum
 from typing import Union
 
 class OrderStatus(IntEnum):
-    UNFILLED = enum.auto()
-    CANCELED = enum.auto()
-    FILLED = enum.auto()
+    UNFILLED = 0
+    CANCELED = 1
+    FILLED = 2
 
 class OrderType(IntEnum):
-    BUY = enum.auto()
-    BUY_AND_STOP = enum.auto()
-    SELL = enum.auto()
+    BUY = 0
+    BUY_AND_STOP = 1
+    SELL = 2
 
 
 class Order(ABC):

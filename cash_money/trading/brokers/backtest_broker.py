@@ -264,7 +264,10 @@ class BacktestBroker(Broker):
         # Clear position
         stock.position = None
         # Clear stop
-        self.stops.pop(sym)
+        try:
+            self.stops.pop(sym)
+        except KeyError:
+            pass
         # Update value
         soldValue = self.qty[sym] * stock.bar.close
         self.totalCash += soldValue

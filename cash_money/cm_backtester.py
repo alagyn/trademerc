@@ -1,9 +1,9 @@
 from typing import Dict, Optional
 from datetime import datetime
 
+from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.utils.run_utils import runTradeBroker, setupStrategies
 from cash_money.utils.log_utils import logInfo as _logInfo, logDbg
-from cash_money.strategies.strategy import Strategy
 from cash_money.trading.brokers.backtest_broker import BacktestBroker
 from cash_money.trading.cm_trader import Trader
 
@@ -39,7 +39,7 @@ def logPlot(m):
     logDbg("Plot", m)
 
 
-def backtest(stratName: str, strats: Dict[str, Strategy],
+def backtest(stratName: str, strats: Dict[str, NodeStrategy],
              masterFigure: Optional[Figure], symFigs: Optional[Dict[str, Figure]],
              startDate: datetime, endDate: datetime,
              startingVal=10000, outputFile: str = 'stats.json'
@@ -80,6 +80,7 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
         portfolio_total = np.add(broker.portfolio_cash, broker.portfolio_value)
 
         logPlot("Dates vs Portfolio_cash")
+
         masterAxes.bar(dates, broker.portfolio_cash, label='Cash', color='C1', width=1, align='edge')
         logPlot("Dates vs Portfolio_total")
         masterAxes.plot(dates, portfolio_total, label='Value')
@@ -135,8 +136,6 @@ def backtest(stratName: str, strats: Dict[str, Strategy],
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
-    from cash_money.utils.strat_utils import makeCustomStrategy
-    from cash_money.utils.file_utils import loadStratFile
     from cash_money.utils.run_utils import loadSystem
 
     loadSystem()
@@ -153,13 +152,13 @@ if __name__ == "__main__":
 
         args = parser.parse_args()
 
-        strat = loadStratFile(args.strategy)
+        strat = json.load(args.strategy)
         start_date = datetime(2018, 1, 1)
         end_date = datetime.today()
 
         strats = {
-            'QQQ': makeCustomStrategy(strat, 'QQQ'),
-            'DIA': makeCustomStrategy(strat, 'DIA'),
+            'QQQ': NodeStrategy(strat['graph']),
+            'DIA': NodeStrategy(strat['graph']),
         }
 
         backtest('TEST', strats=strats, masterFigure=None, symFigs=None,

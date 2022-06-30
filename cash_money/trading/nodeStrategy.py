@@ -1,0 +1,47 @@
+from cash_money.nodes.cmNode import CMNode
+from cash_money.objects.bar import Bar
+from cash_money.objects.stock import Stock, StockStatus
+from cash_money.objects.action import Action
+from cash_money.nodes.datakeys import *
+from cash_money.utils.node_utils import registerNodes
+
+from nodepasta.nodegraph import NodeGraph
+
+class NodeStrategy:
+    def __init__(self, jGraph):
+        self.nodegraph = NodeGraph()
+        registerNodes(self.nodegraph)
+        self.nodegraph.loadFromJSON(jGraph)
+        self.nodegraph.setupNodes()
+
+    def addData(self, bar: Bar):
+        self.nodegraph.datamap[LOW] = bar.lo
+        self.nodegraph.datamap[CLOSE] = bar.close
+        self.nodegraph.datamap[HIGH] = bar.hi
+        self.nodegraph.datamap[VOLUME] = bar.vol
+
+    def nextAction(self, tradeDay: int, stock: Stock) -> Action:
+        self.nodegraph.execute()
+        pos = stock.status()
+
+        if pos == StockStatus.InMarket:
+            if self.nodegraph.datamap[EXIT]:
+                return stock.sell()
+
+            # TODO stop calc
+            return stock.hold()
+
+        elif pos == StockStatus.OutMarket:
+            if self.nodegraph.datamap[ENTRY]:
+                # TODO stop calc
+                return stock.buy()
+
+            return stock.hold()
+
+    def getSetupTime(self) -> int:
+        setuptime = 0
+        for node in self.nodegraph:
+            node: CMNode
+            setuptime = max(setuptime, node.setupTime())
+
+        return setuptime

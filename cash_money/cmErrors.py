@@ -6,6 +6,9 @@ class CMError(Exception):
     def __str__(self):
         return self.msg
 
+class StatError(CMError):
+    def __init__(self, msg):
+        super(StatError, self).__init__(msg)
 
 class IndicatorError(CMError):
     def __init__(self, msg=''):

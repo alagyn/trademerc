@@ -256,7 +256,7 @@ class AlpacaBroker(Broker):
 
         for s in self.symbols:
             db = snaps[s].daily_bar
-            self[s].updateBar(Bar(db.l, db.c, db.h))
+            self[s].updateBar(Bar(db.l, db.c, db.h, db.v))
 
     def _updatePositions(self):
         positions = self._api.list_positions()

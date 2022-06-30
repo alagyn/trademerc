@@ -52,5 +52,5 @@ def getBars(api: alpaca.REST, sym, start, end) -> List[Bar]:
                         start=start,
                         end=end,
                         adjustment='raw').df
-    return [Bar(b['low'][i], b['close'][i], b['high'][i]) for i in range(len(b))]
+    return [Bar(b['low'][i], b['close'][i], b['high'][i], b['volume']) for i in range(len(b))]
 

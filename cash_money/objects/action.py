@@ -1,7 +1,7 @@
 from enum import IntEnum
 import enum
 
-
+# noinspection PyArgumentList
 class ActionEnum(IntEnum):
     BuyAndStop = enum.auto()
     Buy = enum.auto()

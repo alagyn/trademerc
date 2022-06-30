@@ -3,9 +3,9 @@ from typing import Dict, List
 import math
 
 from cash_money import cmErrors
-from cash_money.strategies.strategy import *
+from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.trading.brokers.broker import Broker
-from cash_money.objects.action import ActionEnum
+from cash_money.objects.action import ActionEnum, Action
 from cash_money.objects.stock import StockStatus
 from cash_money.utils.log_utils import logInfo as _logInfo, logErr, logDbg
 
@@ -29,7 +29,7 @@ def logDebug(m):
 
 
 class Trader:
-    def __init__(self, strats: Dict[str, Strategy], broker: Broker):
+    def __init__(self, strats: Dict[str, NodeStrategy], broker: Broker):
 
         self.broker = broker
 
@@ -42,8 +42,8 @@ class Trader:
 
     def trade(self):
         # Update indicators with today's values
-        logDebug('Updating Indicators')
-        self.updateIndicators()
+        logDebug('Updating Graphs')
+        self.updateGraphs()
 
         # Update positions and BP
         logDebug('Updating Positions')
@@ -57,7 +57,7 @@ class Trader:
         logDebug('Running Daily Actions')
         self.runActions(actions)
 
-    def updateIndicators(self):
+    def updateGraphs(self):
         for sym, strat in self.strats.items():
             strat.addData(self.broker[sym].bar)
 
@@ -99,7 +99,7 @@ class Trader:
             logInfo(str(a))
 
     def submitBuy(self, action: Action, buyPwr):
-        qty = calcQty(buyPwr, action.stock.bar.c)
+        qty = calcQty(buyPwr, action.stock.bar.close)
         self.broker.submitBuy(action.stock, qty)
 
     def submitBuyAndStop(self, action: Action, buyPwr):

@@ -1,18 +1,17 @@
+import datetime
 from enum import IntEnum
-import enum
 from typing import Optional
 
-from .action import Action, ActionEnum
-import datetime
 from cash_money.consts import DATE_FMT
-from cash_money.objects.order import Order
 from cash_money.objects.bar import Bar
+from cash_money.objects.order import Order
+from .action import Action, ActionEnum
 
 
 class StockStatus(IntEnum):
-    InMarket = enum.auto()
-    Pending = enum.auto()
-    OutMarket = enum.auto()
+    InMarket = 0
+    Pending = 1
+    OutMarket = 2
 
 
 class Stock:
@@ -57,6 +56,12 @@ class Stock:
         return Action(self, ActionEnum.BuyAndStop,
                       stopPrice=round(stopPrice, 2),
                       limitPrice=round(limitPrice, 2))
+
+    def hold(self):
+        if self.status() == StockStatus.InMarket:
+            return Action(self, ActionEnum.HoldInMarket)
+        else:
+            return Action(self, ActionEnum.HoldOutMarket)
 
     def buy(self):
         return Action(self, ActionEnum.Buy)

@@ -6,10 +6,10 @@ import yfinance as yf
 
 from cash_money.consts import DATE_FMT
 from cash_money.objects.bar import Bar
-from cash_money.strategies.strategy import Strategy
 from cash_money.trading.brokers.broker import Broker
 from cash_money.trading.cm_trader import Trader
 from .log_utils import _setupLogger, logInfo
+from ..trading.nodeStrategy import NodeStrategy
 
 _config = None
 _systemLoaded = False
@@ -31,7 +31,6 @@ def loadSystem() -> ConfigParser:
 
     return _config
 
-
 def calcSetupStartDate(endDay: datetime.datetime, setupTime):
     out = endDay
     while out.weekday() >= 5:
@@ -44,7 +43,7 @@ def calcSetupStartDate(endDay: datetime.datetime, setupTime):
 
     return out
 
-def setupStrategies(strats: Dict[str, Strategy], afterSetupDate: datetime.datetime,
+def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.datetime,
                     endDate: Optional[datetime.datetime] = None) -> Tuple[Dict[str, List[Bar]], int]:
     """
     Sets up the given strategies so that they are up to date with the
@@ -67,11 +66,12 @@ def setupStrategies(strats: Dict[str, Strategy], afterSetupDate: datetime.dateti
     allBars = {}
     for sym, strat in strats.items():
         b = yf.download(sym, startstr, endstr, progress=False)
-        bars = [Bar(b['Low'][x], b['Close'][x], b['High'][x], b.index[x]) for x in range(len(b))]
+        bars = [Bar(b['Low'][x], b['Close'][x], b['High'][x], b['Volume'][x], b.index[x]) for x in range(len(b))]
 
         allBars[sym] = bars
 
-        strat.setupIndicators(bars[0:setupTime])
+        for x in bars[0:setupTime]:
+            strat.addData(x)
 
     logInfo("Setup", f"Strategies setup with {setupTime} days")
 
