@@ -312,7 +312,7 @@ class BTGUI(tk.Frame):
         with open(self.stratFile, mode='r') as f:
             strat = json.load(f)
 
-        runTrader(stratVars=strat,
+        runTrader(stratVars=strat['graph'],
                   stocks=self.stocks,
                   liveRun=liveRun)
 
