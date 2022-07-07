@@ -1,6 +1,7 @@
 import datetime
 from configparser import ConfigParser
 from typing import Dict, Optional, List, Tuple
+import os.path
 
 import yfinance as yf
 
@@ -14,13 +15,19 @@ from ..trading.nodeStrategy import NodeStrategy
 _config = None
 _systemLoaded = False
 
+_configLoc = r"config/system.cfg"
+
 def loadSystem() -> ConfigParser:
     global _systemLoaded, _config
 
     if not _systemLoaded:
         _systemLoaded = True
         _config = ConfigParser()
-        _config.read(r'config/system.cfg')
+        if os.path.exists(_configLoc):
+            _config.read(_configLoc)
+        else:
+            print(f"ERROR: Cannot find {_configLoc}")
+            exit(1)
 
         syscfg = _config['System']
 

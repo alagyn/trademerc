@@ -10,7 +10,7 @@ from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order, OrderStatus, OrderType
 from cash_money.objects.position import Position
 from cash_money.objects.stock import Stock
-from cash_money.trading.notifiers.notfier import Notifier
+from cash_money.trading.notifiers.notfier import Notifier, NotifyKeys
 from cash_money.utils.log_utils import logInfo as _logInfo
 from .broker import Broker
 
@@ -225,16 +225,16 @@ class AlpacaBroker(Broker):
             for sym, s in self._stocks.items():
                 if s.position is not None:
                     p = {
-                        'symbol': s.symbol,
-                        'qty': s.position.qty,
-                        'pl': s.position.unrealized_pl,
-                        'price': s.position.current_price,
-                        'value': s.position.market_value,
-                        'p_value': s.position.avg_entry_price,
-                        'p_date': s.order().data("filled_at"),
-                        'stop_price': s.stopOrder().data("stop_price"),
-                        'last_stop': s.lastStopUpdate,
-                        'next_stop': s.nextStopUpdate
+                        NotifyKeys.Position.Symbol: s.symbol,
+                        NotifyKeys.Position.Qty: s.position.qty,
+                        NotifyKeys.Position.PL: s.position.unrealized_pl,
+                        NotifyKeys.Position.Price: s.position.current_price,
+                        NotifyKeys.Position.Value: s.position.market_value,
+                        NotifyKeys.Position.PurchaseValue: s.position.avg_entry_price,
+                        NotifyKeys.Position.PurchaseDate: s.order().data("filled_at"),
+                        NotifyKeys.Position.StopPrice: s.stopOrder().data("stop_price"),
+                        NotifyKeys.Position.LastStop: s.lastStopUpdate,
+                        NotifyKeys.Position.NextStop: s.nextStopUpdate
                     }
                     positions.append(p)
 
@@ -285,11 +285,11 @@ class AlpacaBroker(Broker):
                 value = qty * price
 
                 t = {
-                    'symbol': order.symbol,
-                    'side': order.side,
-                    'qty': qty,
-                    'price': price,
-                    'value': value
+                    NotifyKeys.Trade.Symbol: order.symbol(),
+                    NotifyKeys.Trade.Side: order.side(),
+                    NotifyKeys.Trade.Qty: qty,
+                    NotifyKeys.Trade.Price: price,
+                    NotifyKeys.Trade.Value: value
                 }
 
                 self._trades.append(t)
