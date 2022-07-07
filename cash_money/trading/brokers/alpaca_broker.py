@@ -306,8 +306,15 @@ class AlpacaBroker(Broker):
     def getOrder(self, orderid) -> Order:
         return AlpacaOrder(self._api.get_order(str(orderid)))
 
-    def getAllOrders(self) -> List[Order]:
-        return [AlpacaOrder(x) for x in self._api.list_orders()]
+    def getAllOrders(self) -> Dict[str, Order]:
+        """
+        :return: Dict OrderID -> Order
+        """
+        out = {}
+        for x in self._api.list_orders():
+            ao = AlpacaOrder(x)
+            out[ao.orderid()] = ao
+        return out
 
     def getPosition(self, symbol: str) -> Position:
         return self._api.get_position(symbol)
