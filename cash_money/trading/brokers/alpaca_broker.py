@@ -311,7 +311,7 @@ class AlpacaBroker(Broker):
         :return: Dict OrderID -> Order
         """
         out = {}
-        for x in self._api.list_orders():
+        for x in self._api.list_orders(status="all", limit=len(self._openOrders)):
             ao = AlpacaOrder(x)
             out[ao.orderid()] = ao
         return out

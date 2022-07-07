@@ -2,7 +2,9 @@ from alpaca_trade_api.rest import REST
 import cash_money.utils.api_utils as api_utils
 
 def close_all(api: REST):
+    print("Cancelling all orders")
     api.cancel_all_orders()
+    print("Closing all positions")
     api.close_all_positions()
 
 
