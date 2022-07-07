@@ -117,7 +117,8 @@ class AlpacaOrder(Order):
     _CANCEL_SET = {"canceled", "expired", "replaced", "pending_cancel", "pending_replace"}
 
     def __init__(self, o: alpaca.rest.Order):
-        super().__init__(o.orderid)
+        super().__init__(o.id)
+
         self._o = o
         if self._o.side == 'sell':
             self._type = OrderType.SELL
