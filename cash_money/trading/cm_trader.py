@@ -48,6 +48,7 @@ class Trader:
         # Update positions and BP
         logDebug('Updating Positions')
         self.updateBuyPwr()
+        logInfo(f"Cycle Buy Power: ${self.totalBuyPwr}")
 
         # Calculate today's actions
         logDebug('Calculating Daily Actions')
@@ -82,6 +83,8 @@ class Trader:
             buyPwr = self.totalBuyPwr / numOutOfMarket
         else:
             buyPwr = 0
+
+        logInfo(f"Num out of market: {numOutOfMarket}, per-stock buy pwr: ${buyPwr:.2f}")
 
         for a in actions:
             if a.action == ActionEnum.Buy:
