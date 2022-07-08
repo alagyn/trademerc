@@ -85,8 +85,14 @@ class Trader:
 
         for a in actions:
             if a.action == ActionEnum.Buy:
+                if buyPwr <= 0:
+                    logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
+                    continue
                 self.submitBuy(a, buyPwr)
             elif a.action == ActionEnum.BuyAndStop:
+                if buyPwr <= 0:
+                    logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
+                    continue
                 self.submitBuyAndStop(a, buyPwr)
             elif a.action == ActionEnum.Sell:
                 self.submitSell(a)
@@ -100,10 +106,16 @@ class Trader:
 
     def submitBuy(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
+        if qty <= 0:
+            logInfo(f"Qty <= 0: {qty}, not submitting Buy request\n\t{str(action)}")
+            return
         self.broker.submitBuy(action.stock, qty)
 
     def submitBuyAndStop(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
+        if qty <= 0:
+            logInfo(f"Qty <= 0: {qty}, not submitting Buy&Stop request\n\t{str(action)}")
+            return
 
         try:
             self.broker.submitBuy(action.stock, qty,
