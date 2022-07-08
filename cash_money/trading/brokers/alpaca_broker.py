@@ -275,7 +275,10 @@ class AlpacaBroker(Broker):
         filled = []
         orders = self.getAllOrders()
         for orderid in self._openOrders:
-            order = orders[orderid]
+            try:
+                order = orders[orderid]
+            except KeyError:
+                order = self.getOrder(orderid)
 
             if order.status() == OrderStatus.FILLED:
                 filled.append(orderid)
