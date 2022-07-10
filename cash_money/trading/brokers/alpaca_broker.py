@@ -198,8 +198,6 @@ class AlpacaBroker(Broker):
         # Close all positions?
         # self._api.close_all_positions()
 
-        # TODO pull existing positions
-
     def postRun(self) -> None:
         log.logInfo('Stopping System, Cancelling all existing orders')
         self._api.cancel_all_orders()

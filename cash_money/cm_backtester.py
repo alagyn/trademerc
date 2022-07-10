@@ -49,7 +49,6 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
     runTradeBroker(trader, broker)
 
     log.logInfo("Calculating Stats")
-    # TODO param
     runStats = broker.getRunStats(True)
     runStats["Strat"] = stratName
 
