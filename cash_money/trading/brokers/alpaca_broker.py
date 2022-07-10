@@ -78,7 +78,7 @@ class SecTF(TimeFrame):
             time.sleep(self.secs)
 
     def notifyWait(self) -> float:
-        return self.secs / 2
+        return min(self.secs / 2, 600)
 
     def postWait(self) -> None:
         # ILB
@@ -119,7 +119,6 @@ class DailyTF(TimeFrame):
 
     def notifyWait(self) -> float:
         return 600
-
 
 
 class AlpacaOrder(Order):
