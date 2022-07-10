@@ -12,6 +12,7 @@ def registerNodes(nodegraph: NodeGraph):
         inputNode.InputNode,
         invertNode.InvertNode,
         macdNode.MACD,
+        mathNode.MathNode,
         maxCheckNode.MaxCheck,
         minCheckNode.MinCheck,
         parabolicSARNode.ParabolicSAR,

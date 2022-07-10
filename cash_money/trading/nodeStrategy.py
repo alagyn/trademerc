@@ -14,6 +14,9 @@ class NodeStrategy:
         self.nodegraph.loadFromJSON(jGraph)
         self.nodegraph.setupNodes()
 
+        self.stopPeriod = self.nodegraph.datamap[STOP_PERIOD]
+        self.nextStopUpdate = 0
+
     def addData(self, bar: Bar):
         self.nodegraph.datamap[LOW] = bar.lo
         self.nodegraph.datamap[CLOSE] = bar.close
@@ -24,17 +27,26 @@ class NodeStrategy:
         self.nodegraph.execute()
         pos = stock.status()
 
+        stop = self.nodegraph.datamap[STOP]
+
         if pos == StockStatus.InMarket:
             if self.nodegraph.datamap[EXIT]:
                 return stock.sell()
 
-            # TODO stop calc
+            if stop is not None and tradeDay >= self.nextStopUpdate:
+                self.nextStopUpdate = tradeDay + self.stopPeriod
+                return stock.updateStop(stop, stop * 0.8)
+
             return stock.hold()
 
         elif pos == StockStatus.OutMarket:
             if self.nodegraph.datamap[ENTRY]:
-                # TODO stop calc
-                return stock.buy()
+
+                if stop is None:
+                    return stock.buy()
+                else:
+                    self.nextStopUpdate = tradeDay + self.stopPeriod
+                    return stock.buyAndStop(stop, stop * 0.8)
 
             return stock.hold()
 

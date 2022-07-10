@@ -8,6 +8,7 @@ __all__ = [
     "inputNode",
     "invertNode",
     "macdNode",
+    "mathNode",
     "maxCheckNode",
     "minCheckNode",
     "parabolicSARNode",

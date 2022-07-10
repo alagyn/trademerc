@@ -2,6 +2,7 @@ import datetime
 from configparser import ConfigParser
 from typing import Dict, Optional, List, Tuple
 import os.path
+import traceback
 
 import yfinance as yf
 
@@ -88,18 +89,25 @@ def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.da
 
 
 def runTradeBroker(trader: Trader, broker: Broker):
-    log.logInfo("Broker Pre-run")
-    broker.preRun()
+    try:
+        log.logInfo("Broker Pre-run")
+        broker.preRun()
 
-    log.logInfo("Starting Loop")
-    while True:
-        if not broker.preTrade():
-            break
+        log.logInfo("Starting Loop")
+        while True:
+            if not broker.preTrade():
+                break
 
-        trader.trade()
-        broker.postTrade()
-        broker.incDay()
+            trader.trade()
+            broker.postTrade()
+            broker.incDay()
 
-    log.logInfo("Broker Post-run")
-    broker.postRun()
-    log.logInfo("Run Complete")
+        log.logInfo("Broker Post-run")
+        broker.postRun()
+        log.logInfo("Run Complete")
+    except Exception as err:
+        # Catch errors to log them to file
+        msg = f'ERROR:\n{traceback.format_exception(err)}'
+        log.logErr(msg)
+        # raise to propagate
+        raise
