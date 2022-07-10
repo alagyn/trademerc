@@ -9,13 +9,15 @@ from cash_money.consts import DATE_FMT
 from cash_money.objects.bar import Bar
 from cash_money.trading.brokers.broker import Broker
 from cash_money.trading.cm_trader import Trader
-from .log_utils import _setupLogger, logInfo
+from .log_utils import _setupLogger, CMLogger
 from ..trading.nodeStrategy import NodeStrategy
 
 _config = None
 _systemLoaded = False
 
 _configLoc = r"config/system.cfg"
+
+log = CMLogger("Run Utils")
 
 def loadSystem() -> ConfigParser:
     global _systemLoaded, _config
@@ -80,16 +82,16 @@ def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.da
         for x in bars[0:setupTime]:
             strat.addData(x)
 
-    logInfo("Setup", f"Strategies setup with {setupTime} days")
+    log.logInfo(f"Strategies setup with {setupTime} days")
 
     return allBars, setupTime
 
 
 def runTradeBroker(trader: Trader, broker: Broker):
-    logInfo("Run", "Broker Pre-run")
+    log.logInfo("Broker Pre-run")
     broker.preRun()
 
-    logInfo("Run", "Starting Loop")
+    log.logInfo("Starting Loop")
     while True:
         if not broker.preTrade():
             break
@@ -98,6 +100,6 @@ def runTradeBroker(trader: Trader, broker: Broker):
         broker.postTrade()
         broker.incDay()
 
-    logInfo("Run", "Broker Post-run")
+    log.logInfo("Broker Post-run")
     broker.postRun()
-    logInfo("Run", "Run Complete")
+    log.logInfo("Run Complete")

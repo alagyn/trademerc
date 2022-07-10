@@ -8,10 +8,9 @@ from alpaca_trade_api.common import URL
 
 from cash_money.consts import LIVE_ENDPOINT, PAPER_ENDPOINT
 from cash_money.objects.bar import Bar
-from cash_money.utils.log_utils import logInfo as _logInfo
+from cash_money.utils.log_utils import CMLogger
 
-def logInfo(m):
-    _logInfo("Alpaca API", m)
+log = CMLogger("Alpaca API")
 
 
 def loadPaperAPI(apiCfg=None):
@@ -20,7 +19,7 @@ def loadPaperAPI(apiCfg=None):
         apiCfg.read('config/system.cfg')
         apiCfg = apiCfg['Alpaca']
 
-    logInfo('Initializing Paper Account')
+    log.logInfo('Initializing Paper Account')
     api_key = str(apiCfg['Paper_API_Key'])
     api_secret = str(apiCfg['Paper_API_Secret'])
     endpoint = PAPER_ENDPOINT
@@ -28,7 +27,7 @@ def loadPaperAPI(apiCfg=None):
 
 
 def loadLiveAPI(apiCfg=None):
-    logInfo('Initializing Live Account')
+    log.logInfo('Initializing Live Account')
     api_key = apiCfg['Live_API_Key']
     api_secret = apiCfg['Live_API_Secret']
     endpoint = LIVE_ENDPOINT

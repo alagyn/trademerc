@@ -9,11 +9,11 @@ from cash_money.trading.notifiers.emailer import CMEmailer
 from cash_money.trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
 from cash_money.utils.file_utils import loadStockFile, loadStratFile
 from cash_money.utils.run_utils import runTradeBroker, loadSystem, setupStrategies
-from cash_money.utils.log_utils import logInfo as _logInfo
+from cash_money.utils.log_utils import CMLogger
 from cash_money.utils.api_utils import loadLiveAPI, loadPaperAPI
 
-def logInfo(m):
-    _logInfo("Trader", m)
+
+log = CMLogger("Run Alpaca")
 
 
 def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = False,
@@ -22,18 +22,18 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     apiCfg = config['Alpaca']
 
     if stratFile is not None:
-        logInfo('Loading Strategy')
+        log.logInfo('Loading Strategy')
         stratVars = loadStratFile(stratFile)
 
     if stockFile is not None:
-        logInfo('Loading Stocks')
+        log.logInfo('Loading Stocks')
         stocks = loadStockFile(stockFile)
 
     strats = {}
     for sym in stocks:
         strats[sym] = NodeStrategy(stratVars)
 
-    logInfo('Setting up strategies')
+    log.logInfo('Setting up strategies')
     setupStrategies(strats, datetime.datetime.now())
 
     if config['System'].getboolean('EnableNotify'):

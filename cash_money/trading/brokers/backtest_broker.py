@@ -8,7 +8,9 @@ from cash_money.objects.order import Order, OrderType, OrderStatus
 from cash_money.objects.position import Position
 from cash_money.objects.stock import Stock
 from .broker import Broker
-from cash_money.utils.log_utils import logInfo as _logInfo, logDbg
+from cash_money.utils.log_utils import CMLogger
+
+log = CMLogger("Backtest Brkr")
 
 
 class BacktestOrder(Order):
@@ -87,15 +89,8 @@ class Stats:
             self.winList.append(delta)
 
 
-def logInfo(m):
-    _logInfo("Backtest Brkr", m)
+statLog = CMLogger("Stats")
 
-
-def logDebug(m) -> None:
-    logDbg("Backtest Brkr", m)
-
-def logStats(m):
-    _logInfo("Stats", m)
 
 def checkStop(stop):
     if stop < 0:
@@ -157,7 +152,7 @@ class BacktestBroker(Broker):
         if self.barIdx >= self.endIdx:
             return False
 
-        logInfo(f"Begin Trade Day: {self.tradeDay}")
+        log.logInfo(f"Begin Trade Day: {self.tradeDay}")
 
         self.curDate = None
 
@@ -182,7 +177,7 @@ class BacktestBroker(Broker):
                 self.stops.pop(sym)
                 self[sym].position = None
 
-                logInfo(f"{sym}: Stop Activated, Value: ${newCash:.2f}")
+                log.logInfo(f"{sym}: Stop Activated, Value: ${newCash:.2f}")
 
         return True
 
@@ -198,20 +193,20 @@ class BacktestBroker(Broker):
         # Update Graph Logs
         self.portfolio_cash[self.tradeDay] = round(self.totalCash, 2)
         self.portfolio_value[self.tradeDay] = round(inMarketEquity, 2)
-        logInfo(f"Total Value: ${self.totalCash + inMarketEquity: .2f}")
+        log.logInfo(f"Total Value: ${self.totalCash + inMarketEquity: .2f}")
 
         self.barIdx += 1
 
     def postRun(self) -> None:
         # clear out any remaining positions
-        logInfo("Closing open positions")
+        log.logInfo("Closing open positions")
         for sym, q in self.qty.items():
             if q > 0:
                 sellPrice = self.bars[sym][-1].close
                 newCash = q * sellPrice
                 self.stats[sym].addSell(self.curDate, newCash, sellPrice)
                 self.totalCash += newCash
-                logInfo(f"    {sym}: Qty={q}, Value={newCash:.2f}")
+                log.logInfo(f"    {sym}: Qty={q}, Value={newCash:.2f}")
 
     def buyPwr(self) -> float:
         return self.totalCash
@@ -325,13 +320,13 @@ class BacktestBroker(Broker):
         winPercent = 0 if numTrades == 0 else wins / (wins + losses)
 
         if logToConsole:
-            logStats(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
-            logStats(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
-            logStats(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
-            logStats(f'Win %: {winPercent:.2%}')
-            logStats(f'Avg Gain: ${avgGain:,.2f}')
-            logStats(f'Avg Loss: ${avgLoss:,.2f}')
-            logStats(f'SQN: {sqnVal:.3f}')
+            statLog.logInfo(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
+            statLog.logInfo(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
+            statLog.logInfo(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
+            statLog.logInfo(f'Win %: {winPercent:.2%}')
+            statLog.logInfo(f'Avg Gain: ${avgGain:,.2f}')
+            statLog.logInfo(f'Avg Loss: ${avgLoss:,.2f}')
+            statLog.logInfo(f'SQN: {sqnVal:.3f}')
 
         return {
             'StartValue': f"{self.startingVal:,.2f}",

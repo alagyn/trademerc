@@ -7,7 +7,7 @@ from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.trading.brokers.broker import Broker
 from cash_money.objects.action import ActionEnum, Action
 from cash_money.objects.stock import StockStatus
-from cash_money.utils.log_utils import logInfo as _logInfo, logErr, logDbg
+from cash_money.utils.log_utils import CMLogger
 
 BUY_PWR_SAFETY = 0.985
 
@@ -15,17 +15,7 @@ BUY_PWR_SAFETY = 0.985
 def calcQty(buyPwr: float, cost: float):
     return math.floor(buyPwr / cost)
 
-
-def logInfo(m):
-    _logInfo('Trader', m)
-
-
-def logCrit(m):
-    logErr('Trader', m)
-
-
-def logDebug(m):
-    logDbg("Trader", m)
+log = CMLogger("Trader")
 
 
 class Trader:
@@ -42,20 +32,20 @@ class Trader:
 
     def trade(self):
         # Update indicators with today's values
-        logDebug('Updating Graphs')
+        log.logDbg('Updating Graphs')
         self.updateGraphs()
 
         # Update positions and BP
-        logDebug('Updating Positions')
+        log.logDbg('Updating Positions')
         self.updateBuyPwr()
-        logInfo(f"Cycle Buy Power: ${self.totalBuyPwr}")
+        log.logInfo(f"Cycle Buy Power: ${self.totalBuyPwr}")
 
         # Calculate today's actions
-        logDebug('Calculating Daily Actions')
+        log.logDbg('Calculating Daily Actions')
         actions = self.getDailyActions()
 
         # Run actions
-        logDebug('Running Daily Actions')
+        log.logDbg('Running Daily Actions')
         self.runActions(actions)
 
     def updateGraphs(self):
@@ -84,17 +74,17 @@ class Trader:
         else:
             buyPwr = 0
 
-        logInfo(f"Num out of market: {numOutOfMarket}, per-stock buy pwr: ${buyPwr:.2f}")
+        log.logInfo(f"Num out of market: {numOutOfMarket}, per-stock buy pwr: ${buyPwr:.2f}")
 
         for a in actions:
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
-                    logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
+                    log.logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
                     continue
                 self.submitBuy(a, buyPwr)
             elif a.action == ActionEnum.BuyAndStop:
                 if buyPwr <= 0:
-                    logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
+                    log.logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
                     continue
                 self.submitBuyAndStop(a, buyPwr)
             elif a.action == ActionEnum.Sell:
@@ -105,19 +95,19 @@ class Trader:
                 # ILB
                 pass
 
-            logInfo(str(a))
+            log.logInfo(str(a))
 
     def submitBuy(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
         if qty <= 0:
-            logInfo(f"Qty <= 0: {qty}, not submitting Buy request\n\t{str(action)}")
+            log.logInfo(f"Qty <= 0: {qty}, not submitting Buy request\n\t{str(action)}")
             return
         self.broker.submitBuy(action.stock, qty)
 
     def submitBuyAndStop(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
         if qty <= 0:
-            logInfo(f"Qty <= 0: {qty}, not submitting Buy&Stop request\n\t{str(action)}")
+            log.logInfo(f"Qty <= 0: {qty}, not submitting Buy&Stop request\n\t{str(action)}")
             return
 
         try:

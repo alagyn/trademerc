@@ -3,20 +3,19 @@ import time
 from abc import ABC
 from time import sleep
 from typing import List, Union, Dict, Tuple, Optional
+import threading
 
 import alpaca_trade_api as alpaca
+from alpaca_trade_api.entity import Position
 
 from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order, OrderStatus, OrderType
-from cash_money.objects.position import Position
 from cash_money.objects.stock import Stock
 from cash_money.trading.notifiers.notfier import Notifier, NotifyKeys
-from cash_money.utils.log_utils import logInfo as _logInfo
+from cash_money.utils.log_utils import CMLogger
 from .broker import Broker
 
-
-def logInfo(m):
-    _logInfo("Alpaca Brkr", m)
+log = CMLogger("Alpaca Brkr")
 
 
 def toTS(t):
@@ -25,9 +24,7 @@ def toTS(t):
 
 MARKET_CLOSE_DELTA = 15 * 60
 
-
-def logTF(m):
-    _logInfo("Timeframe", m)
+tfLog = CMLogger("Timeframe")
 
 
 class TimeFrame(ABC):
@@ -35,6 +32,9 @@ class TimeFrame(ABC):
         self._api = api
 
     def wait(self) -> None:
+        raise NotImplementedError
+
+    def notifyWait(self) -> float:
         raise NotImplementedError
 
     def postWait(self) -> None:
@@ -50,7 +50,8 @@ class TimeFrame(ABC):
                 return
 
             if diff > 6:
-                logTF(f'Sleeping {diff / 60:.2f}min')
+                # TODO add current time to log
+                tfLog.logInfo(f'Sleeping {diff / 60:.2f}min')
                 timeToSleep = diff - 5
                 sleep(timeToSleep)
             else:
@@ -69,11 +70,15 @@ class SecTF(TimeFrame):
         now = toTS(clock.timestamp)
 
         if not clock.is_open or now + self.secs + 0.5 > timeToClose:
-            logTF(f"Sleeping until market opens")
+            # TODO add wait time
+            tfLog.logInfo(f"Sleeping until market opens")
             self._waitForTS(timeToOpen + 1)
         else:
-            logTF(f"Sleeping {self.secs}sec")
+            tfLog.logInfo(f"Sleeping {self.secs}sec")
             time.sleep(self.secs)
+
+    def notifyWait(self) -> float:
+        return self.secs / 2
 
     def postWait(self) -> None:
         # ILB
@@ -97,20 +102,24 @@ class DailyTF(TimeFrame):
         clock = self._api.get_clock()
 
         if self.anchorStart:
-            logTF(f"Sleeping until {self._min} after Open")
+            tfLog.logInfo(f"Sleeping until {self._min} after Open")
             timeToOpen = toTS(clock.next_open)
             self._waitForTS(timeToOpen + self._secs)
         else:
-            logTF(f"Sleeping until {self._min} before close")
+            tfLog.logInfo(f"Sleeping until {self._min} before close")
             timeToClose = toTS(clock.next_close)
             self._waitForTS(timeToClose - self._secs)
 
     def postWait(self) -> None:
         clock = self._api.get_clock()
 
-        logTF(f'Forcing sleep until open')
+        tfLog.logInfo(f'Forcing sleep until open')
         timeToOpen = toTS(clock.next_open)
         self._waitForTS(timeToOpen)
+
+    def notifyWait(self) -> float:
+        return 600
+
 
 
 class AlpacaOrder(Order):
@@ -190,59 +199,68 @@ class AlpacaBroker(Broker):
         # Close all positions?
         # self._api.close_all_positions()
 
+        # TODO pull existing positions
+
     def postRun(self) -> None:
-        logInfo('Stopping System, Cancelling all existing orders')
+        log.logInfo('Stopping System, Cancelling all existing orders')
         self._api.cancel_all_orders()
         # Close all positions?
         # self.api.close_all_positions()
-        logInfo('Done')
+        log.logInfo('Done')
 
     def preTrade(self) -> bool:
         self._account = self._api.get_account()
 
-        logInfo(f"Begin Trade Step: {self.tradeDay}")
+        log.logInfo(f"Begin Trade Step: {self.tradeDay}")
 
         # Wait for the next TF cycle
         self._timeframe.wait()
 
+        self._updatePositions()
         self._updateBars()
 
         return True
 
-    def postTrade(self) -> None:
-
+    def _notifyThread(self):
+        time.sleep(self._timeframe.notifyWait())
         self._account = self._api.get_account()
 
         self._updateTrades()
 
         curEquity = round(float(self._account.equity), 2)
 
-        if self._notif is not None:
-            logInfo('Sending Update')
-            totalPL = curEquity - self._prevEquity
+        log.logInfo('Sending Update')
+        totalPL = curEquity - self._prevEquity
 
-            positions = []
-            for sym, s in self._stocks.items():
-                if s.position is not None:
-                    p = {
-                        NotifyKeys.Position.Symbol: s.symbol,
-                        NotifyKeys.Position.Qty: s.position.qty,
-                        NotifyKeys.Position.PL: s.position.unrealized_pl,
-                        NotifyKeys.Position.Price: s.position.current_price,
-                        NotifyKeys.Position.Value: s.position.market_value,
-                        NotifyKeys.Position.PurchaseValue: s.position.avg_entry_price,
-                        NotifyKeys.Position.PurchaseDate: s.order().data("filled_at"),
-                        NotifyKeys.Position.StopPrice: s.stopOrder().data("stop_price"),
-                        NotifyKeys.Position.LastStop: s.lastStopUpdate,
-                        NotifyKeys.Position.NextStop: s.nextStopUpdate
-                    }
-                    positions.append(p)
+        positions = []
+        for sym, s in self._stocks.items():
+            if s.position is not None:
+                p = {
+                    NotifyKeys.Position.Symbol: s.symbol,
+                    NotifyKeys.Position.Qty: s.position.qty,
+                    NotifyKeys.Position.PL: s.position.unrealized_pl,
+                    NotifyKeys.Position.Price: s.position.current_price,
+                    NotifyKeys.Position.Value: s.position.market_value,
+                    NotifyKeys.Position.PurchaseValue: s.position.avg_entry_price,
+                    NotifyKeys.Position.PurchaseDate: s.order().data("filled_at"),
+                    NotifyKeys.Position.StopPrice: s.stopOrder().data("stop_price"),
+                    NotifyKeys.Position.LastStop: s.lastStopUpdate,
+                    NotifyKeys.Position.NextStop: s.nextStopUpdate
+                }
+            else:
+                p = {
+                    NotifyKeys.Position.Symbol: s.symbol,
+                    NotifyKeys.Position.Qty: 0
+                }
+            positions.append(p)
 
-            self._notif.update(self._prevEquity, curEquity, totalPL, self._trades, positions)
-
+        self._notif.update(self._prevEquity, curEquity, totalPL, self._trades, positions)
         self._prevEquity = curEquity
         self._trades = []
 
+    def postTrade(self) -> None:
+        if self._notif is not None:
+            threading.Thread(target=self._notifyThread).start()
         self._timeframe.postWait()
 
     def _clock(self) -> alpaca.rest.Clock:

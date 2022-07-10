@@ -6,23 +6,29 @@ from cash_money.consts import ROOT_LOGGER
 
 _ERR_C = '\033[91m'
 _DBG_C = '\033[92m'
+_WRN_C = "\033[93m"
 _END_C = '\033[0m'
 
-_F_LOG_FMT = '%(asctime)s %(levelname)s:%(message)s'
+_DFLT = '%(levelname)5s:%(message)s'
+_FILE_FMT = logging.Formatter(f'%(asctime)s {_DFLT}',
+                              datefmt='%b-%d %H:%M:%S')
 
-_C_DFLT = '%(levelname)5s:%(message)s'
+_DFLT_LOG_FMT = logging.Formatter(_DFLT)
+_ERR_LOG_FMT = logging.Formatter(f'{_ERR_C}{_DFLT}{_END_C}')
+_DBG_LOG_FMT = logging.Formatter(f'{_DBG_C}{_DFLT}{_END_C}')
+_WRN_LOG_FMT = logging.Formatter(f"{_WRN_C}{_DFLT}{_END_C}")
 
-_C_ERR_LOG_FMT = f'{_ERR_C}{_C_DFLT}{_END_C}'
-_C_DBG_LOG_FMT = f'{_DBG_C}{_C_DFLT}{_END_C}'
-_C_LOG_FMT = _C_DFLT
+class _ConsoleFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        if record.levelno == logging.DEBUG:
+            return _ERR_LOG_FMT.format(record)
+        elif record.levelno == logging.WARNING:
+            return _WRN_LOG_FMT.format(record)
+        elif record.levelno == logging.ERROR:
+            return _ERR_LOG_FMT.format(record)
+        else:
+            return _DFLT_LOG_FMT.format(record)
 
-def _consoleInfofilter(record: logging.LogRecord) -> bool:
-    """Filter to just show info messages"""
-    return record.levelno == logging.INFO
-
-def _consoleDebugFilter(record: logging.LogRecord) -> bool:
-    """Filter to just show info messages"""
-    return record.levelno == logging.DEBUG
 
 _logger = logging.getLogger(ROOT_LOGGER)
 
@@ -41,44 +47,31 @@ def _setupLogger(debug: bool, logToFile: bool, logDir: str):
             mode='w'
         )
         filehandler.setLevel(level = logging.DEBUG if debug else logging.INFO)
-        ff = logging.Formatter(fmt=_F_LOG_FMT,
-                               datefmt='%b-%d %H:%M:%S')
-        filehandler.setFormatter(ff)
+        filehandler.setFormatter(_FILE_FMT)
         _logger.addHandler(filehandler)
 
-    # logger that only shows info messages
     console1 = logging.StreamHandler(sys.stdout)
-    console1.setLevel(logging.INFO)
-    formatter = logging.Formatter(_C_LOG_FMT)
-    console1.setFormatter(formatter)
-    console1.addFilter(_consoleInfofilter)
+    console1.setLevel(logging.DEBUG if debug else logging.INFO)
+    console1.setFormatter(_ConsoleFormatter())
     _logger.addHandler(console1)
-
-    # logger that shows error and above
-    console2 = logging.StreamHandler(sys.stdout)
-    console2.setLevel(logging.WARNING)
-    formatter = logging.Formatter(_C_ERR_LOG_FMT)
-    console2.setFormatter(formatter)
-    _logger.addHandler(console2)
-
-    if debug:
-        console3 = logging.StreamHandler(sys.stdout)
-        console3.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(_C_DBG_LOG_FMT)
-        console3.setFormatter(formatter)
-        console3.addFilter(_consoleDebugFilter)
-        _logger.addHandler(console3)
 
     _logger.debug("Setup logging")
 
-def _log(level, module, msg):
-    _logger.log(level, f'{module:^15s}: {msg}')
+class CMLogger:
+    def __init__(self, module: str):
+        self.module = module
 
-def logInfo(module, msg):
-    _log(logging.INFO, module, msg)
+    def _log(self, level, msg):
+        _logger.log(level, f'{self.module:^15s}: {msg}')
 
-def logDbg(module, msg):
-    _log(logging.DEBUG, module, msg)
+    def logWrn(self, msg):
+        self._log(logging.WARNING, msg)
 
-def logErr(module, msg):
-    _log(logging.ERROR, module, msg)
+    def logInfo(self, msg):
+        self._log(logging.INFO, msg)
+
+    def logDbg(self, msg):
+        self._log(logging.DEBUG, msg)
+
+    def logErr(self, msg):
+        self._log(logging.ERROR, msg)

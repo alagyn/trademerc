@@ -7,7 +7,6 @@ from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order
 from .action import Action, ActionEnum
 
-
 class StockStatus(IntEnum):
     InMarket = 0
     Pending = 1
