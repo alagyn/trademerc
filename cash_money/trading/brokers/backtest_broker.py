@@ -5,7 +5,6 @@ import math
 from ... import cmErrors
 from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order, OrderType, OrderStatus
-from cash_money.objects.position import Position
 from cash_money.objects.stock import Stock
 from .broker import Broker
 from cash_money.utils.log_utils import CMLogger
@@ -223,11 +222,11 @@ class BacktestBroker(Broker):
         # TODO
         raise NotImplementedError
 
-    def getPosition(self, symbol: str) -> Position:
+    def getPosition(self, symbol: str) -> any:
         # TODO
         raise NotImplementedError
 
-    def getOpenPositions(self) -> Dict[str, Position]:
+    def getOpenPositions(self) -> Dict[str, any]:
         # TODO
         raise NotImplementedError
 

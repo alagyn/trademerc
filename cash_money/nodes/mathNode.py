@@ -1,7 +1,5 @@
-import nodepasta.errors
-
 from cash_money.nodes.cmNode import CMNode
-from nodepasta.node import InPort, OutPort, NodeArg
+from nodepasta.node import InPort, OutPort
 from nodepasta.argtypes import FLOAT, EnumNodeArg
 from nodepasta.errors import ExecutionError
 
