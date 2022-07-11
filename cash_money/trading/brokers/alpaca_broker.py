@@ -286,14 +286,20 @@ class AlpacaBroker(Broker):
         stock.order = AlpacaOrder(order)
         self._openOrders[order.id] = order
 
-    def closePosition(self, stock: Stock) -> None:
+    def _closePosition(self, stock: Stock):
         if stock.stopOrder is not None:
             self._api.cancel_order(stock.stopOrder.orderid())
+            # Force sleep to prevent errors
+            time.sleep(0.1)
+
         order = self._api.close_position(symbol=stock.symbol)
         stock.order = None
         stock.stopOrder = None
         stock.lastCloseOrder = order
         self._openOrders[order.id] = order
+
+    def closePosition(self, stock: Stock) -> None:
+        threading.Thread(target=self._closePosition, args=(stock,)).start()
 
     def submitSell(self, symbol: str, qty: int) -> Order:
         """
