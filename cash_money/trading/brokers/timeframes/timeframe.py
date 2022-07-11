@@ -1,0 +1,43 @@
+from abc import ABC
+import datetime
+from alpaca_trade_api import REST
+from time import sleep
+
+from cash_money.utils.log_utils import CMLogger
+
+def toTS(t):
+    return t.replace(tzinfo=datetime.timezone.utc).timestamp()
+
+
+tfLog = CMLogger("Timeframe")
+
+class TimeFrame(ABC):
+    def __init__(self, api: REST):
+        self._api = api
+
+    def wait(self) -> None:
+        raise NotImplementedError
+
+    def notifyWait(self) -> float:
+        raise NotImplementedError
+
+    def postWait(self) -> None:
+        raise NotImplementedError
+
+    def _waitForTS(self, ts):
+        """Utility to wait until timestamp"""
+
+        while True:
+            clock = self._api.get_clock()
+            diff = ts - toTS(clock.timestamp)
+            if diff <= 0:
+                return
+
+            if diff > 6:
+                # TODO add current time to log
+                tfLog.logInfo(f'Sleeping {diff / 60:.2f}min')
+                timeToSleep = diff - 5
+                sleep(timeToSleep)
+            else:
+                sleep(2)
+

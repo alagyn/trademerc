@@ -82,6 +82,7 @@ def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.da
 
         for x in bars[0:setupTime]:
             strat.addData(x)
+            strat.dryRun()
 
     log.logInfo(f"Strategies setup with {setupTime} days")
 
@@ -107,7 +108,9 @@ def runTradeBroker(trader: Trader, broker: Broker):
         log.logInfo("Run Complete")
     except Exception as err:
         # Catch errors to log them to file
-        msg = f'ERROR:\n{traceback.format_exception(err)}'
+        tb = traceback.TracebackException.from_exception(err).format()
+        tb = "".join(tb)
+        msg = f'ERROR:\n{tb}'
         log.logErr(msg)
         # raise to propagate
         raise

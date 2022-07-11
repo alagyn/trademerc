@@ -6,7 +6,10 @@ from typing import List
 from cash_money.trading.cm_trader import Trader
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.trading.notifiers.emailer import CMEmailer
-from cash_money.trading.brokers.alpaca_broker import AlpacaBroker, SecTF, DailyTF
+from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
+from cash_money.trading.brokers.alpaca_broker import AlpacaBroker
+from cash_money.trading.brokers.timeframes.dailyTF import DailyTF
+from cash_money.trading.brokers.timeframes.secondTF import SecTF
 from cash_money.utils.file_utils import loadStockFile, loadStratFile
 from cash_money.utils.run_utils import runTradeBroker, loadSystem, setupStrategies
 from cash_money.utils.log_utils import CMLogger
@@ -23,7 +26,7 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
 
     if stratFile is not None:
         log.logInfo('Loading Strategy')
-        stratVars = loadStratFile(stratFile)
+        stratVars = loadStratFile(stratFile)['graph']
 
     if stockFile is not None:
         log.logInfo('Loading Stocks')
@@ -36,10 +39,14 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     log.logInfo('Setting up strategies')
     setupStrategies(strats, datetime.datetime.now())
 
-    if config['System'].getboolean('EnableNotify'):
-        emailer = CMEmailer(config['Email'])
+    notifyType = config['System']['Notify']
+    # TODO error check ^^
+    if notifyType == "Email":
+        notifier = CMEmailer(config['Email'])
+    elif notifyType == "Console":
+        notifier = ConsoleNotifier()
     else:
-        emailer = None
+        notifier = None
 
     if liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
@@ -61,13 +68,16 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     else:
         raise RuntimeError("Invalid Timeframe type")
 
-    broker = AlpacaBroker(api, stocks, emailer, tf)
+    broker = AlpacaBroker(api, stocks, notifier, tf)
     trader = Trader(strats, broker)
 
+    # noinspection PyBroadException
     try:
         runTradeBroker(trader, broker)
-    except KeyboardInterrupt:
+    except:
+        # Errors will be logged in runTradeBroker
         broker.postRun()
+
 
 
 if __name__ == '__main__':

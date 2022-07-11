@@ -4,12 +4,12 @@ import os
 import sys
 from cash_money.consts import ROOT_LOGGER
 
-_ERR_C = '\033[91m'
-_DBG_C = '\033[92m'
-_WRN_C = "\033[93m"
-_END_C = '\033[0m'
+_ERR_C = '\x1b[1;31m'
+_DBG_C = '\x1b[1;32m'
+_WRN_C = "\x1b[1;33m"
+_END_C = '\x1b[0m'
 
-_DFLT = '%(levelname)5s:%(message)s'
+_DFLT = '%(levelname)7s:%(message)s'
 _FILE_FMT = logging.Formatter(f'%(asctime)s {_DFLT}',
                               datefmt='%b-%d %H:%M:%S')
 
@@ -21,7 +21,7 @@ _WRN_LOG_FMT = logging.Formatter(f"{_WRN_C}{_DFLT}{_END_C}")
 class _ConsoleFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         if record.levelno == logging.DEBUG:
-            return _ERR_LOG_FMT.format(record)
+            return _DBG_LOG_FMT.format(record)
         elif record.levelno == logging.WARNING:
             return _WRN_LOG_FMT.format(record)
         elif record.levelno == logging.ERROR:

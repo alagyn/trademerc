@@ -2,9 +2,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import datetime
-from .notfier import Notifier, NotifyKeys
+from .notfier import Notifier
+from .html_generator import HTMLGen
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 class CMEmailer(Notifier):
     def __init__(self, config):
@@ -15,32 +15,14 @@ class CMEmailer(Notifier):
 
         self._toAddr = config['RecievingEmail']
 
-
-        self.htmlEnv = Environment(
-            loader=FileSystemLoader('html_templates'),
-            autoescape=select_autoescape()
-        )
-        self.emailTemplate = self.htmlEnv.get_template("emailtemplate.html")
-
-    def generate(self, portfolio_start, portfolio_cur, portfolio_pl, trades, positions):
-        args = {
-            NotifyKeys.Portfolio.START: portfolio_start,
-            NotifyKeys.Portfolio.CUR: portfolio_cur,
-            NotifyKeys.Portfolio.PL: portfolio_pl,
-            NotifyKeys.TRADES: trades,
-            NotifyKeys.POSITIONS: positions
-        }
-        return self.emailTemplate.render(
-            **args
-        )
+        self.gen = HTMLGen()
 
     def update(self, portfolio_start, portfolio_cur, portfolio_pl, trades, positions):
-        content = self.generate(portfolio_start, portfolio_cur, portfolio_pl, trades, positions)
+        content = self.gen.generate(portfolio_start, portfolio_cur, portfolio_pl, trades, positions)
 
         header = f'Stock Algo Daily Update: {datetime.datetime.today()}'
 
         self._send(header, content)
-
 
     def _send(self, subject: str, content: str):
         msg = MIMEMultipart('alternative')

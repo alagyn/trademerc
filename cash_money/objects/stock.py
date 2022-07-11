@@ -1,26 +1,36 @@
 import datetime
 from enum import IntEnum
 from typing import Optional
+import abc
 
 from cash_money.consts import DATE_FMT
 from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order
 from .action import Action, ActionEnum
 
+
 class StockStatus(IntEnum):
     InMarket = 0
     Pending = 1
     OutMarket = 2
 
+class CMPosition(abc.ABC):
+    @abc.abstractmethod
+    def getstatus(self) -> StockStatus:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def data(self) -> any:
+        raise NotImplementedError
 
 class Stock:
     def __init__(self, symbol: str):
         self.symbol: str = symbol
-        self._order: Optional[Order] = None
-        self._stopOrder: Optional[Order] = None
+        self.order: Optional[Order] = None
+        self.stopOrder: Optional[Order] = None
         self.buyDate = ''
 
-        self.position = None
+        self.position: Optional[CMPosition] = None
 
         self.bar: Optional[Bar] = None
 
@@ -32,23 +42,11 @@ class Stock:
     def updateBar(self, bar: Bar):
         self.bar = bar
 
-    def order(self, o: Order = None) -> Order:
-        if o is not None:
-            self._order = o
-
-        return self._order
-
-    def stopOrder(self, so: Order = None) -> Order:
-        if so is not None:
-            self._stopOrder = so
-
-        return self._stopOrder
-
     def status(self) -> StockStatus:
         if self.position is None:
             return StockStatus.OutMarket
         else:
-            return StockStatus.InMarket
+            return self.position.getstatus()
 
     def buyAndStop(self, stopPrice: float, limitPrice: float):
         """Creates a buy action for this stock"""

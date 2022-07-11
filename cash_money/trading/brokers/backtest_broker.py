@@ -5,11 +5,19 @@ import math
 from ... import cmErrors
 from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order, OrderType, OrderStatus
-from cash_money.objects.stock import Stock
+from cash_money.objects.stock import Stock, CMPosition, StockStatus
 from .broker import Broker
 from cash_money.utils.log_utils import CMLogger
 
 log = CMLogger("Backtest Brkr")
+
+
+class BackTestPosition(CMPosition):
+    def getstatus(self) -> StockStatus:
+        return StockStatus.InMarket
+
+    def data(self) -> any:
+        return None
 
 
 class BacktestOrder(Order):
@@ -232,12 +240,13 @@ class BacktestBroker(Broker):
 
     def submitBuy(self, stock: Stock, qty: int, stopLimit: Optional[Tuple[float, float]] = None) -> None:
         # Set position to non-None
-        stock.position = "InMarket"
+        stock.position = BackTestPosition()
         if stopLimit is not None:
             # Set new stop
             checkStop(stopLimit[0])
             self.stops[stock.symbol] = stopLimit[0]
             t = OrderType.BUY_AND_STOP
+            stock.stopOrder = "STOP"
         else:
             t = OrderType.BUY
 
@@ -251,7 +260,7 @@ class BacktestBroker(Broker):
         self.totalCash -= trueCost
 
         o = BacktestOrder(t, stock.symbol, qty, stock.bar.close, stopLimit)
-        stock.order(o)
+        stock.order = o
 
     def closePosition(self, stock: Stock) -> None:
         sym = stock.symbol

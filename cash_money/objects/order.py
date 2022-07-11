@@ -32,14 +32,6 @@ class Order(ABC):
         """
         raise NotImplementedError
 
-    def data(self, key: str) -> any:
-        """
-        Returns arbitrary data from the wrapped order object
-        :param key: The string key
-        :return: The data
-        """
-        raise NotImplementedError
-
     def orderType(self) -> OrderType:
         raise NotImplementedError
 
@@ -65,4 +57,7 @@ class Order(ABC):
         raise NotImplementedError
 
     def limitPrice(self) -> Union[float, None]:
+        raise NotImplementedError
+
+    def data(self) -> any:
         raise NotImplementedError

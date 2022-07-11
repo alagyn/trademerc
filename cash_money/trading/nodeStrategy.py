@@ -5,7 +5,12 @@ from cash_money.objects.action import Action
 from cash_money.nodes.datakeys import *
 from cash_money.utils.node_utils import registerNodes
 
+from cash_money.utils.log_utils import CMLogger
+
 from nodepasta.nodegraph import NodeGraph
+
+log = CMLogger("NodeStrategy")
+
 
 class NodeStrategy:
     def __init__(self, jGraph):
@@ -22,6 +27,9 @@ class NodeStrategy:
         self.nodegraph.datamap[CLOSE] = bar.close
         self.nodegraph.datamap[HIGH] = bar.hi
         self.nodegraph.datamap[VOLUME] = bar.vol
+
+    def dryRun(self):
+        self.nodegraph.execute()
 
     def nextAction(self, tradeDay: int, stock: Stock) -> Action:
         self.nodegraph.execute()
@@ -48,7 +56,7 @@ class NodeStrategy:
                     self.nextStopUpdate = tradeDay + self.stopPeriod
                     return stock.buyAndStop(stop, stop * 0.8)
 
-            return stock.hold()
+        return stock.hold()
 
     def getSetupTime(self) -> int:
         setuptime = 0
