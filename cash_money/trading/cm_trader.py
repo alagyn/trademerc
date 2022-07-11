@@ -77,14 +77,15 @@ class Trader:
         log.logInfo(f"Num out of market: {numOutOfMarket}, per-stock buy pwr: ${buyPwr:.2f}")
 
         for a in actions:
+            log.logInfo(str(a))
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
-                    log.logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
+                    log.logInfo(f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
                     continue
                 self.submitBuy(a, buyPwr)
             elif a.action == ActionEnum.BuyAndStop:
                 if buyPwr <= 0:
-                    log.logInfo(f"Buy Power is <= 0: ${buyPwr:.2f}, skipping:\n\t{str(a)}")
+                    log.logInfo(f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
                     continue
                 self.submitBuyAndStop(a, buyPwr)
             elif a.action == ActionEnum.Sell:
@@ -95,7 +96,7 @@ class Trader:
                 # ILB
                 pass
 
-            log.logInfo(str(a))
+
 
     def submitBuy(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
