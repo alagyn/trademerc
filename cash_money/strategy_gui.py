@@ -74,6 +74,6 @@ if __name__ == '__main__':
     tk.Button(btnFrame, text="Load", command=load).grid(row=0, column=0, sticky='w')
     tk.Button(btnFrame, text='Save', command=save).grid(row=0, column=1, stick='w')
 
-    root.wm_attributes('-zoomed', 1)
+    root.wm_state('zoomed')
 
     root.mainloop()

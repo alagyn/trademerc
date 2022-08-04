@@ -4,11 +4,12 @@ from nodepasta.argtypes import BOOL
 from cash_money.nodes.cmNode import CMNode
 
 class InvertNode(CMNode):
+    DESCRIPTION = "Inverts a boolean (true/false) value."
     _INPUTS = [
-        InPort("In", BOOL)
+        InPort("In", BOOL, "The input")
     ]
     _OUTPUTS = [
-        OutPort("Out", BOOL)
+        OutPort("Out", BOOL, "The inverse")
     ]
     NODETYPE = "Invert"
 

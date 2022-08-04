@@ -9,9 +9,16 @@ PERIOD = 'period'
 
 
 class AverageTrueRange(CMNode):
+    DESCRIPTION = "Calculates the True Range, which is calculated as:\n" \
+                  "max(close, high) - min(close, low)\n" \
+                  "The average true range is the true range input into a smoothed moving average"
     _INPUTS = []
-    _OUTPUTS = [OutPort("ATR", FLOAT), OutPort("TR", FLOAT)]
-    _ARGS = [NodeArg(PERIOD, INT, "Period", 5)]
+    _OUTPUTS = [
+        OutPort("ATR", FLOAT, "The Average True Range"),
+        OutPort("TR", FLOAT, "The True Range")]
+    _ARGS = [
+        NodeArg(PERIOD, INT, "Period", "The period of the ATR moving average", 5)
+    ]
     NODETYPE = "Average True Range"
 
     def __init__(self):

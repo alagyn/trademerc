@@ -7,15 +7,17 @@ _T = '_type'
 _W = '_wgt'
 
 class WeightNode(CMNode):
+    DESCRIPTION = "Takes in a boolean (true/false) and outputs a constant value, or zero"
     _INPUTS = [
-        InPort("Condition", BOOL)
+        InPort("Condition", BOOL, "The boolean condition")
     ]
     _OUTPUTS = [
-        OutPort("Value", FLOAT)
+        OutPort("Value", FLOAT, 'Outputs zero if input is false, else outputs the value of "Weight"')
     ]
     _ARGS = [
-        NodeArg(_W, "Weight", )
+        NodeArg(_W, FLOAT, "Weight", "The value to output when the condition is true")
     ]
+
     NODETYPE = "Weight"
 
     def __init__(self):

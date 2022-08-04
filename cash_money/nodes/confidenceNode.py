@@ -7,16 +7,19 @@ _EnterThresh = "enterThresh"
 _ExitThresh = "exitThresh"
 
 class ConfidenceNode(CMNode):
+    DESCRIPTION = "Takes in a variable number of weights and sums them, then compares against a threshold.\n" \
+                  "Inputs do not have to sum to 1"
     _INPUTS = [
-        InPort("Weights", FLOAT, variable=True, cnt=1)
+        InPort("Weights", FLOAT, "The input weights",
+               variable=True, cnt=1)
     ]
     _OUTPUTS = [
-        OutPort("Enter", BOOL),
-        OutPort("Exit", BOOL)
+        OutPort("Enter", BOOL, 'Outputs "true" if and only if the sum is greater than the enter threshold'),
+        OutPort("Exit", BOOL, 'Outputs "true" if and only if the sum is less than the exit threshold')
     ]
     _ARGS = [
-        NodeArg(_EnterThresh, FLOAT, "Enter Threshold", 0.5),
-        NodeArg(_ExitThresh, FLOAT, "Exit Threshold", 0.5)
+        NodeArg(_EnterThresh, FLOAT, "Enter Threshold", "The entry theshold", 0.5),
+        NodeArg(_ExitThresh, FLOAT, "Exit Threshold", "The exit threshold", 0.5)
     ]
     NODETYPE = "Confidence"
 

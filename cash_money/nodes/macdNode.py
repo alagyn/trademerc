@@ -14,14 +14,18 @@ class MACD(CMNode):
     """
     Moving Average Convergence Divergence
     """
+    DESCRIPTION = "Calculated the Moving Average Convergence Divergence (MACD).\n" \
+                  "Uses two Exponential Moving Averages (EMA) over the cycle's close value.\n" \
+                  'One EMA is "fast", the other is "slow".\n' \
+                  'MACD = fast - slow. Signal is another EMA over the MACD'
     _OUTPUTS = [
-        OutPort("MACD", FLOAT),
-        OutPort("Signal", FLOAT)
+        OutPort("MACD", FLOAT, "The MACD value"),
+        OutPort("Signal", FLOAT, "The Signal value")
     ]
     _ARGS = [
-        NodeArg(_FP, INT, "Fast Period", 5),
-        NodeArg(_SP, INT, "Slow Period", 10),
-        NodeArg(_SigP, INT, "Signal Period", 10)
+        NodeArg(_FP, INT, "Fast Period", "Period of the fast EMA", 5),
+        NodeArg(_SP, INT, "Slow Period", "Period of the slow EMA", 10),
+        NodeArg(_SigP, INT, "Signal Period", "Period of the signal EMA", 10)
     ]
     NODETYPE = "MACD"
 

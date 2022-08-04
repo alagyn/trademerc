@@ -6,15 +6,17 @@ from nodepasta.errors import ExecutionError
 import operator
 
 class MathNode(CMNode):
+    DESCRIPTION = "Calculates basic math operations on two operands.\nA (operation) B"
     _INPUTS = [
-        InPort("A", FLOAT),
-        InPort("B", FLOAT)
+        InPort("A", FLOAT, "The first operand"),
+        InPort("B", FLOAT, "The second operand")
     ]
     _OUTPUTS = [
-        OutPort("Out", FLOAT)
+        OutPort("Out", FLOAT, "The output of the operation")
     ]
     _ARGS = [
-        EnumNodeArg("op", "Operation", "+", ["+", "-", "*", "/"])
+        EnumNodeArg("op", "Operation", "The operation to perform",
+                    "ADD", ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"])
     ]
     NODETYPE = "Math"
 
@@ -28,13 +30,13 @@ class MathNode(CMNode):
     def setup(self) -> None:
         x = self.args["op"].value
 
-        if x == "+":
+        if x == "ADD":
             self.op = operator.add
-        elif x == "-":
+        elif x == "SUBTRACT":
             self.op = operator.sub
-        elif x == "*":
+        elif x == "MULTIPLY":
             self.op = operator.mul
-        elif x == "/":
+        elif x == "DIVIDE":
             self.op = operator.truediv
 
     def setupTime(self) -> int:

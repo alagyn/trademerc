@@ -9,15 +9,17 @@ _TYPE = '_TYPE'
 
 
 class Compare(CMNode):
+    DESCRIPTION = "Ouputs the comparison of two numbers.\nA (operation) B"
     _INPUTS = [
-        InPort("A", FLOAT),
-        InPort("B", FLOAT)
+        InPort("A", FLOAT, "The first operand"),
+        InPort("B", FLOAT, "The second operand")
     ]
     _OUTPUTS = [
-        OutPort("Check", BOOL)
+        OutPort("Check", BOOL, "The boolean output (true/false)")
     ]
     _ARGS = [
-        EnumNodeArg(_TYPE, "Type", "<", ["<", ">"])
+        EnumNodeArg(_TYPE, "Type", "The operation to perform",
+                    "LESS THAN", ["LESS THAN", "GREATER THAN"])
     ]
     NODETYPE = "Compare"
 
@@ -30,7 +32,7 @@ class Compare(CMNode):
         self.out = self.outputs[0]
 
     def setup(self) -> None:
-        if self._opType == "<":
+        if self._opType == "LESS THAN":
             self.op = lt
         else:
             self.op = gt

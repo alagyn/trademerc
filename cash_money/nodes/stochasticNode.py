@@ -12,15 +12,26 @@ SP = '_SP'
 
 
 class Stochastic(CMNode):
+    DESCRIPTION = "Calculates the Stochastic Oscillator Indicator." \
+                  "Calculated as:\n" \
+                  "%K = ((C - L)/(H - L)) * 100\n" \
+                  "Where:\n" \
+                  "\tC: The most recent closing price\n" \
+                  '\tL: The lowest price traded in the last "K Period" cycles\n' \
+                  '\tH: The highest price traded in the last "K Period" cycles\n' \
+                  '\t%K: The current stochastic indicator\n' \
+                  '%D is an SMA over %K with period "D Period"\n' \
+                  '%D-Slow is an SMA over %D with period "D-Slow Period"'
+
     _OUTPUTS = [
-        OutPort("%K", FLOAT),
-        OutPort("%D", FLOAT),
-        OutPort("%D Slow", FLOAT)
+        OutPort("%K", FLOAT, 'The "fast" stochastic indicator'),
+        OutPort("%D", FLOAT, 'The "slow" stochastic indicator'),
+        OutPort("%D-Slow", FLOAT, 'The slowest stochastic indicator')
     ]
     _ARGS = [
-        NodeArg(KP, 'K Period', INT, 5),
-        NodeArg(DP, INT, 'D Period', 5),
-        NodeArg(SP, INT, 'Slow-D Period', 0)
+        NodeArg(KP, INT, 'K Period', "The number of cycles to choose the highest and lowest", 5),
+        NodeArg(DP, INT, 'D Period', "The period the %D SMA", 5),
+        NodeArg(SP, INT, 'Slow-D Period', "The period of the %D-Slow SMA", 0)
     ]
     NODETYPE = "Stochastic"
 

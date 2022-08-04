@@ -7,13 +7,15 @@ from cash_money.nodes.datakeys import ENTRY, EXIT, STOP, STOP_PERIOD
 _STOP_P = "stopPeriod"
 
 class StrategyNode(CMNode):
+    DESCRIPTION = "The output of the strategy graph."
     _INPUTS = [
-        InPort("Entry Condition", BOOL),
-        InPort("Exit Condition", BOOL),
-        InPort("Stop-Loss Price", FLOAT)
+        InPort("Entry Condition", BOOL, "When set to true, signals a buy action if out of market"),
+        InPort("Exit Condition", BOOL, "When set to true, signals a sell action if in market"),
+        InPort("Stop-Loss Price", FLOAT, "Used to set the value of the stop-loss order when buying/updating")
     ]
     _ARGS = [
-        NodeArg(_STOP_P, INT, "Stop Update Period", value=1)
+        NodeArg(_STOP_P, INT, "Stop Update Period", "The number of cycles before the stop-loss order is updated",
+                value=1)
     ]
     NODETYPE = "Strategy"
 

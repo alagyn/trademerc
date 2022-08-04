@@ -74,9 +74,8 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
 
         portfolio_total = np.add(broker.portfolio_cash, broker.portfolio_value)
 
-        plotLog.logInfo("Dates vs Portfolio_cash")
-
-        masterAxes.bar(dates, broker.portfolio_cash, label='Cash', color='C1', width=1, align='edge')
+        # plotLog.logInfo("Dates vs Portfolio_cash")
+        # masterAxes.plot(dates, broker.portfolio_cash, label='Cash', color='C1')
         plotLog.logInfo("Dates vs Portfolio_total")
         masterAxes.plot(dates, portfolio_total, label='Value')
 

@@ -35,8 +35,9 @@ class BTGUI(tk.Frame):
 
         self.grid(column=0, row=0, sticky='nesw')
 
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=2)
+        self.columnconfigure(0, weight=0)
+        self.columnconfigure(1, weight=0)
+        self.columnconfigure(2, weight=1)
 
         self.rowconfigure(0, weight=1)
 

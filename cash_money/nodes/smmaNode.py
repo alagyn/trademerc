@@ -10,14 +10,15 @@ _P = '_p'
 class SMMANode(CMNode):
     """Smoothing Moving Average"""
 
+    DESCRIPTION = "Calculates a Smoothing Moving Average (SMMA)"
     _INPUTS = [
-        InPort("Value", FLOAT)
+        InPort("Value", FLOAT, "The input value")
     ]
     _OUTPUTS = [
-        OutPort("SMMA", FLOAT)
+        OutPort("SMMA", FLOAT, "The averaged value")
     ]
     _ARGS = [
-        NodeArg(_P, INT, "Period", 5)
+        NodeArg(_P, INT, "Period", "The period of the moving average", 5)
     ]
     NODETYPE = "Smoothing Moving Avg"
 

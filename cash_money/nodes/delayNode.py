@@ -8,14 +8,15 @@ from cash_money.nodes.cmNode import CMNode
 _D = '_D'
 
 class DelayNode(CMNode):
+    DESCRIPTION = "Inputs are stored and then output at a specific delay"
     _INPUTS = [
-        InPort("In", FLOAT)
+        InPort("In", FLOAT, "The input value")
     ]
     _OUTPUTS = [
-        OutPort("Out", FLOAT)
+        OutPort("Out", FLOAT, "The output value")
     ]
     _ARGS = [
-        NodeArg(_D, INT, "Delay", 1)
+        NodeArg(_D, INT, "Delay", "The number of cycles to delay outputs", 1)
     ]
     NODETYPE = "Delay"
 

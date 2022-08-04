@@ -6,12 +6,13 @@ from cash_money.nodes.datakeys import HIGH, LOW, CLOSE, VOLUME
 
 
 class InputNode(CMNode):
+    DESCRIPTION = "Outputs the stock values for the current cycle"
     _INPUTS = []
     _OUTPUTS = [
-        OutPort("Low", FLOAT),
-        OutPort("Close", FLOAT),
-        OutPort("High", FLOAT),
-        OutPort("Volume", FLOAT)
+        OutPort("Low", FLOAT, "The cycle's Low"),
+        OutPort("Close", FLOAT, "The cycle's Close"),
+        OutPort("High", FLOAT, "The cycles's High"),
+        OutPort("Volume", FLOAT, "The cycle's Volume")
     ]
     NODETYPE = 'Input'
 
