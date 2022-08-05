@@ -1,8 +1,9 @@
 from nodepasta.argtypes import BOOL, FLOAT, INT
 from nodepasta.node import InPort, NodeArg
+from nodepasta.errors import NodeDefError
 
 from cash_money.nodes.cmNode import CMNode
-from cash_money.nodes.datakeys import ENTRY, EXIT, STOP, STOP_PERIOD
+from cash_money.nodes.datakeys import ENTRY, EXIT, STOP, STOP_PERIOD, STRAT_NODE
 
 _STOP_P = "stopPeriod"
 
@@ -25,7 +26,13 @@ class StrategyNode(CMNode):
         self.exit = self.inputs[1]
         self.stop = self.inputs[2]
 
+
     def setup(self) -> None:
+        if STRAT_NODE in self.datamap:
+            raise NodeDefError("StrategyNode.init()", f"More than one strategy node defined:\n"
+                                                      f"{self.datamap[STRAT_NODE]}\n"
+                                                      f"{self}")
+        self.datamap[STRAT_NODE] = self
         self.datamap[STOP_PERIOD] = self.args[_STOP_P].value
 
     def setupTime(self) -> int:

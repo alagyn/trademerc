@@ -10,7 +10,7 @@ _AFMAX = '_AFMAX'
 
 
 class ParabolicSAR(CMNode):
-    DESCRIPTION = "Calculates the Parabolic Stop-And-Release (PSAR). It's complicated, google it."
+    DESCRIPTION = "Calculates the Parabolic Stop-And-Release (PSAR).\nIt's complicated, google it."
     _OUTPUTS = [
         OutPort("PSAR", FLOAT, "The PSAR")
     ]

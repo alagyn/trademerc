@@ -34,7 +34,7 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
 
     strats = {}
     for sym in stocks:
-        strats[sym] = NodeStrategy(stratVars)
+        strats[sym] = NodeStrategy(stratVars, sym)
 
     log.logInfo('Setting up strategies')
     setupStrategies(strats, datetime.datetime.now())

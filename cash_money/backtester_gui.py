@@ -281,7 +281,7 @@ class BTGUI(tk.Frame):
         if not self.indivVar.get():
             strats = {}
             for x in self.stocks:
-                strats[x] = NodeStrategy(strat['graph'])
+                strats[x] = NodeStrategy(strat['graph'], x)
 
             stats = cm_backtester.backtest(**args, strats=strats)
             for k, v in stats.items():
@@ -292,7 +292,7 @@ class BTGUI(tk.Frame):
 
         else:
             for x in self.stocks:
-                strats = {x: NodeStrategy(strat['graph'])}
+                strats = {x: NodeStrategy(strat['graph'], x)}
                 cm_backtester.backtest(**args, strats=strats)
 
         for c in self.canvases:

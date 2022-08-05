@@ -1,7 +1,7 @@
 from cash_money.nodes.cmNode import CMNode
 from nodepasta.node import InPort, OutPort
 from nodepasta.argtypes import FLOAT, EnumNodeArg
-from nodepasta.errors import ExecutionError
+from nodepasta.errors import ExecutionError, NodeDefError
 
 import operator
 
@@ -38,6 +38,8 @@ class MathNode(CMNode):
             self.op = operator.mul
         elif x == "DIVIDE":
             self.op = operator.truediv
+        else:
+            raise NodeDefError("MathNode.init", f"Unknown operation: {x}")
 
     def setupTime(self) -> int:
         return 1

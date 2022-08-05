@@ -152,8 +152,8 @@ if __name__ == "__main__":
         end_date = datetime.today()
 
         strats = {
-            'QQQ': NodeStrategy(strat['graph']),
-            'DIA': NodeStrategy(strat['graph']),
+            'QQQ': NodeStrategy(strat['graph'], "QQQ"),
+            'DIA': NodeStrategy(strat['graph'], "DIA"),
         }
 
         backtest('TEST', strats=strats, masterFigure=None, symFigs=None,

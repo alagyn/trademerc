@@ -59,4 +59,4 @@ class MACD(CMNode):
         self.signalOut.setValue(signal)
 
     def setupTime(self) -> int:
-        return max(self._fp.value, self._sp.value, self._sigP.value)
+        return max(self._fp.value, self._sp.value) + self._sigP.value

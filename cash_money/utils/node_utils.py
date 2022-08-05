@@ -18,6 +18,7 @@ def registerNodes(nodegraph: NodeGraph):
         rangeCheckNode.RangeCheck,
         smaNode.SMANode,
         smmaNode.SMMANode,
+        stochasticNode.Stochastic,
         strategyNode.StrategyNode,
         weightNode.WeightNode
     ]

@@ -13,11 +13,13 @@ log = CMLogger("NodeStrategy")
 
 
 class NodeStrategy:
-    def __init__(self, jGraph):
+    def __init__(self, jGraph, symbol: str):
         self.nodegraph = NodeGraph()
         registerNodes(self.nodegraph)
         self.nodegraph.loadFromJSON(jGraph)
         self.nodegraph.setupNodes()
+
+        self.nodegraph.datamap[SYMBOL] = symbol
 
         self.stopPeriod = self.nodegraph.datamap[STOP_PERIOD]
         self.nextStopUpdate = 0
@@ -29,7 +31,9 @@ class NodeStrategy:
         self.nodegraph.datamap[VOLUME] = bar.vol
 
     def dryRun(self):
+        self.nodegraph.datamap[DRY_RUN] = True
         self.nodegraph.execute()
+        self.nodegraph.datamap[DRY_RUN] = False
 
     def nextAction(self, tradeDay: int, stock: Stock) -> Action:
         self.nodegraph.execute()
@@ -59,9 +63,5 @@ class NodeStrategy:
         return stock.hold()
 
     def getSetupTime(self) -> int:
-        setuptime = 0
-        for node in self.nodegraph:
-            node: CMNode
-            setuptime = max(setuptime, node.setupTime())
-
-        return setuptime
+        stratNode: CMNode = self.nodegraph.datamap[STRAT_NODE]
+        return stratNode.recurseSetupTime()

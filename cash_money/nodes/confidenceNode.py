@@ -3,6 +3,11 @@ from cash_money.nodes.cmNode import CMNode
 from nodepasta.node import InPort, OutPort, NodeArg
 from nodepasta.argtypes import BOOL, FLOAT
 
+from cash_money.utils.log_utils import CMLogger
+from .datakeys import SYMBOL, DRY_RUN
+
+log = CMLogger("Conf Node")
+
 _EnterThresh = "enterThresh"
 _ExitThresh = "exitThresh"
 
@@ -10,8 +15,7 @@ class ConfidenceNode(CMNode):
     DESCRIPTION = "Takes in a variable number of weights and sums them, then compares against a threshold.\n" \
                   "Inputs do not have to sum to 1"
     _INPUTS = [
-        InPort("Weights", FLOAT, "The input weights",
-               variable=True, cnt=1)
+        InPort("Weights", FLOAT, "The input weights", variable=True)
     ]
     _OUTPUTS = [
         OutPort("Enter", BOOL, 'Outputs "true" if and only if the sum is greater than the enter threshold'),
@@ -41,13 +45,23 @@ class ConfidenceNode(CMNode):
         return 1
 
     def execute(self) -> None:
-        self.enter.setValue(False)
-        self.exit.setValue(False)
-
         if self.weights.value is None:
+            self.enter.setValue(False)
+            self.exit.setValue(False)
             return
 
-        value = sum(self.weights.value)
+        try:
+            value = sum(self.weights.value)
+        except TypeError:
+            if not self.datamap[DRY_RUN]:
+                log.logErr("Confidence not setup")
+            self.enter.setValue(False)
+            self.exit.setValue(False)
+            return
+
+        if not self.datamap[DRY_RUN]:
+            log.logInfo(f"{self.datamap[SYMBOL]}: Confidence: {value:.2f}")
+
         if value >= self.enterThresh.value:
             self.enter.setValue(True)
         if value <= self.exitThresh.value:

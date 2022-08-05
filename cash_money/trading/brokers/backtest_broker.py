@@ -62,7 +62,7 @@ class BacktestOrder(Order):
     def limitPrice(self) -> Union[float, None]:
         return self._sl[1]
 
-    def data(self, key: str) -> any:
+    def data(self) -> any:
         return None
 
 
