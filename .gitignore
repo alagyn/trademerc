@@ -7,3 +7,6 @@ stats.json
 logs/
 
 testnotebook.py
+
+dist/
+build/
