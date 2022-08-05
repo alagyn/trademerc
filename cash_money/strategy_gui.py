@@ -9,7 +9,7 @@ from nodepasta.tk.tk_node_graph import TKNodeGraph
 
 from cash_money.utils.node_utils import registerNodes
 
-if __name__ == '__main__':
+def main():
     ng = NodeGraph()
 
     registerNodes(ng)
@@ -24,7 +24,6 @@ if __name__ == '__main__':
 
     canvasFrame.columnconfigure(0, weight=1)
     canvasFrame.rowconfigure(0, weight=1)
-
 
     ngFrame = TKNodeGraph(canvasFrame, ng)
     ngFrame.setPortTypeColor(FLOAT, "lightgreen")
@@ -45,7 +44,6 @@ if __name__ == '__main__':
 
     ngFrame.grid(row=0, column=0, sticky='nesw')
 
-
     def execute():
         try:
             ng.execute()
@@ -53,10 +51,8 @@ if __name__ == '__main__':
             # Set an error message in the info box
             ngFrame.setErrorMessage(f'{e.loc}: {e.msg}')
 
-
     btnFrame = tk.LabelFrame(root, text='')
     btnFrame.grid(row=0, column=0, sticky='nw')
-
 
     def save():
         ret = filedialog.asksaveasfilename(confirmoverwrite=True, filetypes=[(".strat", ".strat")],
@@ -77,3 +73,6 @@ if __name__ == '__main__':
     root.wm_state('zoomed')
 
     root.mainloop()
+
+if __name__ == '__main__':
+    main()

@@ -11,7 +11,6 @@ from nodepasta.nodegraph import NodeGraph
 
 log = CMLogger("NodeStrategy")
 
-
 class NodeStrategy:
     def __init__(self, jGraph, symbol: str):
         self.nodegraph = NodeGraph()

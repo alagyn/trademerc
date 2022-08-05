@@ -318,8 +318,12 @@ class BTGUI(tk.Frame):
                   liveRun=liveRun)
 
 
+def main():
+    app = BTGUI(tk.Tk())
+    app.mainloop()
+
 if __name__ == '__main__':
     from cash_money.utils.run_utils import loadSystem
     loadSystem()
-    app = BTGUI(tk.Tk())
-    app.mainloop()
+    main()
+
