@@ -5,3 +5,5 @@ tkcalendar==1.6.1
 alpaca-trade-api
 jinja2==3.0.3
 nodepasta
+colorama
+cx_Freeze

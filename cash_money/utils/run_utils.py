@@ -1,8 +1,10 @@
 import datetime
 from configparser import ConfigParser
 from typing import Dict, Optional, List, Tuple
+from sys import exit
 import os.path
 import traceback
+import colorama
 
 import yfinance as yf
 
@@ -12,6 +14,8 @@ from cash_money.trading.brokers.broker import Broker
 from cash_money.trading.cm_trader import Trader
 from .log_utils import _setupLogger, CMLogger
 from ..trading.nodeStrategy import NodeStrategy
+
+import tkinter.messagebox as dialog
 
 _config = None
 _systemLoaded = False
@@ -24,12 +28,14 @@ def loadSystem() -> ConfigParser:
     global _systemLoaded, _config
 
     if not _systemLoaded:
+        colorama.init()
         _systemLoaded = True
         _config = ConfigParser()
         if os.path.exists(_configLoc):
             _config.read(_configLoc)
         else:
             print(f"ERROR: Cannot find {_configLoc}")
+            dialog.showerror("Error: Cash Money", f"Cannot find \"{_configLoc}\"")
             exit(1)
 
         syscfg = _config['System']
@@ -114,3 +120,6 @@ def runTradeBroker(trader: Trader, broker: Broker):
         log.logErr(msg)
         # raise to propagate
         raise
+
+def showError(title: str, message: str) -> None:
+    dialog.showerror(title, message)

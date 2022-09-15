@@ -3,7 +3,9 @@ import json
 import os.path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from typing import Dict
+from typing import Dict, Optional
+
+from threading import Thread
 
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -185,7 +187,32 @@ class BTGUI(tk.Frame):
         mainGraphFrame.grid(row=0, column=2, sticky='news', padx=FRAME_PAD)
         # stratFrame.grid(row=0, column=1, sticky='nsew', padx=FRAME_PAD)
 
+        self.run = True
+
+        self.runThread: Optional[Thread] = None
+        self.threadRunning = False
+        self.stats = None
+
+    def loop(self):
+        while self.run:
+            self.update_idletasks()
+            self.update()
+
+            if self.runThread is not None:
+                if not self.threadRunning:
+                    self.runThread.join()
+                    self.runThread = None
+                    for k, v in self.stats.items():
+                        try:
+                            self.statVars[k].set(v)
+                        except KeyError:
+                            pass
+                    for c in self.canvases:
+                        c.draw()
+
+
     def closeWindow(self):
+        self.run = False
         self.root.destroy()
 
     def selectOut(self):
@@ -255,6 +282,9 @@ class BTGUI(tk.Frame):
         for sym in self.stocks:
             self.figures[sym] = self.createPlotCanvas(sym)
 
+    def runThreadFunc(self, args, strats):
+        self.stats = cm_backtester.backtest(**args, strats=strats)
+        self.threadRunning = False
 
     def runBT(self):
         if len(self.stocks) <= 0 or len(self.stratFile) == 0:
@@ -283,20 +313,14 @@ class BTGUI(tk.Frame):
             for x in self.stocks:
                 strats[x] = NodeStrategy(strat['graph'], x)
 
-            stats = cm_backtester.backtest(**args, strats=strats)
-            for k, v in stats.items():
-                try:
-                    self.statVars[k].set(v)
-                except KeyError:
-                    pass
-
+            self.runThread = Thread(target=self.runThreadFunc, args=(args, strats))
+            self.threadRunning = True
+            self.runThread.start()
         else:
             for x in self.stocks:
                 strats = {x: NodeStrategy(strat['graph'], x)}
                 cm_backtester.backtest(**args, strats=strats)
 
-        for c in self.canvases:
-            c.draw()
 
     def runAlpaca(self):
         if self.stocks is None or len(self.stocks) == 0 or len(self.stratFile) == 0:
@@ -320,10 +344,14 @@ class BTGUI(tk.Frame):
 
 def main():
     app = BTGUI(tk.Tk())
-    app.mainloop()
+    app.loop()
 
 if __name__ == '__main__':
-    from cash_money.utils.run_utils import loadSystem
-    loadSystem()
-    main()
+    from cash_money.utils.run_utils import loadSystem, showError
+    try:
+        loadSystem()
+        main()
+    except Exception as e:
+        showError("Error: Backtester", f"Fatal Error Has Occurred\n{type(e)}\n{str(e)}")
+        exit(-1)
 

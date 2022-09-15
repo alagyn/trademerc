@@ -67,8 +67,6 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
             dates = [b.date for b in bars[sym][startIdx:]]
             break
 
-        masterFigure.clear()
-
         masterAxes = masterFigure.add_subplot()
         # r = range(len(portfolio_cash))
 
@@ -89,7 +87,7 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
         masterAxes.legend()
 
         for sym in strats.keys():
-            symFigs[sym].clear()
+            # symFigs[sym].clear()
             axes = symFigs[sym].subplot_mosaic([['top'],
                                                 ['bot'],
                                                 ['bot']], sharex=True)
