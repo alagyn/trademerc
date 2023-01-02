@@ -2,11 +2,11 @@ import unittest
 from cash_money.nodes.crossoverNode import Crossover
 from nodepasta.testing.tester import Tester
 
+
 class CrossoverTest(unittest.TestCase):
     def test_crossover(self):
         co = Crossover()
         tester = Tester(co)
-
 
         out = tester.test({
             "A": 0,
@@ -50,4 +50,3 @@ class CrossoverTest(unittest.TestCase):
             "B": 10
         })
         self.assertEqual(0, out['Delta'])
-

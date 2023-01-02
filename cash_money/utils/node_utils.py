@@ -3,10 +3,12 @@ from cash_money.nodes import averageTrueRange, \
     compareNode, confidenceNode, constantNode, crossoverNode, \
     delayNode, emaNode, inputNode, invertNode, macdNode, mathNode, \
     parabolicSARNode, rangeCheckNode, smaNode, smmaNode, stochasticNode, \
-    strategyNode, weightNode
+    strategyNode, weightNode, absoluteValueNode
+
 
 def registerNodes(nodegraph: NodeGraph):
     nodeTypes = [
+        absoluteValueNode.AbsoluteValueNode,
         averageTrueRange.AverageTrueRange,
         compareNode.Compare,
         confidenceNode.ConfidenceNode,

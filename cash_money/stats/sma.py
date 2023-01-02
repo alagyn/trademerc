@@ -1,4 +1,6 @@
 from collections import deque
+from statistics import stdev
+
 
 class SMA:
     def __init__(self, period: int):
@@ -15,6 +17,9 @@ class SMA:
             self.avg = self.avg + (data - old) / self.p
 
         return self.avg
+
+    def std_dev(self) -> float:
+        return stdev(self.vals)
 
     def getValue(self) -> float:
         return self.avg

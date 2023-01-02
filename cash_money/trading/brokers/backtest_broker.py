@@ -165,13 +165,18 @@ class BacktestBroker(Broker):
 
         # Update bars and check stops
         for sym in self.symbols:
-            symdate = self.bars[sym][self.barIdx].date
+            try:
+                symdate = self.bars[sym][self.barIdx].date
+            except IndexError:
+                log.logInfo(f"{sym}: No more bars")
+                continue
+
             # Get the current date
             if self.curDate is None:
                 self.curDate = symdate
 
             if symdate != self.curDate:
-                raise cmErrors.BacktestError(f"Bar Date desync, {self.curDate} != {symdate}")
+                log.logWrn(f"Bar Date desync, {self.curDate} != {symdate}")
 
             self[sym].updateBar(self.bars[sym][self.barIdx])
             if sym in self.stops and self.stops[sym] > self.bars[sym][self.barIdx].lo:
@@ -190,7 +195,8 @@ class BacktestBroker(Broker):
 
     def postTrade(self) -> None:
         if self.totalCash < 0:
-            raise cmErrors.BacktestError('Negative Buy Power, Strategy Failure?')
+            raise cmErrors.BacktestError(
+                'Negative Buy Power, Strategy Failure?')
 
         inMarketEquity = 0
         for sym in self.symbols:
@@ -255,7 +261,8 @@ class BacktestBroker(Broker):
         # Update value
         trueCost = qty * stock.bar.close
 
-        self.stats[stock.symbol].addBuy(self.curDate, trueCost, stock.bar.close)
+        self.stats[stock.symbol].addBuy(
+            self.curDate, trueCost, stock.bar.close)
 
         self.totalCash -= trueCost
 
@@ -293,7 +300,8 @@ class BacktestBroker(Broker):
         soldValue = qty * stock.bar.close
         self.totalCash += soldValue
 
-        self.stats[stock.symbol].addSell(self.curDate, soldValue, stock.bar.close)
+        self.stats[stock.symbol].addSell(
+            self.curDate, soldValue, stock.bar.close)
 
     def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
         checkStop(stopLimit[0])
@@ -328,9 +336,12 @@ class BacktestBroker(Broker):
         winPercent = 0 if numTrades == 0 else wins / (wins + losses)
 
         if logToConsole:
-            statLog.logInfo(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
-            statLog.logInfo(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
-            statLog.logInfo(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
+            statLog.logInfo(
+                f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
+            statLog.logInfo(
+                f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
+            statLog.logInfo(
+                f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
             statLog.logInfo(f'Win %: {winPercent:.2%}')
             statLog.logInfo(f'Avg Gain: ${avgGain:,.2f}')
             statLog.logInfo(f'Avg Loss: ${avgLoss:,.2f}')

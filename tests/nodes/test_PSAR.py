@@ -1,11 +1,16 @@
 import unittest
-from cash_money.nodes.parabolicSARNode import ParabolicSAR
+from cash_money.nodes.parabolicSARNode import ParabolicSAR, DEFAULT_AF_START
 from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
 
 
 class PSARTest(unittest.TestCase):
     def test_uptrend(self):
         sar = ParabolicSAR()
+        sar.setup()
+
+        self.assertEqual(DEFAULT_AF_START, sar._af,
+                         "The start AF is not correct")
+
         datamap = {}
 
         sar.datamap._datamap = datamap
@@ -48,6 +53,10 @@ class PSARTest(unittest.TestCase):
 
     def test_downtrend(self):
         sar = ParabolicSAR()
+        sar.setup()
+
+        self.assertEqual(DEFAULT_AF_START, sar._af,
+                         "The start AF is not correct")
 
         datamap = {}
         sar.datamap._datamap = datamap
