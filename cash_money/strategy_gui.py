@@ -9,6 +9,7 @@ from nodepasta.tk.tk_node_graph import TKNodeGraph
 
 from cash_money.utils.node_utils import registerNodes
 
+
 def main():
     ng = NodeGraph()
 
@@ -30,7 +31,8 @@ def main():
     ngFrame.setPortTypeColor(BOOL, "brown")
 
     def load():
-        filename = filedialog.askopenfilename(filetypes=[(".strat", ".strat")], defaultextension="strat")
+        filename = filedialog.askopenfilename(
+            filetypes=[(".strat", ".strat")], defaultextension="strat")
         if filename is not None and len(filename) > 0:
             with open(filename, mode='r') as f:
                 data = json.load(f)
@@ -67,12 +69,13 @@ def main():
             with open(ret, mode='w') as f:
                 json.dump(out, f)
 
-    tk.Button(btnFrame, text="Load", command=load).grid(row=0, column=0, sticky='w')
-    tk.Button(btnFrame, text='Save', command=save).grid(row=0, column=1, stick='w')
-
-    root.wm_state('zoomed')
+    tk.Button(btnFrame, text="Load", command=load).grid(
+        row=0, column=0, sticky='w')
+    tk.Button(btnFrame, text='Save', command=save).grid(
+        row=0, column=1, stick='w')
 
     root.mainloop()
+
 
 if __name__ == '__main__':
     main()
