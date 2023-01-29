@@ -1,0 +1,26 @@
+todo
+make running alpaca be able to run off a config file instead of using the GUI
+
+later
+thread/give control back to backtester GUI periodically during Alpaca runs
+    GUI is frozen during this time and has issues
+
+figure out how to render graphs and send them in emails
+
+nodes
+  profit/loss
+  relative strength index
+  
+run different strategy for different symbols
+
+risk input = max % of portfolio per stock
+access buy price in strategy
+  can check if we have met a profit percent
+  
+need to log the strat actions to a file in a better format
+  xcel sheet with a page for each symbol?
+  line per action, buy/sell price, confidence, profit/loss
+  
+have an output node to print out specific values for a strat and have it drawn on the output graph
+
+stats per year/stock
