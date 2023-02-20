@@ -1,4 +1,4 @@
-from typing import Union, Tuple, Dict, List, Optional
+from typing import Union, Tuple, Dict, List, Optional, Any
 import numpy as np
 import math
 
@@ -16,18 +16,23 @@ class BackTestPosition(CMPosition):
     def getstatus(self) -> StockStatus:
         return StockStatus.InMarket
 
-    def data(self) -> any:
+    def data(self) -> Any:
         return None
 
 
-class BacktestOrder(Order):
+class BacktestOrderStub(Order):
     _ID_GEN = 0
+
+    def __init__(self):
+        super().__init__(BacktestOrderStub._ID_GEN)
+        BacktestOrderStub._ID_GEN += 1
+
+
+class BacktestOrder(BacktestOrderStub):
 
     def __init__(self, orderT: OrderType, symbol: str, qty: int, price: float,
                  stopLimit: Optional[Tuple[float, float]] = None):
-        super().__init__(BacktestOrder._ID_GEN)
-        BacktestOrder._ID_GEN += 1
-
+        super().__init__()
         self.stat = OrderStatus.UNFILLED
         self.price = price
         self._sym = symbol
@@ -39,7 +44,7 @@ class BacktestOrder(Order):
         return self.stat
 
     def orderType(self) -> OrderType:
-        pass
+        raise NotImplemented
 
     def symbol(self) -> str:
         return self._sym
@@ -57,12 +62,18 @@ class BacktestOrder(Order):
         return self.price
 
     def stopPrice(self) -> Union[float, None]:
-        return self._sl[0]
+        if self._sl is not None:
+            return self._sl[0]
+        else:
+            return None
 
     def limitPrice(self) -> Union[float, None]:
-        return self._sl[1]
+        if self._sl is not None:
+            return self._sl[1]
+        else:
+            return None
 
-    def data(self) -> any:
+    def data(self) -> Any:
         return None
 
 
@@ -118,7 +129,7 @@ def calcSQN(tradeList) -> float:
     # profit std
     c = np.std(arr)
 
-    return a * b / c
+    return float(a * b / c)
 
 
 class BacktestBroker(Broker):
@@ -201,7 +212,9 @@ class BacktestBroker(Broker):
         inMarketEquity = 0
         for sym in self.symbols:
             if self.qty[sym] > 0:
-                inMarketEquity += self.qty[sym] * self[sym].bar.close
+                bar = self[sym].bar
+                if bar is not None:
+                    inMarketEquity += self.qty[sym] * bar.close
 
         # Update Graph Logs
         self.portfolio_cash[self.tradeDay] = round(self.totalCash, 2)
@@ -236,15 +249,19 @@ class BacktestBroker(Broker):
         # TODO
         raise NotImplementedError
 
-    def getPosition(self, symbol: str) -> any:
+    def getPosition(self, symbol: str) -> Any:
         # TODO
         raise NotImplementedError
 
-    def getOpenPositions(self) -> Dict[str, any]:
+    def getOpenPositions(self) -> Dict[str, Any]:
         # TODO
         raise NotImplementedError
 
     def submitBuy(self, stock: Stock, qty: int, stopLimit: Optional[Tuple[float, float]] = None) -> None:
+        if stock.bar is None:
+            log.logWrn(f"Cannot submit buy for {stock.symbol}, bar is none")
+            return
+
         # Set position to non-None
         stock.position = BackTestPosition()
         if stopLimit is not None:
@@ -252,7 +269,7 @@ class BacktestBroker(Broker):
             checkStop(stopLimit[0])
             self.stops[stock.symbol] = stopLimit[0]
             t = OrderType.BUY_AND_STOP
-            stock.stopOrder = "STOP"
+            stock.stopOrder = BacktestOrderStub()
         else:
             t = OrderType.BUY
 
@@ -270,6 +287,10 @@ class BacktestBroker(Broker):
         stock.order = o
 
     def closePosition(self, stock: Stock) -> None:
+        if stock.bar is None:
+            log.logWrn(f"Cannot close position for {stock.symbol}, bar is none")
+            return
+
         sym = stock.symbol
         # Clear position
         stock.position = None
@@ -292,6 +313,10 @@ class BacktestBroker(Broker):
                 self.closePosition(stock)
 
     def submitSell(self, stock: Stock, qty: int) -> None:
+        if stock.bar is None:
+            log.logWrn(f"Cannot submit sell for {stock.symbol}, bar is None")
+            return
+
         if qty >= self.qty[stock.symbol]:
             self.closePosition(stock)
             return
@@ -304,10 +329,14 @@ class BacktestBroker(Broker):
             self.curDate, soldValue, stock.bar.close)
 
     def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
+        if stopLimit is None:
+            log.logWrn("Cannot update stop, stopLimit is None")
+            return
+
         checkStop(stopLimit[0])
         self.stops[stock.symbol] = stopLimit[0]
 
-    def getRunStats(self, logToConsole: bool) -> Dict[str, any]:
+    def getRunStats(self, logToConsole: bool) -> Dict[str, Any]:
         wins = 0
         losses = 0
         winTotal = 0

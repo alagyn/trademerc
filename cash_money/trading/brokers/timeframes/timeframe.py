@@ -6,6 +6,7 @@ from alpaca.trading.client import TradingClient
 import alpaca.trading.models as models
 
 from cash_money.utils.log_utils import CMLogger
+from cash_money.cmErrors import CMError
 
 
 def toTS(t):
@@ -33,6 +34,9 @@ class TimeFrame(ABC):
 
         while True:
             clock = self._api.get_clock()
+            if not isinstance(clock, models.Clock):
+                raise CMError()
+
             diff = ts - toTS(clock.timestamp)
             if diff <= 0:
                 return

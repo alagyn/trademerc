@@ -1,6 +1,8 @@
 from .timeframe import TimeFrame, tfLog, toTS
+from cash_money.cmErrors import CMError
 
 from alpaca.trading.client import TradingClient
+from alpaca.trading.models import Clock
 
 
 class DailyTF(TimeFrame):
@@ -18,6 +20,8 @@ class DailyTF(TimeFrame):
 
     def wait(self):
         clock = self._api.get_clock()
+        if not isinstance(clock, Clock):
+            raise CMError()
 
         if self.anchorStart:
             tfLog.logInfo(f"Sleeping until {self._min} after Open")
@@ -30,6 +34,8 @@ class DailyTF(TimeFrame):
 
     def postWait(self) -> None:
         clock = self._api.get_clock()
+        if not isinstance(clock, Clock):
+            raise CMError()
 
         tfLog.logInfo(f'Forcing sleep until open')
         timeToOpen = toTS(clock.next_open)

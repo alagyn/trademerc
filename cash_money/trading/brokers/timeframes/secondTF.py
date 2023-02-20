@@ -1,7 +1,10 @@
-from .timeframe import TimeFrame, toTS, tfLog
 import time
 
+from .timeframe import TimeFrame, toTS, tfLog
+from cash_money.cmErrors import CMError
+
 from alpaca.trading.client import TradingClient
+from alpaca.trading.models import Clock
 
 
 class SecTF(TimeFrame):
@@ -11,6 +14,8 @@ class SecTF(TimeFrame):
 
     def wait(self) -> None:
         clock = self._api.get_clock()
+        if not isinstance(clock, Clock):
+            raise CMError()
         timeToClose = toTS(clock.next_close)
         timeToOpen = toTS(clock.next_open)
         now = toTS(clock.timestamp)
