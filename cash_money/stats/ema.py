@@ -1,8 +1,15 @@
+from typing import Optional
+
 from cash_money.cmErrors import StatError
 
+
 class EMA:
-    def __init__(self, *, alpha: float = None, period: float = None, smoothing: float = 2):
-        self._avg = None
+    """
+    Exponential Moving Average
+    """
+
+    def __init__(self, *, alpha: Optional[float] = None, period: Optional[float] = None, smoothing: float = 2):
+        self._avg: Optional[float] = None
         if alpha is not None:
             self._a = alpha
         elif period is None or smoothing is None:
@@ -20,5 +27,6 @@ class EMA:
         return self._avg
 
     def getValue(self) -> float:
+        if self._avg is None:
+            return 0.0
         return self._avg
-

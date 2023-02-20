@@ -1,23 +1,31 @@
 import time
-from typing import List, Union, Dict, Tuple, Optional
+from typing import List, Union, Dict, Tuple, Optional, Any
 from .timeframes.timeframe import TimeFrame
 import threading
 
-import alpaca_trade_api as alpaca
+from alpaca.trading.client import TradingClient
+import alpaca.trading.requests as tradeReq
+import alpaca.trading.enums as tradeEnum
+import alpaca.trading.models as models
+import alpaca.data.models as dataModels
 
 from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order, OrderStatus, OrderType
 from cash_money.objects.stock import Stock, CMPosition, StockStatus
-from cash_money.trading.notifiers.notfier import Notifier, NotifyKeys
+from cash_money.trading.notifiers.notifier import Notifier, NotifyKeys
 from cash_money.utils.log_utils import CMLogger
+from cash_money.cmErrors import CMError
+from cash_money.utils.api_utils import CMAPI
 from .broker import Broker
 
 log = CMLogger("Alpaca Brkr")
 
-class AlpacaOrder(Order):
-    _CANCEL_SET = {"canceled", "expired", "replaced", "pending_cancel", "pending_replace"}
 
-    def __init__(self, o: alpaca.rest.Order):
+class AlpacaOrder(Order):
+    _CANCEL_SET = {"canceled", "expired", "replaced",
+                   "pending_cancel", "pending_replace"}
+
+    def __init__(self, o: models.Order):
         super().__init__(o.id)
 
         self._data = o
@@ -45,28 +53,34 @@ class AlpacaOrder(Order):
         return self._status
 
     def qty(self) -> Union[int, None]:
-        return self._data.qty
+        x = self._data.qty
+        return None if x is None else int(x)
 
     def filledQty(self) -> int:
-        return int(self._data.filled_qty)
+        x = self._data.filled_qty
+        return 0 if x is None else int(x)
 
     def filledAvgPrice(self) -> float:
-        return float(self._data.filled_avg_price)
+        x = self._data.filled_avg_price
+        return 0.0 if x is None else float(x)
 
     def stopPrice(self) -> Union[float, None]:
-        return self._data.stop_price
+        x = self._data.stop_price
+        return None if x is None else float(x)
 
     def limitPrice(self) -> Union[float, None]:
-        return self._data.limit_price
+        x = self._data.limit_price
+        return None if x is None else float(x)
 
-    def data(self) -> any:
+    def data(self) -> Any:
         return self._data
 
+
 class AlpacaPosition(CMPosition):
-    def __init__(self, data: alpaca.rest.Position):
+    def __init__(self, data: models.Position):
         self._data = data
 
-    def data(self) -> any:
+    def data(self) -> Any:
         return self._data
 
     def getstatus(self) -> StockStatus:
@@ -75,9 +89,10 @@ class AlpacaPosition(CMPosition):
         else:
             return StockStatus.Pending
 
+
 class AlpacaBroker(Broker):
 
-    def __init__(self, api: alpaca.REST, symbols: List[str], notifier: Notifier, timeframe: TimeFrame):
+    def __init__(self, api: CMAPI, symbols: List[str], notifier: Notifier, timeframe: TimeFrame):
         super().__init__(symbols)
 
         self._notif = notifier
@@ -85,9 +100,13 @@ class AlpacaBroker(Broker):
         self._api = api
         self._timeframe = timeframe
 
-        self._account = self._api.get_account()
+        x = self._api.trade.get_account()
+        if not isinstance(x, models.TradeAccount):
+            raise CMError("AlpacaBroker.__init__() API in raw mode")
+        self._account: models.TradeAccount = x
         self._buyPower: float = 0.0
-        self._prevEquity = round(float(self._account.equity), 2)
+        if self._account.equity is not None:
+            self._prevEquity: float = round(float(self._account.equity), 2)
 
         self._bars = {}
 
@@ -96,22 +115,27 @@ class AlpacaBroker(Broker):
         # Dict of order.id -> order
         self._openOrders = {}
 
+        self._api.data.subscribe_bars(self._barUpdateHandler, *symbols)
+
+    def updateAccount(self):
+        self._account = self._api.get_account()  # type: ignore
+
     def preRun(self):
         # TODO check for proper shutdown
         # First cancel any existing orders?
-        self._api.cancel_all_orders()
+        self._api.trade.cancel_orders()
         # Close all positions?
         # self._api.close_all_positions()
 
     def postRun(self) -> None:
         log.logInfo('Stopping System, Cancelling all existing orders')
-        self._api.cancel_all_orders()
+        self._api.trade.cancel_orders()
         # Close all positions?
         # self.api.close_all_positions()
         log.logInfo('Done')
 
     def preTrade(self) -> bool:
-        self._account = self._api.get_account()
+        self.updateAccount()
 
         log.logInfo(f"Begin Trade Step: {self.tradeDay}")
 
@@ -125,11 +149,13 @@ class AlpacaBroker(Broker):
 
     def _notifyThread(self):
         time.sleep(self._timeframe.notifyWait())
-        self._account = self._api.get_account()
+        self.updateAccount()
 
         self._updateTrades()
         self._updatePositions()
 
+        if self._account.equity is None:
+            raise CMError("AlpacaBroker._notifyThread() Cannot parse equity")
         curEquity = round(float(self._account.equity), 2)
 
         log.logInfo('Sending Update')
@@ -162,7 +188,8 @@ class AlpacaBroker(Broker):
                 }
             positions.append(p)
 
-        self._notif.update(self._prevEquity, curEquity, totalPL, self._trades, positions)
+        self._notif.update(self._prevEquity, curEquity,
+                           totalPL, self._trades, positions)
         self._prevEquity = curEquity
         self._trades = []
 
@@ -171,22 +198,38 @@ class AlpacaBroker(Broker):
             threading.Thread(target=self._notifyThread).start()
         self._timeframe.postWait()
 
-    def _clock(self) -> alpaca.rest.Clock:
+    def _clock(self) -> models.Clock:
         """Shorcut to get the API clock"""
-        return self._api.get_clock()
+        return self._api.get_clock()  # type: ignore
 
     def buyPwr(self) -> float:
-        return round(float(self._account.buying_power), 2)
+        if self._account.buying_power is not None:
+            return round(float(self._account.buying_power), 2)
+        else:
+            # TODO make this not error? don't want it to die unexpectedly
+            raise CMError("AlpacaBroker.buyPwr() Cannot get buy pwr")
+
+    async def _barUpdateHandler(self, data: Any):
+        print(type(data))
+        print(data)
+        # data
+        # self[s].updateBar(Bar(db.l, db.c, db.h, db.v))
 
     def _updateBars(self) -> None:
+        """
         snaps = self._api.get_snapshots(self.symbols)
 
         for s in self.symbols:
             db = snaps[s].daily_bar
-            self[s].updateBar(Bar(db.l, db.c, db.h, db.v))
+        """
+        pass
 
     def _updatePositions(self):
-        positions: List[alpaca.rest.Position] = self._api.list_positions()
+        x = self._api.trade.get_all_positions()
+        if not isinstance(x, List):
+            raise CMError()
+
+        positions: List[models.Position] = x
         openset = set()
         for p in positions:
             openset.add(p.symbol)
@@ -226,28 +269,42 @@ class AlpacaBroker(Broker):
             del self._openOrders[x]
 
     def cancelAllOrders(self) -> None:
-        self._api.cancel_all_orders()
+        self._api.trade.cancel_orders()
 
     def closeAllPositions(self) -> None:
-        self._api.close_all_positions()
+        self._api.trade.close_all_positions(True)
 
     def getOrder(self, orderid) -> Order:
-        return AlpacaOrder(self._api.get_order(str(orderid)))
+        x = self._api.trade.get_order_by_id(str(orderid))
+        if not isinstance(x, models.Order):
+            raise CMError()
+        return AlpacaOrder(x)
 
     def getAllOrders(self) -> Dict[str, Order]:
         """
         :return: Dict OrderID -> Order
         """
         out = {}
-        for x in self._api.list_orders(status="all", limit=len(self._openOrders)):
+        req = tradeReq.GetOrdersRequest(status=tradeEnum.QueryOrderStatus.ALL,
+                                        limit=len(self._openOrders),
+                                        after=None,
+                                        until=None,
+                                        direction=None,
+                                        nested=None,
+                                        side=None,
+                                        symbols=None)
+        for x in self._api.trade.get_orders(req):
+            if not isinstance(x, models.Order):
+                raise CMError()
+
             ao = AlpacaOrder(x)
             out[ao.orderid()] = ao
         return out
 
-    def getPosition(self, symbol: str) -> any:
-        return self._api.get_position(symbol)
+    def getPosition(self, symbol: str) -> Any:
+        return self._api.trade.get_open_position(symbol)
 
-    def getOpenPositions(self) -> Dict[str, any]:
+    def getOpenPositions(self) -> Dict[str, Any]:
         # TODO
         raise NotImplementedError
 
@@ -255,30 +312,48 @@ class AlpacaBroker(Broker):
                   stopLimit: Optional[Tuple[float, float]] = None) -> None:
 
         if stopLimit is None:
-            order = self._api.submit_order(
+            req = tradeReq.OrderRequest(
                 symbol=stock.symbol,
                 qty=qty,
-                side='buy',
-                type='market',
-                time_in_force='day'
+                notional=None,
+                side=tradeEnum.OrderSide.BUY,
+                type=tradeEnum.OrderType.MARKET,
+                time_in_force=tradeEnum.TimeInForce.DAY,
+                order_class=tradeEnum.OrderClass.SIMPLE,
+                extended_hours=False,
+                client_order_id=None,
+                take_profit=None,
+                stop_loss=None
             )
+            x = self._api.trade.submit_order(req)
+            if not isinstance(x, models.Order):
+                raise CMError()
+            order = x
 
             stock.stopOrder = None
         else:
-            order: alpaca.rest.Order = self._api.submit_order(
+            req = tradeReq.OrderRequest(
                 symbol=stock.symbol,
                 qty=qty,
-                side='buy',
-                type='market',
-                time_in_force='day',
-
+                notional=None,
+                side=tradeEnum.OrderSide.BUY,
+                type=tradeEnum.OrderType.MARKET,
+                time_in_force=tradeEnum.TimeInForce.DAY,
                 # Class: One-Triggers-Other, activates the stop loss after buy is filled
-                order_class='oto',
-                stop_loss={
-                    'stop_price': stopLimit[0],
-                    'limit_price': stopLimit[1]
-                }
+                order_class=tradeEnum.OrderClass.OTO,
+                extended_hours=False,
+                client_order_id=None,
+                take_profit=None,
+                stop_loss=tradeReq.StopLossRequest(
+                    stop_price=stopLimit[0], limit_price=stopLimit[1])
             )
+            x = self._api.trade.submit_order(req)
+            if not isinstance(x, models.Order):
+                raise CMError()
+            order: models.Order = x
+            if order.legs is None:
+                raise CMError()
+
             o = AlpacaOrder(order.legs[0])
             self._openOrders[order.legs[0].id] = o
             stock.stopOrder = o
@@ -288,14 +363,17 @@ class AlpacaBroker(Broker):
 
     def _closePosition(self, stock: Stock):
         if stock.stopOrder is not None:
-            self._api.cancel_order(stock.stopOrder.orderid())
+            self._api.trade.cancel_order_by_id(stock.stopOrder.orderid())
             # Force sleep to prevent errors
             time.sleep(0.1)
 
-        order = self._api.close_position(symbol=stock.symbol)
+        order = self._api.trade.close_position(stock.symbol)
+        if not isinstance(order, models.Order):
+            raise CMError()
+
         stock.order = None
         stock.stopOrder = None
-        stock.lastCloseOrder = order
+        stock.lastCloseOrder = AlpacaOrder(order)
         self._openOrders[order.id] = order
 
     def closePosition(self, stock: Stock) -> None:
@@ -320,8 +398,16 @@ class AlpacaBroker(Broker):
         raise NotImplementedError
 
     def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
-        order = self._api.replace_order(order_id=stock.stopOrder.orderid(),
-                                        stop_price=f"{stopLimit[0]:.2f}",
-                                        limit_price=f"{stopLimit[1]:.2f}")
+        if stopLimit is not None and stock.stopOrder is not None:
+            req = tradeReq.ReplaceOrderRequest(
+                qty=None,
+                time_in_force=None,
+                stop_price=stopLimit[0],
+                limit_price=stopLimit[1],
+                trail=None,
+                client_order_id=None)
+            order = self._api.trade.replace_order_by_id(stock.stopOrder.orderid(), req)
+            if not isinstance(order, models.Order):
+                raise CMError()
 
-        stock.stopOrder = AlpacaOrder(order)
+            stock.stopOrder = AlpacaOrder(order)

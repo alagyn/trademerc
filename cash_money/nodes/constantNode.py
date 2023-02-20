@@ -1,13 +1,14 @@
 from nodepasta.argtypes import FLOAT
-from nodepasta.node import OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
+
 
 class ConstantNode(CMNode):
     DESCRIPTION = "Outputs a constant value"
     _INPUTS = []
     _OUTPUTS = [
-        OutPort("Value", FLOAT, "The value")
+        Port("Value", FLOAT, "The value")
     ]
     _ARGS = [
         NodeArg("value", FLOAT, "Value", "The value", 1)
@@ -26,4 +27,4 @@ class ConstantNode(CMNode):
         return 0
 
     def execute(self) -> None:
-        self.out.setValue(self.val.value)
+        self.out.value(self.val.value)

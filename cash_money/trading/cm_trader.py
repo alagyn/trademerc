@@ -15,6 +15,7 @@ BUY_PWR_SAFETY = 0.985
 def calcQty(buyPwr: float, cost: float):
     return math.floor(buyPwr / cost)
 
+
 log = CMLogger("Trader")
 
 
@@ -50,7 +51,9 @@ class Trader:
 
     def updateGraphs(self):
         for sym, strat in self.strats.items():
-            strat.addData(self.broker[sym].bar)
+            bar = self.broker[sym].bar
+            if bar is not None:
+                strat.addData(bar)
 
     def updateBuyPwr(self):
         self.totalBuyPwr = round(self.broker.buyPwr() * BUY_PWR_SAFETY, 2)
@@ -96,8 +99,6 @@ class Trader:
                 # ILB
                 pass
 
-
-
     def submitBuy(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
         if qty <= 0:
@@ -115,7 +116,8 @@ class Trader:
             self.broker.submitBuy(action.stock, qty,
                                   (action.args['stopPrice'], action.args['limitPrice']))
         except KeyError as err:
-            raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
+            raise cmErrors.ActionError(
+                f'Action missing argument: "{str(err)}", Action: {str(action)}')
 
     def submitSell(self, action: Action):
         self.broker.closePosition(action.stock)
@@ -128,4 +130,5 @@ class Trader:
             self.broker.submitUpdateStop(action.stock,
                                          (action.args['stopPrice'], action.args['limitPrice']))
         except KeyError as err:
-            raise cmErrors.ActionError(f'Action missing argument: "{str(err)}", Action: {str(action)}')
+            raise cmErrors.ActionError(
+                f'Action missing argument: "{str(err)}", Action: {str(action)}')

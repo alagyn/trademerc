@@ -1,5 +1,6 @@
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from .notfier import NotifyKeys
+from .notifier import NotifyKeys
+
 
 class HTMLGen:
     def __init__(self):

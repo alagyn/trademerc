@@ -1,6 +1,6 @@
 import datetime
 from enum import IntEnum
-from typing import Optional
+from typing import Optional, Any
 import abc
 
 from cash_money.consts import DATE_FMT
@@ -14,14 +14,16 @@ class StockStatus(IntEnum):
     Pending = 1
     OutMarket = 2
 
+
 class CMPosition(abc.ABC):
     @abc.abstractmethod
     def getstatus(self) -> StockStatus:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def data(self) -> any:
+    def data(self) -> Any:
         raise NotImplementedError
+
 
 class Stock:
     def __init__(self, symbol: str):
@@ -34,10 +36,10 @@ class Stock:
 
         self.bar: Optional[Bar] = None
 
-        self.lastCloseOrder = None
+        self.lastCloseOrder: Optional[Order] = None
 
-        self.lastStopUpdate = None
-        self.nextStopUpdate = None
+        self.lastStopUpdate: Optional[str] = None
+        self.nextStopUpdate: Optional[str] = None
 
     def updateBar(self, bar: Bar):
         self.bar = bar

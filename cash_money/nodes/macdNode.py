@@ -1,5 +1,5 @@
 from nodepasta.argtypes import FLOAT, INT
-from nodepasta.node import OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
 from cash_money.nodes.datakeys import CLOSE
@@ -19,8 +19,8 @@ class MACD(CMNode):
                   'One EMA is "fast", the other is "slow".\n' \
                   'MACD = fast - slow. Signal is another EMA over the MACD'
     _OUTPUTS = [
-        OutPort("MACD", FLOAT, "The MACD value"),
-        OutPort("Signal", FLOAT, "The Signal value")
+        Port("MACD", FLOAT, "The MACD value"),
+        Port("Signal", FLOAT, "The Signal value")
     ]
     _ARGS = [
         NodeArg(_FP, INT, "Fast Period", "Period of the fast EMA", 5),
@@ -35,9 +35,9 @@ class MACD(CMNode):
         self._sp = self.args[_SP]
         self._sigP = self.args[_SigP]
 
-        self._fastEMA = None
-        self._slowEMA = None
-        self._sigEMA = None
+        self._fastEMA = EMA(period=self._fp.value)
+        self._slowEMA = EMA(period=self._sp.value)
+        self._sigEMA = EMA(period=self._sigP.value)
 
         self.macdOut = self.outputs[0]
         self.signalOut = self.outputs[1]
@@ -55,8 +55,8 @@ class MACD(CMNode):
         newMACD = fastVal - slowVal
         signal = self._sigEMA.next(newMACD)
 
-        self.macdOut.setValue(newMACD)
-        self.signalOut.setValue(signal)
+        self.macdOut.value(newMACD)
+        self.signalOut.value(signal)
 
     def setupTime(self) -> int:
         return max(self._fp.value, self._sp.value) + self._sigP.value

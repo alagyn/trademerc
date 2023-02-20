@@ -1,19 +1,24 @@
 
 from configparser import ConfigParser
-from typing import List
+from typing import Optional
 
-import alpaca_trade_api as alpaca
-from alpaca_trade_api import TimeFrame, TimeFrameUnit
-from alpaca_trade_api.common import URL
+from alpaca.trading.client import TradingClient
+from alpaca.data.live.stock import StockDataStream
+from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
-from cash_money.consts import LIVE_ENDPOINT, PAPER_ENDPOINT
 from cash_money.objects.bar import Bar
 from cash_money.utils.log_utils import CMLogger
 
 log = CMLogger("Alpaca API")
 
 
-def loadPaperAPI(apiCfg=None):
+class CMAPI:
+    def __init__(self, trade: TradingClient, data: StockDataStream) -> None:
+        self.trade = trade
+        self.data = data
+
+
+def loadPaperAPI(apiCfg=None) -> CMAPI:
     if apiCfg is None:
         apiCfg = ConfigParser()
         apiCfg.read('config/system.cfg')
@@ -22,19 +27,24 @@ def loadPaperAPI(apiCfg=None):
     log.logInfo('Initializing Paper Account')
     api_key = str(apiCfg['Paper_API_Key'])
     api_secret = str(apiCfg['Paper_API_Secret'])
-    endpoint = PAPER_ENDPOINT
-    return alpaca.REST(api_key, api_secret, URL(endpoint), 'v2')
+
+    trade = TradingClient(api_key, api_secret, paper=True)
+    data = StockDataStream(api_key, api_secret)
+    return CMAPI(trade, data)
 
 
-def loadLiveAPI(apiCfg=None):
+def loadLiveAPI(apiCfg: ConfigParser) -> CMAPI:
     log.logInfo('Initializing Live Account')
-    api_key = apiCfg['Live_API_Key']
-    api_secret = apiCfg['Live_API_Secret']
-    endpoint = LIVE_ENDPOINT
-    return alpaca.REST(api_key, api_secret, URL(endpoint), 'v2')
+    api_key = str(apiCfg['Live_API_Key'])
+    api_secret = str(apiCfg['Live_API_Secret'])
+
+    trade = TradingClient(api_key, api_secret, paper=False)
+    data = StockDataStream(api_key, api_secret)
+
+    return CMAPI(trade, data)
 
 
-def loadAPI(apiCfg, liveRun: bool = False):
+def loadAPI(apiCfg, liveRun: bool = False) -> Optional[CMAPI]:
     if liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
         if x != 'YES':
@@ -45,11 +55,12 @@ def loadAPI(apiCfg, liveRun: bool = False):
     return loadPaperAPI()
 
 
-def getBars(api: alpaca.REST, sym, start, end) -> List[Bar]:
+"""
+def getBars(api: TradingClient, sym, start, end) -> List[Bar]:
     b = api.get_bars(symbol=sym,
-                        timeframe=TimeFrame(1, TimeFrameUnit.Day),
-                        start=start,
-                        end=end,
-                        adjustment='raw').df
+                     timeframe=TimeFrame(1, TimeFrameUnit.Day),
+                     start=start,
+                     end=end,
+                     adjustment='raw').df
     return [Bar(b['low'][i], b['close'][i], b['high'][i], b['volume']) for i in range(len(b))]
-
+"""

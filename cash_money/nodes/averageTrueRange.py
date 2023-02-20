@@ -1,9 +1,11 @@
 from nodepasta.argtypes import FLOAT, INT
-from nodepasta.node import OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
 from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
 from cash_money.stats.smma import SMMA
+
+from typing import Optional
 
 PERIOD = 'period'
 
@@ -14,8 +16,8 @@ class AverageTrueRange(CMNode):
                   "The average true range is the true range input into a smoothed moving average"
     _INPUTS = []
     _OUTPUTS = [
-        OutPort("ATR", FLOAT, "The Average True Range"),
-        OutPort("TR", FLOAT, "The True Range")]
+        Port("ATR", FLOAT, "The Average True Range"),
+        Port("TR", FLOAT, "The True Range")]
     _ARGS = [
         NodeArg(PERIOD, INT, "Period", "The period of the ATR moving average", 5)
     ]
@@ -25,8 +27,8 @@ class AverageTrueRange(CMNode):
         super().__init__()
         self._p = self.args[PERIOD]
 
-        self._prevClose = None
-        self._atr_smma = None
+        self._prevClose: Optional[float] = None
+        self._atr_smma = SMMA(self._p.value)
 
         self.atrOut = self.outputs[0]
         self.trOut = self.outputs[1]
@@ -42,8 +44,8 @@ class AverageTrueRange(CMNode):
 
         if self._prevClose is None:
             self._prevClose = close
-            self.atrOut.setValue(None)
-            self.trOut.setValue(None)
+            self.atrOut.value(None)
+            self.trOut.value(None)
             return
 
         tr = max(hi, self._prevClose) - min(lo, self._prevClose)
@@ -51,8 +53,8 @@ class AverageTrueRange(CMNode):
 
         self._prevClose = close
 
-        self.atrOut.setValue(atr)
-        self.trOut.setValue(tr)
+        self.atrOut.value(atr)
+        self.trOut.value(tr)
 
     def setupTime(self) -> int:
         return self._atr_smma.setupTime() + 1

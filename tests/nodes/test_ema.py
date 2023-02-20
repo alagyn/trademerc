@@ -8,7 +8,7 @@ class EMATest(unittest.TestCase):
     def test_7Day(self):
         ema = EMA(period=7, smoothing=2)
 
-        self.assertIsNone(ema.getValue())
+        self.assertEqual(0.0, ema.getValue())
 
         i = iter(S_TEST_DATA)
 
@@ -23,6 +23,3 @@ class EMATest(unittest.TestCase):
         self.assertAlmostEqual(0.545, ema.next(next(i)), 3)
         self.assertAlmostEqual(0.659, ema.next(next(i)), 3)
         self.assertAlmostEqual(0.794, ema.next(next(i)), 3)
-
-
-

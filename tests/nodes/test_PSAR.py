@@ -12,8 +12,7 @@ class PSARTest(unittest.TestCase):
                          "The start AF is not correct")
 
         datamap = {}
-
-        sar.datamap._datamap = datamap
+        sar.datamap._datamap = datamap  # type: ignore
 
         # HI, LO, Expected
         testvals = [
@@ -59,7 +58,7 @@ class PSARTest(unittest.TestCase):
                          "The start AF is not correct")
 
         datamap = {}
-        sar.datamap._datamap = datamap
+        sar.datamap._datamap = datamap  # type: ignore
 
         testvals = [
             (46.44, 45.56, None),

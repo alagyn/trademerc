@@ -1,4 +1,4 @@
-from .notfier import Notifier
+from .notifier import Notifier
 from cash_money.utils.log_utils import CMLogger
 
 log = CMLogger("Notify")

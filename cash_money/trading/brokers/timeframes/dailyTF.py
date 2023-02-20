@@ -1,9 +1,10 @@
 from .timeframe import TimeFrame, tfLog, toTS
 
-import alpaca_trade_api as alpaca
+from alpaca.trading.client import TradingClient
+
 
 class DailyTF(TimeFrame):
-    def __init__(self, api: alpaca.REST, anchor: str, minoffset: float):
+    def __init__(self, api: TradingClient, anchor: str, minoffset: float):
         super(DailyTF, self).__init__(api)
         if anchor == "open":
             self.anchorStart = True

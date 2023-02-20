@@ -17,12 +17,13 @@ from ..trading.nodeStrategy import NodeStrategy
 
 import tkinter.messagebox as dialog
 
-_config = None
+_config = ConfigParser()
 _systemLoaded = False
 
 _configLoc = r"config/system.cfg"
 
 log = CMLogger("Run Utils")
+
 
 def loadSystem() -> ConfigParser:
     global _systemLoaded, _config
@@ -30,7 +31,6 @@ def loadSystem() -> ConfigParser:
     if not _systemLoaded:
         colorama.init()
         _systemLoaded = True
-        _config = ConfigParser()
         if os.path.exists(_configLoc):
             _config.read(_configLoc)
         else:
@@ -47,6 +47,7 @@ def loadSystem() -> ConfigParser:
 
     return _config
 
+
 def calcSetupStartDate(endDay: datetime.datetime, setupTime):
     out = endDay
     while out.weekday() >= 5:
@@ -58,6 +59,7 @@ def calcSetupStartDate(endDay: datetime.datetime, setupTime):
             setupTime -= 1
 
     return out
+
 
 def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.datetime,
                     endDate: Optional[datetime.datetime] = None) -> Tuple[Dict[str, List[Bar]], int]:
@@ -82,7 +84,8 @@ def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.da
     allBars = {}
     for sym, strat in strats.items():
         b = yf.download(sym, startstr, endstr, progress=False)
-        bars = [Bar(b['Low'][x], b['Close'][x], b['High'][x], b['Volume'][x], b.index[x]) for x in range(len(b))]
+        bars = [Bar(b['Low'][x], b['Close'][x], b['High'][x], b['Volume'][x], b.index[x])
+                for x in range(len(b))]
 
         allBars[sym] = bars
 
@@ -120,6 +123,7 @@ def runTradeBroker(trader: Trader, broker: Broker):
         log.logErr(msg)
         # raise to propagate
         raise
+
 
 def showError(title: str, message: str) -> None:
     dialog.showerror(title, message)

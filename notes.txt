@@ -17,6 +17,8 @@ risk input = max % of portfolio per stock
 access buy price in strategy
   can check if we have met a profit percent
   
+need to add an optional limit of max-purchase
+  
 need to log the strat actions to a file in a better format
   xcel sheet with a page for each symbol?
   line per action, buy/sell price, confidence, profit/loss

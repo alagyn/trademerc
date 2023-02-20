@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Dict, Tuple, Iterator, Optional
+from typing import List, Dict, Tuple, Iterator, Optional, Any
 
 from cash_money.objects.order import Order
 from cash_money.objects.stock import Stock
@@ -98,7 +98,7 @@ class Broker(ABC):
         """
         raise NotImplementedError
 
-    def getOpenPositions(self) -> Dict[str, any]:
+    def getOpenPositions(self) -> Dict[str, Any]:
         """
         Returns a dict of all open positions
         :return: the positions

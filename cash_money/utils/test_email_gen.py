@@ -1,5 +1,5 @@
 from cash_money.trading.notifiers.emailer import CMEmailer
-from cash_money.trading.notifiers.notfier import NotifyKeys
+from cash_money.trading.notifiers.notifier import NotifyKeys
 from cash_money.utils.run_utils import loadSystem
 
 if __name__ == "__main__":
@@ -70,9 +70,9 @@ if __name__ == "__main__":
         }
     ]
 
-    content = emailer.generate(100, 200, 100, trades, positions)
+    # content = emailer.update(100, 200, 100, trades, positions)
 
-    with open("temp.html", mode='w') as f:
-        f.write(content)
+    # with open("temp.html", mode='w') as f:
+    # f.write(content)
 
-    print("Done")
+    # print("Done")

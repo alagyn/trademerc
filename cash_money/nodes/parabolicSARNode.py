@@ -1,5 +1,7 @@
+from typing import Optional
+
 from nodepasta.argtypes import FLOAT
-from nodepasta.node import OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
 
@@ -15,7 +17,7 @@ DEFAULT_AF_MAX = 0.2
 class ParabolicSAR(CMNode):
     DESCRIPTION = "Calculates the Parabolic Stop-And-Release (PSAR).\nIt's complicated, google it."
     _OUTPUTS = [
-        OutPort("PSAR", FLOAT, "The PSAR")
+        Port("PSAR", FLOAT, "The PSAR")
     ]
     _ARGS = [
         NodeArg(_AF, FLOAT, "AF Start",
@@ -32,36 +34,36 @@ class ParabolicSAR(CMNode):
         self._af: float = self._afStart.value
         self._afMax = self.args[_AFMAX]
 
-        self._extreme = None
+        self._extreme = 0.0
         self._trend = False
 
-        self._nextSAR = None
+        self._nextSAR: Optional[float] = None
 
-        self._prevHigh = None
-        self._prevLow = None
+        self._prevHigh = 0.0
+        self._prevLow: Optional[float] = None
 
         self.out = self.outputs[0]
 
     def setup(self) -> None:
         self._af: float = self._afStart.value
-        self._extreme = None
+        self._extreme = 0.0
         self._trend = False
 
         self._nextSAR = None
 
-        self._prevHigh = None
-        self._prevLow = None
+        self._prevHigh = 0.0
+        self._prevLow: Optional[float] = None
 
     def execute(self) -> None:
         hi, lo, close = self.hlc()
 
         # Start case, takes 2 iterations to setup
-        if self._nextSAR is None:
-            if self._prevLow is None:
-                self._prevLow = close
-                self.out.setValue(None)
-                return
+        if self._prevLow is None:
+            self._prevLow = close
+            self.out.value(None)
+            return
 
+        if self._nextSAR is None:
             # estimated downtrend
             if self._prevLow < close:
                 self._trend = False
@@ -74,7 +76,7 @@ class ParabolicSAR(CMNode):
             self._nextSAR = (hi + lo) / 2
             self._prevLow = lo
             self._prevHigh = hi
-            self.out.setValue(None)
+            self.out.value(None)
             return
 
         # Update to today's SAR
@@ -116,7 +118,7 @@ class ParabolicSAR(CMNode):
         self._prevLow = lo
         self._prevHigh = hi
 
-        self.out.setValue(todayPSAR)
+        self.out.value(todayPSAR)
 
     def setupTime(self) -> int:
         return 2

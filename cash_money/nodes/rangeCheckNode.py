@@ -1,5 +1,5 @@
 from nodepasta.argtypes import FLOAT, BOOL
-from nodepasta.node import InPort, OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
 
@@ -10,10 +10,10 @@ _MAX = '_max'
 class RangeCheck(CMNode):
     DESCRIPTION = "Checks if the input is within a set range"
     _INPUTS = [
-        InPort("Value", FLOAT, "The input")
+        Port("Value", FLOAT, "The input")
     ]
     _OUTPUTS = [
-        OutPort("Check", BOOL, "Outputs true if and only if the input is greater than the min and less than the max")
+        Port("Check", BOOL, "Outputs true if and only if the input is greater than the min and less than the max")
     ]
     # TODO change to be a port
     _ARGS = [
@@ -37,7 +37,7 @@ class RangeCheck(CMNode):
         return 0
 
     def execute(self) -> None:
-        if self.a.value is None:
-            self.out.setValue(None)
+        if self.a.value() is None:
+            self.out.value(None)
         else:
-            self.out.setValue(self.minVal.value <= self.a.value <= self.maxVal.value)
+            self.out.value(self.minVal.value <= self.a.value() <= self.maxVal.value)

@@ -1,5 +1,5 @@
 from nodepasta.argtypes import FLOAT
-from nodepasta.node import OutPort
+from nodepasta.node import Port
 
 from cash_money.nodes.cmNode import CMNode
 from cash_money.nodes.datakeys import HIGH, LOW, CLOSE, VOLUME
@@ -9,10 +9,10 @@ class InputNode(CMNode):
     DESCRIPTION = "Outputs the stock values for the current cycle"
     _INPUTS = []
     _OUTPUTS = [
-        OutPort("Low", FLOAT, "The cycle's Low"),
-        OutPort("Close", FLOAT, "The cycle's Close"),
-        OutPort("High", FLOAT, "The cycles's High"),
-        OutPort("Volume", FLOAT, "The cycle's Volume")
+        Port("Low", FLOAT, "The cycle's Low"),
+        Port("Close", FLOAT, "The cycle's Close"),
+        Port("High", FLOAT, "The cycles's High"),
+        Port("Volume", FLOAT, "The cycle's Volume")
     ]
     NODETYPE = 'Input'
 
@@ -30,7 +30,7 @@ class InputNode(CMNode):
         return 0
 
     def execute(self) -> None:
-        self.lo.setValue(self.datamap[LOW])
-        self.close.setValue(self.datamap[CLOSE])
-        self.hi.setValue(self.datamap[HIGH])
-        self.vol.setValue(self.datamap[VOLUME])
+        self.lo.value(self.datamap[LOW])
+        self.close.value(self.datamap[CLOSE])
+        self.hi.value(self.datamap[HIGH])
+        self.vol.value(self.datamap[VOLUME])

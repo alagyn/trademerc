@@ -1,7 +1,7 @@
 import datetime
 import sys
 from argparse import ArgumentParser
-from typing import List
+from typing import List, Optional
 
 from cash_money.trading.cm_trader import Trader
 from cash_money.trading.nodeStrategy import NodeStrategy
@@ -14,13 +14,14 @@ from cash_money.utils.file_utils import loadStockFile, loadStratFile
 from cash_money.utils.run_utils import runTradeBroker, loadSystem, setupStrategies
 from cash_money.utils.log_utils import CMLogger
 from cash_money.utils.api_utils import loadLiveAPI, loadPaperAPI
+from cash_money.cmErrors import CMError
 
 
 log = CMLogger("Run Alpaca")
 
 
-def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = False,
-              stocks: List[str] = None, stratVars=None):
+def runTrader(*, stratFile: Optional[str] = None, stockFile: Optional[str] = None, liveRun: bool = False,
+              stocks: Optional[List[str]] = None, stratVars=None):
     config = loadSystem()
     apiCfg = config['Alpaca']
 
@@ -28,9 +29,13 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
         log.logInfo('Loading Strategy')
         stratVars = loadStratFile(stratFile)['graph']
 
-    if stockFile is not None:
-        log.logInfo('Loading Stocks')
-        stocks = loadStockFile(stockFile)
+    if stocks is None:
+        if stockFile is not None:
+            log.logInfo('Loading Stocks')
+            stocks = loadStockFile(stockFile)
+        else:
+            raise CMError(
+                "run_alpaca.runTrader() No stocks or stock file provided")
 
     strats = {}
     for sym in stocks:
@@ -46,7 +51,8 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     elif notifyType == "Console":
         notifier = ConsoleNotifier()
     else:
-        notifier = None
+        raise CMError(
+            f"run_alpaca.runTrader() Invalid notifier type \"{notifyType}\"")
 
     if liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
@@ -71,13 +77,11 @@ def runTrader(*, stratFile: str = None, stockFile: str = None, liveRun: bool = F
     broker = AlpacaBroker(api, stocks, notifier, tf)
     trader = Trader(strats, broker)
 
-    # noinspection PyBroadException
     try:
         runTradeBroker(trader, broker)
     except:
         # Errors will be logged in runTradeBroker
         broker.postRun()
-
 
 
 if __name__ == '__main__':
@@ -90,7 +94,7 @@ if __name__ == '__main__':
         # parser.add_argument('-c', '--cashOnly', action='store_true')
 
         args = parser.parse_args()
-        runTrader(stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun)
-
+        runTrader(stratFile=args.strat,
+                  stockFile=args.stocks, liveRun=args.liveRun)
 
     main()

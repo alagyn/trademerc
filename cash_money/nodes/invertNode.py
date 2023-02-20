@@ -1,15 +1,16 @@
-from nodepasta.node import InPort, OutPort
+from nodepasta.node import Port
 from nodepasta.argtypes import BOOL
 
 from cash_money.nodes.cmNode import CMNode
 
+
 class InvertNode(CMNode):
     DESCRIPTION = "Inverts a boolean (true/false) value."
     _INPUTS = [
-        InPort("In", BOOL, "The input")
+        Port("In", BOOL, "The input")
     ]
     _OUTPUTS = [
-        OutPort("Out", BOOL, "The inverse")
+        Port("Out", BOOL, "The inverse")
     ]
     NODETYPE = "Invert"
 
@@ -22,10 +23,10 @@ class InvertNode(CMNode):
         return 1
 
     def execute(self) -> None:
-        if self.a.value is None:
-            self.out.setValue(None)
+        if self.a.value() is None:
+            self.out.value(None)
         else:
-            self.out.setValue(not self.a.value)
+            self.out.value(not self.a.value())
 
     def setup(self) -> None:
         pass

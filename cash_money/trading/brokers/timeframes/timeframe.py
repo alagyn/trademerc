@@ -1,9 +1,12 @@
 from abc import ABC
 import datetime
-from alpaca_trade_api import REST
 from time import sleep
 
+from alpaca.trading.client import TradingClient
+import alpaca.trading.models as models
+
 from cash_money.utils.log_utils import CMLogger
+
 
 def toTS(t):
     return t.replace(tzinfo=datetime.timezone.utc).timestamp()
@@ -11,8 +14,9 @@ def toTS(t):
 
 tfLog = CMLogger("Timeframe")
 
+
 class TimeFrame(ABC):
-    def __init__(self, api: REST):
+    def __init__(self, api: TradingClient):
         self._api = api
 
     def wait(self) -> None:
@@ -40,4 +44,3 @@ class TimeFrame(ABC):
                 sleep(timeToSleep)
             else:
                 sleep(2)
-

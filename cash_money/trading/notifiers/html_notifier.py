@@ -1,5 +1,6 @@
-from .notfier import Notifier
+from .notifier import Notifier
 from .html_generator import HTMLGen
+
 
 class HTMLNotifier(Notifier):
     def __init__(self):

@@ -1,7 +1,7 @@
 from collections import deque
 
 from nodepasta.argtypes import FLOAT, INT
-from nodepasta.node import OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
 from cash_money.stats.sma import SMA
@@ -24,12 +24,13 @@ class Stochastic(CMNode):
                   '%D-Slow is an SMA over %D with period "D-Slow Period"'
 
     _OUTPUTS = [
-        OutPort("%K", FLOAT, 'The "fast" stochastic indicator'),
-        OutPort("%D", FLOAT, 'The "slow" stochastic indicator'),
-        OutPort("%D-Slow", FLOAT, 'The slowest stochastic indicator')
+        Port("%K", FLOAT, 'The "fast" stochastic indicator'),
+        Port("%D", FLOAT, 'The "slow" stochastic indicator'),
+        Port("%D-Slow", FLOAT, 'The slowest stochastic indicator')
     ]
     _ARGS = [
-        NodeArg(KP, INT, 'K Period', "The number of cycles to choose the highest and lowest", 5),
+        NodeArg(KP, INT, 'K Period',
+                "The number of cycles to choose the highest and lowest", 5),
         NodeArg(DP, INT, 'D Period', "The period the %D SMA", 5),
         NodeArg(SP, INT, 'Slow-D Period', "The period of the %D-Slow SMA", 0)
     ]
@@ -46,11 +47,11 @@ class Stochastic(CMNode):
         self._sp = self.args[SP]
         self.slow = False
 
-        self._percDfast = None
-        self._percDslow = None
+        self._percDfast = SMA(self._dp.value)
+        self._percDslow = SMA(self._sp.value)
 
-        self.lows = None
-        self.highs = None
+        self.lows = deque(maxlen=self._kp.value)
+        self.highs = deque(maxlen=self._kp.value)
 
         self.percKOut = self.outputs[0]
         self.percDOut = self.outputs[1]
@@ -64,7 +65,6 @@ class Stochastic(CMNode):
 
         self.lows = deque(maxlen=self._kp.value)
         self.highs = deque(maxlen=self._kp.value)
-
 
     def execute(self) -> None:
         hi, lo, close = self.hlc()
@@ -81,9 +81,9 @@ class Stochastic(CMNode):
         if self.slow:
             newPerDSlow = self._percDslow.next(newPerD)
 
-        self.percKOut.setValue(newPercK)
-        self.percDOut.setValue(newPerD)
-        self.percDSOut.setValue(newPerDSlow)
+        self.percKOut.value(newPercK)
+        self.percDOut.value(newPerD)
+        self.percDSOut.value(newPerDSlow)
 
     def setupTime(self) -> int:
         return self._kp.value + self._dp.value + self._sp.value

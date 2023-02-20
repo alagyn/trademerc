@@ -1,9 +1,11 @@
 from .timeframe import TimeFrame, toTS, tfLog
 import time
-import alpaca_trade_api as alpaca
+
+from alpaca.trading.client import TradingClient
+
 
 class SecTF(TimeFrame):
-    def __init__(self, api: alpaca.REST, secs: float):
+    def __init__(self, api: TradingClient, secs: float):
         super().__init__(api)
         self.secs = secs
 

@@ -1,5 +1,5 @@
 from nodepasta.argtypes import FLOAT, INT
-from nodepasta.node import InPort, OutPort, NodeArg
+from nodepasta.node import Port, NodeArg
 
 from cash_money.nodes.cmNode import CMNode
 from cash_money.stats.sma import SMA
@@ -14,14 +14,14 @@ class BollingerNode(CMNode):
     """
     DESCRIPTION = 'Calculates Bollinger bands'
     _INPUTS = [
-        InPort("Input", FLOAT, "The input value")
+        Port("Input", FLOAT, "The input value")
     ]
     _OUTPUTS = [
-        OutPort("Top", FLOAT, "The top band"),
-        OutPort("Bottom", FLOAT, "The bottom band"),
-        OutPort("Width", FLOAT, "The Distance between bands"),
-        OutPort("Center", FLOAT, "The Center Simple-Moving-Avg"),
-        OutPort("Std Dev", FLOAT, "The Standard Deviation")
+        Port("Top", FLOAT, "The top band"),
+        Port("Bottom", FLOAT, "The bottom band"),
+        Port("Width", FLOAT, "The Distance between bands"),
+        Port("Center", FLOAT, "The Center Simple-Moving-Avg"),
+        Port("Std Dev", FLOAT, "The Standard Deviation")
     ]
     _ARGS = [
         NodeArg(_Period, INT, 'Period', 'The period of the center SMA', 20),
@@ -35,7 +35,7 @@ class BollingerNode(CMNode):
 
         self._period = self.args[_Period]
         self._stdDev = self.args[_StdDev]
-        self._sma = None
+        self._sma = SMA(period=self._period.value)
 
         self._in = self.inputs[0]
 
@@ -51,15 +51,15 @@ class BollingerNode(CMNode):
     def execute(self) -> None:
         # Get the next SMA value
         val = self._sma.next(self._in.value)
-        self._centerOut.setValue(val)
+        self._centerOut.value(val)
         # Get the Std Dev
         SD = self._sma.std_dev()
-        self._sdOut.setValue(SD)
+        self._sdOut.value(SD)
         # Get the band distance
         band = self._stdDev.value * SD
-        self._topOut.setValue(val + band)
-        self._botOut.setValue(val - band)
-        self._widthOut.setValue(band * 2)
+        self._topOut.value(val + band)
+        self._botOut.value(val - band)
+        self._widthOut.value(band * 2)
 
     def setupTime(self) -> int:
         return self._period.value

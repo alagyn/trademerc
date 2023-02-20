@@ -1,5 +1,6 @@
 from abc import ABC
 
+
 class NotifyKeys:
     class Portfolio:
         START = "portfolio_start"
@@ -7,6 +8,7 @@ class NotifyKeys:
         PL = "portfolio_pl"
 
     TRADES = "trades"
+
     class Trade:
         Symbol = "symbol"
         Side = "side"
@@ -15,6 +17,7 @@ class NotifyKeys:
         Value = "value"
 
     POSITIONS = "positions"
+
     class Position:
         Symbol = "symbol"
         Qty = "qty"
@@ -26,6 +29,7 @@ class NotifyKeys:
         StopPrice = "stop_price"
         LastStop = "last_stop"
         NextStop = "next_stop"
+
 
 class Notifier(ABC):
     def update(self, portfolio_start, portfolio_cur, portfolio_pl, trades, positions):

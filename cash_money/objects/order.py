@@ -1,11 +1,13 @@
 from abc import ABC
 from enum import IntEnum
-from typing import Union
+from typing import Union, Any
+
 
 class OrderStatus(IntEnum):
     UNFILLED = 0
     CANCELED = 1
     FILLED = 2
+
 
 class OrderType(IntEnum):
     BUY = 0
@@ -15,10 +17,10 @@ class OrderType(IntEnum):
 
 class Order(ABC):
 
-    def __init__(self, orderid: any):
+    def __init__(self, orderid: Any):
         self._orderid = orderid
 
-    def orderid(self) -> any:
+    def orderid(self) -> Any:
         """
         Returns this order's id
         :return: the id
@@ -59,5 +61,5 @@ class Order(ABC):
     def limitPrice(self) -> Union[float, None]:
         raise NotImplementedError
 
-    def data(self) -> any:
+    def data(self) -> Any:
         raise NotImplementedError

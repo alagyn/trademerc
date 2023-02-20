@@ -1,16 +1,16 @@
-from alpaca_trade_api.rest import REST
+from alpaca.trading.client import TradingClient
 import cash_money.utils.api_utils as api_utils
 
-def close_all(api: REST):
-    print("Cancelling all orders")
-    api.cancel_all_orders()
+
+def close_all(api: api_utils.CMAPI):
     print("Closing all positions")
-    api.close_all_positions()
+    api.trade.close_all_positions(True)
 
 
 def main():
     api = api_utils.loadPaperAPI()
     close_all(api)
+
 
 if __name__ == "__main__":
     main()
