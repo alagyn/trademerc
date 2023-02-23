@@ -2,11 +2,11 @@ from abc import ABC
 import datetime
 from time import sleep
 
-from alpaca.trading.client import TradingClient
 import alpaca.trading.models as models
 
 from cash_money.utils.log_utils import CMLogger
 from cash_money.cmErrors import CMError
+from cash_money.utils.api_utils import CMAPI
 
 
 def toTS(t):
@@ -17,7 +17,7 @@ tfLog = CMLogger("Timeframe")
 
 
 class TimeFrame(ABC):
-    def __init__(self, api: TradingClient):
+    def __init__(self, api: CMAPI):
         self._api = api
 
     def wait(self) -> None:
@@ -33,7 +33,7 @@ class TimeFrame(ABC):
         """Utility to wait until timestamp"""
 
         while True:
-            clock = self._api.get_clock()
+            clock = self._api.trade.get_clock()
             if not isinstance(clock, models.Clock):
                 raise CMError()
 

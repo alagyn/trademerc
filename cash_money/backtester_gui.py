@@ -8,7 +8,7 @@ from typing import Dict, Optional
 from threading import Thread
 
 from matplotlib.backend_bases import key_press_handler
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk  # type: ignore
 from matplotlib.figure import Figure
 from tkcalendar import DateEntry
 
@@ -19,6 +19,7 @@ from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.utils.file_utils import loadStockFile
 
 STRAT_FT = [('Strategy', '.strat')]
+
 
 class BTGUI(tk.Frame):
     def __init__(self, root):
@@ -49,7 +50,7 @@ class BTGUI(tk.Frame):
         self.root['menu'] = menubar
 
         # Run frame
-        #region
+        # region
         runFrame = tk.LabelFrame(self, text="Run")
 
         LOAD_BTN_ROW = 0
@@ -71,9 +72,11 @@ class BTGUI(tk.Frame):
 
         START_VAL_ROW = SEP0_ROW + 1
 
-        tk.Label(runFrame, text='Starting Value ($):').grid(row=START_VAL_ROW, column=0, sticky='ew')
+        tk.Label(runFrame, text='Starting Value ($):').grid(
+            row=START_VAL_ROW, column=0, sticky='ew')
         self.startValVar = tk.IntVar(value=10000)
-        tk.Spinbox(runFrame, textvariable=self.startValVar).grid(row=START_VAL_ROW, column=1, sticky='ew')
+        tk.Spinbox(runFrame, textvariable=self.startValVar).grid(
+            row=START_VAL_ROW, column=1, sticky='ew')
 
         SYMBOL_BTN_ROW = START_VAL_ROW + 1
 
@@ -147,7 +150,7 @@ class BTGUI(tk.Frame):
 
         liveBtn = tk.Button(runFrame, text='Run on Alpaca', command=self.runAlpaca)
         liveBtn.grid(row=RUN_LIVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
-        #endregion
+        # endregion
 
         # GRID MAIN FRAMES
         FRAME_PAD = 5
@@ -167,7 +170,6 @@ class BTGUI(tk.Frame):
             tk.Label(statFrame, textvariable=var).grid(row=row, column=1, sticky='new')
 
             row += 1
-
 
         # GRAPH FRAME
         mainGraphFrame = tk.Frame(self)
@@ -191,7 +193,7 @@ class BTGUI(tk.Frame):
 
         self.runThread: Optional[Thread] = None
         self.threadRunning = False
-        self.stats = None
+        self.stats = {}
 
     def loop(self):
         while self.run:
@@ -210,20 +212,20 @@ class BTGUI(tk.Frame):
                     for c in self.canvases:
                         c.draw()
 
-
     def closeWindow(self):
         self.run = False
         self.root.destroy()
 
     def selectOut(self):
         # noinspection PyArgumentList
-        ret = filedialog.askopenfilename(filetypes=[('json', 'json')], multiple=False, initialdir='.')
+        ret = filedialog.askopenfilename(
+            filetypes=[('json', 'json')], initialdir='.')
         if len(ret) > 0:
             self.outVar.set(ret)
 
     def selectStrat(self):
         # noinspection PyArgumentList
-        ret = filedialog.askopenfilename(filetypes=STRAT_FT, multiple=False, initialdir='./config')
+        ret = filedialog.askopenfilename(filetypes=STRAT_FT, initialdir='./config')
         if len(ret) > 0:
             try:
                 self.stratFile = ret
@@ -234,7 +236,8 @@ class BTGUI(tk.Frame):
 
     def selectSymbolFile(self):
         # noinspection PyArgumentList
-        ret = filedialog.askopenfilename(filetypes=[('.txt', '.txt')], multiple=False, initialdir='./config')
+        ret = filedialog.askopenfilename(
+            filetypes=[('.txt', '.txt')], initialdir='./config')
         if len(ret) > 0:
             self.stocks = loadStockFile(ret)
             _, f = os.path.split(ret)
@@ -321,7 +324,6 @@ class BTGUI(tk.Frame):
                 strats = {x: NodeStrategy(strat['graph'], x)}
                 cm_backtester.backtest(**args, strats=strats)
 
-
     def runAlpaca(self):
         if self.stocks is None or len(self.stocks) == 0 or len(self.stratFile) == 0:
             return
@@ -346,6 +348,7 @@ def main():
     app = BTGUI(tk.Tk())
     app.loop()
 
+
 if __name__ == '__main__':
     from cash_money.utils.run_utils import loadSystem, showError
     try:
@@ -354,4 +357,3 @@ if __name__ == '__main__':
     except Exception as e:
         showError("Error: Backtester", f"Fatal Error Has Occurred\n{type(e)}\n{str(e)}")
         exit(-1)
-

@@ -28,9 +28,7 @@ class ConfidenceNode(CMNode):
     ]
     NODETYPE = "Confidence"
 
-    def __init__(self):
-        super(ConfidenceNode, self).__init__()
-
+    def init(self):
         self.enterThresh = self.args[_EnterThresh]
         self.exitThresh = self.args[_ExitThresh]
 

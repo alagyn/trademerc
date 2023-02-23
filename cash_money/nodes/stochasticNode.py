@@ -36,12 +36,10 @@ class Stochastic(CMNode):
     ]
     NODETYPE = "Stochastic"
 
-    def __init__(self):
+    def init(self):
         """
         Stochastic Oscillator Indicator
         """
-        super().__init__()
-
         self._kp = self.args[KP]
         self._dp = self.args[DP]
         self._sp = self.args[SP]

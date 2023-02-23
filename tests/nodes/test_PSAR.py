@@ -2,6 +2,8 @@ import unittest
 from cash_money.nodes.parabolicSARNode import ParabolicSAR, DEFAULT_AF_START
 from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
 
+from nodepasta.testing.tester import Tester
+
 
 class PSARTest(unittest.TestCase):
     def test_uptrend(self):
@@ -13,6 +15,8 @@ class PSARTest(unittest.TestCase):
 
         datamap = {}
         sar.datamap._datamap = datamap  # type: ignore
+
+        tester = Tester(sar)
 
         # HI, LO, Expected
         testvals = [
@@ -37,17 +41,17 @@ class PSARTest(unittest.TestCase):
             (49.35, 48.86, 48.28)
         ]
 
-        out = sar.out
-
         for i, x in enumerate(testvals):
             datamap[LOW] = x[1]
             datamap[HIGH] = x[0]
             datamap[CLOSE] = (x[0] + x[1]) / 2
-            sar.execute()
+            out = tester.test({})
 
-            if out.value is not None and x[2] is not None:
-                self.assertAlmostEqual(x[2], out.value, 2)
-            elif out.value is not None and x[2] is None:
+            val: float = out['PSAR']
+
+            if val is not None and x[2] is not None:
+                self.assertAlmostEqual(x[2], val, 2)
+            elif val is not None and x[2] is None:
                 self.assertTrue(True, "Value should not be none")
 
     def test_downtrend(self):
@@ -59,6 +63,8 @@ class PSARTest(unittest.TestCase):
 
         datamap = {}
         sar.datamap._datamap = datamap  # type: ignore
+
+        tester = Tester(sar)
 
         testvals = [
             (46.44, 45.56, None),
@@ -88,8 +94,9 @@ class PSARTest(unittest.TestCase):
             datamap[LOW] = x[1]
             datamap[HIGH] = x[0]
             datamap[CLOSE] = (x[0] + x[1]) / 2
-            sar.execute()
-            if out.value is not None and x[2] is not None:
+            out = tester.test({})
+            val = out["PSAR"]
+            if val is not None and x[2] is not None:
                 # a = round(out[0], 2)
                 # b = round(sar._extreme, 2)
                 # c = round(out[0] - sar._extreme, 2)
@@ -97,6 +104,6 @@ class PSARTest(unittest.TestCase):
                 # e = round(sar._af * (out[0] - sar._extreme), 3)
                 # print(a, b, c, d, e)
 
-                self.assertAlmostEqual(x[2], out.value, delta=0.008)
-            elif out.value is not None and x[2] is None:
+                self.assertAlmostEqual(x[2], val, delta=0.008)
+            elif val is not None and x[2] is None:
                 self.assertTrue(True, "Value should not be none")

@@ -25,9 +25,7 @@ class EMANode(CMNode):
     ]
     NODETYPE = "Exponential Moving Avg"
 
-    def __init__(self, ):
-        super().__init__()
-
+    def init(self, ):
         self._s = self.args[_S]
         self._p = self.args[_P]
 

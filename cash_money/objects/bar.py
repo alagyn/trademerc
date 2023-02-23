@@ -6,3 +6,6 @@ class Bar:
         self.hi = hi
         self.vol = vol
         self.date = date
+
+    def __str__(self) -> str:
+        return f"(L:{self.lo}, C:{self.close}, H:{self.hi}, V:{self.vol})"

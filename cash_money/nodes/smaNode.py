@@ -24,9 +24,7 @@ class SMANode(CMNode):
     ]
     NODETYPE = "Simple Moving Avg"
 
-    def __init__(self):
-        super().__init__()
-
+    def init(self):
         self._p = self.args[_P]
         self._sma = SMA(self._p.value)
 
@@ -37,10 +35,10 @@ class SMANode(CMNode):
         self._sma = SMA(self._p.value)
 
     def execute(self) -> None:
-        if self.a.value is None:
+        if self.a.value() is None:
             self.out.value(None)
         else:
-            self.out.value(self._sma.next(self.a.value))
+            self.out.value(self._sma.next(self.a.value()))
 
     def setupTime(self) -> int:
         return self._p.value

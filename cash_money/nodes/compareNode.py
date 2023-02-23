@@ -23,8 +23,7 @@ class Compare(CMNode):
     ]
     NODETYPE = "Compare"
 
-    def __init__(self):
-        super().__init__()
+    def init(self):
         self._opType = self.args[_TYPE]
         self.op = lt
         self.a = self.inputs[0]

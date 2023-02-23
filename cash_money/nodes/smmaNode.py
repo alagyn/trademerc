@@ -22,9 +22,7 @@ class SMMANode(CMNode):
     ]
     NODETYPE = "Smoothing Moving Avg"
 
-    def __init__(self):
-        super().__init__()
-
+    def init(self):
         self._p = self.args[_P]
         self._smma = SMMA(self._p.value)
 

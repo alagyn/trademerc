@@ -17,8 +17,7 @@ class Crossover(CMNode):
     ]
     NODETYPE = "Crossover"
 
-    def __init__(self):
-        super().__init__()
+    def init(self):
         self.prevDiff = None
         self.curDiff = None
 

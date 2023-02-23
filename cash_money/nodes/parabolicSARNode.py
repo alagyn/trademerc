@@ -27,9 +27,7 @@ class ParabolicSAR(CMNode):
     ]
     NODETYPE = "PSAR"
 
-    def __init__(self):
-        super().__init__()
-
+    def init(self):
         self._afStart = self.args[_AF]
         self._af: float = self._afStart.value
         self._afMax = self.args[_AFMAX]

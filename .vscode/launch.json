@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Paper",
+            "type": "python",
+            "request": "launch",
+            "module": "cash_money.run_alpaca",
+            "args": [
+                "-s",
+                "${workspaceFolder}/config/test.strat",
+                "-stx",
+                "${workspaceFolder}/config/example_stocks.txt",
+            ],
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        },
+        {
             "name": "Backtester",
             "type": "python",
             "request": "launch",

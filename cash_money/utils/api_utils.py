@@ -1,6 +1,6 @@
 
 from configparser import ConfigParser
-from typing import Optional
+from typing import Optional, Mapping
 
 from alpaca.trading.client import TradingClient
 from alpaca.data.live.stock import StockDataStream
@@ -33,7 +33,7 @@ def loadPaperAPI(apiCfg=None) -> CMAPI:
     return CMAPI(trade, data)
 
 
-def loadLiveAPI(apiCfg: ConfigParser) -> CMAPI:
+def loadLiveAPI(apiCfg: Mapping[str, str]) -> CMAPI:
     log.logInfo('Initializing Live Account')
     api_key = str(apiCfg['Live_API_Key'])
     api_secret = str(apiCfg['Live_API_Secret'])

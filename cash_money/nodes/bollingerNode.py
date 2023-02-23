@@ -30,9 +30,7 @@ class BollingerNode(CMNode):
     ]
     NODETYPE = 'Bollinger Bands'
 
-    def __init__(self):
-        super().__init__()
-
+    def init(self):
         self._period = self.args[_Period]
         self._stdDev = self.args[_StdDev]
         self._sma = SMA(period=self._period.value)
@@ -50,7 +48,7 @@ class BollingerNode(CMNode):
 
     def execute(self) -> None:
         # Get the next SMA value
-        val = self._sma.next(self._in.value)
+        val = self._sma.next(self._in.value())
         self._centerOut.value(val)
         # Get the Std Dev
         SD = self._sma.std_dev()

@@ -21,8 +21,7 @@ class DelayNode(CMNode):
     ]
     NODETYPE = "Delay"
 
-    def __init__(self):
-        super().__init__()
+    def init(self):
         self._d = self.args[_D]
         self._q = deque()
         self.a = self.inputs[0]

@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from datetime import datetime
 
 from cash_money.trading.nodeStrategy import NodeStrategy
@@ -9,6 +9,7 @@ from cash_money.trading.cm_trader import Trader
 
 from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
+from matplotlib.markers import MarkerStyle
 from matplotlib.dates import ConciseDateFormatter
 import json
 
@@ -32,11 +33,12 @@ STATS = [
 
 _MODULE = "Backtest"
 
+
 def backtest(stratName: str, strats: Dict[str, NodeStrategy],
              masterFigure: Optional[Figure], symFigs: Optional[Dict[str, Figure]],
              startDate: datetime, endDate: datetime,
              startingVal=10000, outputFile: str = 'stats.json'
-             ):
+             ) -> Dict[str, Any]:
     log.logInfo("Setting up strategies")
     bars, startIdx = setupStrategies(strats, startDate, endDate)
 
@@ -57,7 +59,7 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
         json.dump(runStats, f)
         f.write('\n')
 
-    if masterFigure is not None:
+    if masterFigure is not None and symFigs is not None:
         log.logInfo("Plotting")
 
         plotLog = CMLogger("Plot")
@@ -92,8 +94,8 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
                                                 ['bot'],
                                                 ['bot']], sharex=True)
 
-            topPlot = axes['top']
-            botPlot = axes['bot']
+            topPlot = axes['top']  # type: ignore
+            botPlot = axes['bot']  # type: ignore
 
             dates = [x.date for x in bars[sym][startIdx:]]
             closes = [x.close for x in bars[sym][startIdx:]]
@@ -104,9 +106,11 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
             stat = broker.stats[sym]
 
             plotLog.logInfo(f"{sym}: Buy prices")
-            botPlot.scatter(stat.buyDays, stat.buyPrices, marker='^', color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
+            botPlot.scatter(stat.buyDays, stat.buyPrices, marker='^',  # type: ignore
+                            color=(0.1, 0.75, 0.1), label='Buys', zorder=2.5)
             plotLog.logInfo(f"{sym}: Sell prices")
-            botPlot.scatter(stat.sellDays, stat.sellPrices, marker='v', color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
+            botPlot.scatter(stat.sellDays, stat.sellPrices, marker='v',  # type: ignore
+                            color=(1, 0.1, 0.1), label='Sells', zorder=2.5)
 
             botPlot.xaxis.set_major_locator(locator)
             botPlot.xaxis.set_major_formatter(dateformat)
@@ -123,7 +127,7 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
 
             topPlot.legend()
 
-        return runStats
+    return runStats
 
 
 if __name__ == "__main__":
@@ -131,7 +135,6 @@ if __name__ == "__main__":
     from cash_money.utils.run_utils import loadSystem
 
     loadSystem()
-
 
     def _main():
         parser = ArgumentParser()
@@ -156,6 +159,5 @@ if __name__ == "__main__":
 
         backtest('TEST', strats=strats, masterFigure=None, symFigs=None,
                  startDate=start_date, endDate=end_date)
-
 
     _main()

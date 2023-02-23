@@ -14,8 +14,7 @@ class InvertNode(CMNode):
     ]
     NODETYPE = "Invert"
 
-    def __init__(self):
-        super(InvertNode, self).__init__()
+    def init(self):
         self.a = self.inputs[0]
         self.out = self.outputs[0]
 

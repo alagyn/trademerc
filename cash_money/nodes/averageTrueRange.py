@@ -23,8 +23,7 @@ class AverageTrueRange(CMNode):
     ]
     NODETYPE = "Average True Range"
 
-    def __init__(self):
-        super().__init__()
+    def init(self):
         self._p = self.args[PERIOD]
 
         self._prevClose: Optional[float] = None

@@ -15,8 +15,7 @@ class ConstantNode(CMNode):
     ]
     NODETYPE = 'Constant'
 
-    def __init__(self):
-        super(ConstantNode, self).__init__()
+    def init(self):
         self.out = self.outputs[0]
         self.val = self.args['value']
 

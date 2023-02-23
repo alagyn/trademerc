@@ -22,8 +22,7 @@ class RangeCheck(CMNode):
     ]
     NODETYPE = "Range"
 
-    def __init__(self):
-        super().__init__()
+    def init(self):
         self.minVal = self.args[_MIN]
         self.maxVal = self.args[_MAX]
 

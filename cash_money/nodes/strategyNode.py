@@ -21,8 +21,7 @@ class StrategyNode(CMNode):
     ]
     NODETYPE = "Strategy"
 
-    def __init__(self):
-        super(StrategyNode, self).__init__()
+    def init(self):
         self.entry = self.inputs[0]
         self.exit = self.inputs[1]
         self.stop = self.inputs[2]

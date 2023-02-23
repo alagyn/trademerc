@@ -21,8 +21,7 @@ class MathNode(CMNode):
     ]
     NODETYPE = "Math"
 
-    def __init__(self):
-        super(MathNode, self).__init__()
+    def init(self):
         self.a = self.inputs[0]
         self.b = self.inputs[1]
         self.out = self.outputs[0]

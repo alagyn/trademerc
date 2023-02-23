@@ -15,8 +15,7 @@ class AbsoluteValueNode(CMNode):
     ]
     NODETYPE = "Absolute Value"
 
-    def __init__(self):
-        super().__init__()
+    def init(self):
         self.val = self.inputs[0]
         self.absOut = self.outputs[0]
 

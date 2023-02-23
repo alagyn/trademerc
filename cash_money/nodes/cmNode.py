@@ -7,9 +7,6 @@ from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
 
 
 class CMNode(Node):
-    def __init__(self):
-        super(CMNode, self).__init__(noneCapable=True)
-
     def setupTime(self) -> int:
         raise NotImplementedError
 
@@ -19,7 +16,7 @@ class CMNode(Node):
 
         cost = 0
         for link in self.incoming():
-            parent: CMNode = link.parent  # type: ignore
+            parent: CMNode = link.pPort.node  # type: ignore
             try:
                 parentCost = cachemap[parent.nodeID]
             except KeyError:

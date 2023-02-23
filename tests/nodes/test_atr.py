@@ -3,6 +3,8 @@ import unittest
 from cash_money.nodes.averageTrueRange import AverageTrueRange, PERIOD
 from .data import DatamapIter, RAW_TEST_DATA
 
+from nodepasta.testing.tester import Tester
+
 
 class ATRTest(unittest.TestCase):
     def test_8Day(self):
@@ -13,6 +15,8 @@ class ATRTest(unittest.TestCase):
         self.assertEqual(8, atrNode._atr_smma._p)
 
         i = DatamapIter(atrNode, RAW_TEST_DATA)
+
+        tester = Tester(atrNode)
 
         # ATR, TR
         expected = [
@@ -33,18 +37,21 @@ class ATRTest(unittest.TestCase):
         # 0: ATR
         # 1: TR
 
-        atr = atrNode.atrOut
-        tr = atrNode.trOut
-
         next(i)
-        atrNode.execute()
-        self.assertIsNone(atr.value)
-        self.assertIsNone(tr.value)
+        out = tester.test({})
+        atr: float = out["ATR"]
+        tr: float = out["TR"]
+        self.assertIsNone(atr)
+        self.assertIsNone(tr)
 
         for x in expected:
             next(i)
-            atrNode.execute()
-            self.assertIsNotNone(atr.value)
-            self.assertIsNotNone(tr.value)
-            self.assertAlmostEqual(x[0], atr.value, places=2)
-            self.assertAlmostEqual(x[1], tr.value, delta=0.005)
+            out = tester.test({})
+            atr: float = out["ATR"]
+            tr: float = out["TR"]
+
+            self.assertIsNotNone(atr)
+            self.assertIsNotNone(tr)
+
+            self.assertAlmostEqual(x[0], atr, places=2)
+            self.assertAlmostEqual(x[1], tr, delta=0.005)

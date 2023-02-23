@@ -2,6 +2,7 @@ import time
 from typing import List, Union, Dict, Tuple, Optional, Any
 from .timeframes.timeframe import TimeFrame
 import threading
+import asyncio
 
 from alpaca.trading.client import TradingClient
 import alpaca.trading.requests as tradeReq
@@ -116,9 +117,16 @@ class AlpacaBroker(Broker):
         self._openOrders = {}
 
         self._api.data.subscribe_bars(self._barUpdateHandler, *symbols)
+        log.logInfo("Starting Websocket")
+        self._dataThread = threading.Thread(name="Alpaca Data", target=self._api.data.run)
+        self._dataThread.start()
+        log.logInfo("Init complete")
 
     def updateAccount(self):
-        self._account = self._api.get_account()  # type: ignore
+        x = self._api.trade.get_account()
+        if not isinstance(x, models.TradeAccount):
+            raise CMError()
+        self._account = x
 
     def preRun(self):
         # TODO check for proper shutdown
@@ -132,6 +140,7 @@ class AlpacaBroker(Broker):
         self._api.trade.cancel_orders()
         # Close all positions?
         # self.api.close_all_positions()
+        asyncio.run(self._api.data.stop_ws())
         log.logInfo('Done')
 
     def preTrade(self) -> bool:
@@ -148,7 +157,7 @@ class AlpacaBroker(Broker):
         return True
 
     def _notifyThread(self):
-        time.sleep(self._timeframe.notifyWait())
+        self._timeframe.notifyWait()
         self.updateAccount()
 
         self._updateTrades()
@@ -209,11 +218,10 @@ class AlpacaBroker(Broker):
             # TODO make this not error? don't want it to die unexpectedly
             raise CMError("AlpacaBroker.buyPwr() Cannot get buy pwr")
 
-    async def _barUpdateHandler(self, data: Any):
-        print(type(data))
-        print(data)
-        # data
-        # self[s].updateBar(Bar(db.l, db.c, db.h, db.v))
+    async def _barUpdateHandler(self, data: dataModels.bars.Bar):
+        self[data.symbol].updateBar(
+            Bar(data.low, data.close, data.high, data.volume)
+        )
 
     def _updateBars(self) -> None:
         """
@@ -222,7 +230,9 @@ class AlpacaBroker(Broker):
         for s in self.symbols:
             db = snaps[s].daily_bar
         """
-        pass
+        print("Bars:")
+        for sym, stock in self._stocks.items():
+            print(sym, stock.bar)
 
     def _updatePositions(self):
         x = self._api.trade.get_all_positions()

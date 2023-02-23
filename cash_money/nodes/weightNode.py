@@ -21,8 +21,7 @@ class WeightNode(CMNode):
 
     NODETYPE = "Weight"
 
-    def __init__(self):
-        super(WeightNode, self).__init__()
+    def init(self):
         self._wgt = self.args[_W]
         self.c = self.inputs[0]
         self.out = self.outputs[0]
@@ -34,7 +33,7 @@ class WeightNode(CMNode):
         return 0
 
     def execute(self) -> None:
-        if self.c.value is None:
+        if self.c.value() is None:
             self.out.value(None)
         else:
-            self.out.value(self._wgt.value if self.c.value else 0)
+            self.out.value(self._wgt.value if self.c.value() else 0)

@@ -16,8 +16,7 @@ class InputNode(CMNode):
     ]
     NODETYPE = 'Input'
 
-    def __init__(self):
-        super(InputNode, self).__init__()
+    def init(self):
         self.lo = self.outputs[0]
         self.close = self.outputs[1]
         self.hi = self.outputs[2]
