@@ -25,9 +25,9 @@ def main():
     if stockFile is None or len(stockFile) == 0:
         return
 
-    root.destroy()
     root.update()
     root.update_idletasks()
+    root.destroy()
 
     runPaper = askyesnocancel("Run Paper Account?", "Run Paper Account?")
     if runPaper is None:
