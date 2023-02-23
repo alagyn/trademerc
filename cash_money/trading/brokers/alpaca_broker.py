@@ -243,7 +243,10 @@ class AlpacaBroker(Broker):
         openset = set()
         for p in positions:
             openset.add(p.symbol)
-            self[p.symbol].position = AlpacaPosition(p)
+            try:
+                self[p.symbol].position = AlpacaPosition(p)
+            except KeyError:
+                pass
 
         closed = self._stocks.keys() - openset
         for s in closed:
