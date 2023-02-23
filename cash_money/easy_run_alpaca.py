@@ -1,12 +1,14 @@
 from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import askyesnocancel
-
+import tkinter as tk
 from cash_money.run_alpaca import runTrader
 
 STRAT_FT = [('Strategy', '.strat')]
 
 
 def main():
+    root = tk.Tk()
+
     stratFile = askopenfilename(
         filetypes=STRAT_FT,
         title="Select Strategy"
@@ -20,6 +22,8 @@ def main():
     )
     if stockFile is None or len(stockFile) == 0:
         return
+
+    root.destroy()
 
     runPaper = askyesnocancel("Run Paper Account?", "Run Paper Account?")
     if runPaper is None:
