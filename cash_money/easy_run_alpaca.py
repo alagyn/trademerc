@@ -11,19 +11,23 @@ def main():
 
     stratFile = askopenfilename(
         filetypes=STRAT_FT,
-        title="Select Strategy"
+        title="Select Strategy",
+        parent=root
     )
     if stratFile is None or len(stratFile) == 0:
         return
 
     stockFile = askopenfilename(
         filetypes=[('Text', '.txt')],
-        title="Select stock list"
+        title="Select stock list",
+        parent=root
     )
     if stockFile is None or len(stockFile) == 0:
         return
 
     root.destroy()
+    root.update()
+    root.update_idletasks()
 
     runPaper = askyesnocancel("Run Paper Account?", "Run Paper Account?")
     if runPaper is None:
