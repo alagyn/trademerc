@@ -5,9 +5,13 @@ from cash_money.run_alpaca import runTrader
 
 STRAT_FT = [('Strategy', '.strat')]
 
+import threading
+import time
+
 
 def main():
     root = tk.Tk()
+    root.withdraw()
 
     stratFile = askopenfilename(
         filetypes=STRAT_FT,
@@ -25,16 +29,15 @@ def main():
     if stockFile is None or len(stockFile) == 0:
         return
 
-    root.update()
-    root.update_idletasks()
-    root.destroy()
-
     runPaper = askyesnocancel("Run Paper Account?", "Run Paper Account?")
     if runPaper is None:
         return
 
-    runTrader(stratFile=stratFile,
-              stockFile=stockFile, liveRun=not runPaper)
+    root.update_idletasks()
+    root.update()
+    root.destroy()
+
+    runTrader(stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper)
 
 
 if __name__ == '__main__':
