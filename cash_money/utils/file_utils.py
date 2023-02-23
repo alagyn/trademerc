@@ -10,7 +10,7 @@ def loadStockFile(file) -> List[str]:
             if len(x) > 0 and not x.startswith('#'):
                 stocks.add(x)
 
-    return sorted(list(stocks))
+    return list(sorted(stocks))
 
 
 def loadStratFile(file):

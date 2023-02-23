@@ -1,8 +1,11 @@
 from abc import ABC
 from typing import List, Dict, Tuple, Iterator, Optional, Any
 
+from cash_money.utils.log_utils import CMLogger
 from cash_money.objects.order import Order
 from cash_money.objects.stock import Stock
+
+log = CMLogger("Broker")
 
 
 class Broker(ABC):
@@ -14,6 +17,8 @@ class Broker(ABC):
         self._stocks: Dict[str, Stock] = {}
         for x in self.symbols:
             self._stocks[x] = Stock(x)
+
+        log.logInfo(f"Loaded Symbols: {symbols}")
 
         self.tradeDay = 0
 
