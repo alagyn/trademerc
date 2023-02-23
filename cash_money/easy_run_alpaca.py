@@ -16,7 +16,8 @@ def main():
     stratFile = askopenfilename(
         filetypes=STRAT_FT,
         title="Select Strategy",
-        parent=root
+        parent=root,
+        initialdir='config'
     )
     if stratFile is None or len(stratFile) == 0:
         return
@@ -24,7 +25,8 @@ def main():
     stockFile = askopenfilename(
         filetypes=[('Text', '.txt')],
         title="Select stock list",
-        parent=root
+        parent=root,
+        initialdir='config'
     )
     if stockFile is None or len(stockFile) == 0:
         return
