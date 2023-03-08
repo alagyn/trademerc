@@ -1,3 +1,4 @@
+import numpy as np
 from typing import Dict, Optional, Any
 from datetime import datetime
 
@@ -15,7 +16,6 @@ import json
 
 log = CMLogger("Backtest Run")
 
-import numpy as np
 
 STATS = [
     ('EndValue', 'End Value $:'),
@@ -30,8 +30,6 @@ STATS = [
     ('avgGain', 'Avg Gain $:'),
     ('avgLoss', 'Avg Loss $:'),
 ]
-
-_MODULE = "Backtest"
 
 
 def backtest(stratName: str, strats: Dict[str, NodeStrategy],
@@ -103,7 +101,7 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
             plotLog.logInfo(f"{sym}: Dates vs Closes")
             botPlot.plot(dates, closes, label=sym, color=(0, 0, 0))
 
-            stat = broker.stats[sym]
+            stat = broker.positions[sym].stats
 
             plotLog.logInfo(f"{sym}: Buy prices")
             botPlot.scatter(stat.buyDays, stat.buyPrices, marker='^',  # type: ignore
@@ -121,7 +119,8 @@ def backtest(stratName: str, strats: Dict[str, NodeStrategy],
             color = ['g' if x > 0 else 'r' for x in stat.sellDeltas]
 
             plotLog.logInfo(f"{sym}: Sell deltas")
-            topPlot.scatter(stat.sellDays, stat.sellDeltas, color=color, label='Profit/Loss')
+            topPlot.scatter(stat.sellDays, stat.sellDeltas,
+                            color=color, label='Profit/Loss')
             topPlot.set_yticks([0])
             topPlot.grid(True)
 
