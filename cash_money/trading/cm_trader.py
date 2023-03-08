@@ -77,18 +77,21 @@ class Trader:
         else:
             buyPwr = 0
 
-        log.logInfo(f"Num out of market: {numOutOfMarket}, per-stock buy pwr: ${buyPwr:.2f}")
+        log.logInfo(
+            f"Num out of market: {numOutOfMarket}, per-stock buy pwr: ${buyPwr:.2f}")
 
         for a in actions:
-            log.logInfo(str(a))
+            # log.logInfo(str(a))
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
-                    log.logInfo(f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
+                    log.logInfo(
+                        f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
                     continue
                 self.submitBuy(a, buyPwr)
             elif a.action == ActionEnum.BuyAndStop:
                 if buyPwr <= 0:
-                    log.logInfo(f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
+                    log.logInfo(
+                        f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
                     continue
                 self.submitBuyAndStop(a, buyPwr)
             elif a.action == ActionEnum.Sell:
@@ -102,14 +105,16 @@ class Trader:
     def submitBuy(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
         if qty <= 0:
-            log.logInfo(f"Qty <= 0: {qty}, not submitting Buy request\n\t{str(action)}")
+            log.logInfo(
+                f"Qty <= 0: {qty}, not submitting Buy request\n\t{str(action)}")
             return
         self.broker.submitBuy(action.stock, qty)
 
     def submitBuyAndStop(self, action: Action, buyPwr):
         qty = calcQty(buyPwr, action.stock.bar.close)
         if qty <= 0:
-            log.logInfo(f"Qty <= 0: {qty}, not submitting Buy&Stop request\n\t{str(action)}")
+            log.logInfo(
+                f"Qty <= 0: {qty}, not submitting Buy&Stop request\n\t{str(action)}")
             return
 
         try:
@@ -125,7 +130,8 @@ class Trader:
     def submitUpdateStop(self, action: Action):
         try:
             if action.stock.stopOrder is None:
-                raise cmErrors.ActionError('Cannot Update stop, no stop created')
+                raise cmErrors.ActionError(
+                    'Cannot Update stop, no stop created')
 
             self.broker.submitUpdateStop(action.stock,
                                          (action.args['stopPrice'], action.args['limitPrice']))

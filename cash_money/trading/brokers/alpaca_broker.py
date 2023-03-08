@@ -13,7 +13,7 @@ import alpaca.data.models as dataModels
 from cash_money.objects.bar import Bar
 from cash_money.objects.order import Order, OrderStatus, OrderType
 from cash_money.objects.stock import Stock, CMPosition, StockStatus
-from cash_money.trading.notifiers.notifier import Notifier, NotifyKeys
+from cash_money.trading.notifiers.notifier import Notifier, Notification
 from cash_money.utils.log_utils import CMLogger
 from cash_money.cmErrors import CMError
 from cash_money.utils.api_utils import CMAPI
@@ -105,20 +105,20 @@ class AlpacaBroker(Broker):
         if not isinstance(x, models.TradeAccount):
             raise CMError("AlpacaBroker.__init__() API in raw mode")
         self._account: models.TradeAccount = x
-        self._buyPower: float = 0.0
         if self._account.equity is not None:
             self._prevEquity: float = round(float(self._account.equity), 2)
 
         self._bars = {}
 
         # List of trades to send in next update
-        self._trades = []
+        self._next_notification = Notification()
         # Dict of order.id -> order
         self._openOrders = {}
 
         self._api.data.subscribe_bars(self._barUpdateHandler, *symbols)
         log.logInfo("Starting Websocket")
-        self._dataThread = threading.Thread(name="Alpaca Data", target=self._api.data.run)
+        self._dataThread = threading.Thread(
+            name="Alpaca Data", target=self._api.data.run)
         self._dataThread.start()
         log.logInfo("Init complete")
 
@@ -170,37 +170,32 @@ class AlpacaBroker(Broker):
         log.logInfo('Sending Update')
         totalPL = curEquity - self._prevEquity
 
-        positions = []
+        self._next_notification.portfolio_start = self._prevEquity
+        self._next_notification.portfolio_cur = curEquity
+        self._next_notification.portfolio_pl = totalPL
+
         for sym, s in self._stocks.items():
             if s.position is not None:
-                data = s.position.data()
-                p = {
-                    NotifyKeys.Position.Symbol: s.symbol,
-                    NotifyKeys.Position.Qty: data.qty,
-                    NotifyKeys.Position.PL: data.unrealized_pl,
-                    NotifyKeys.Position.Price: data.current_price,
-                    NotifyKeys.Position.Value: data.market_value,
-                    NotifyKeys.Position.PurchaseValue: data.avg_entry_price,
-                    NotifyKeys.Position.LastStop: s.lastStopUpdate,
-                    NotifyKeys.Position.NextStop: s.nextStopUpdate
-                }
+                data: models.Position = s.position.data()
 
-                if s.order is not None:
-                    p[NotifyKeys.Position.PurchaseDate] = s.order.data().filled_at
-                if s.stopOrder is not None:
-                    p[NotifyKeys.Position.StopPrice] = s.stopOrder.data().stop_price
-
+                self._next_notification.addPosition(
+                    symbol=s.symbol,
+                    qty=int(data.qty),
+                    pl=float(data.unrealized_pl),
+                    price=float(data.current_price),
+                    value=float(data.market_value),
+                    purchaseValue=float(data.avg_entry_price),
+                    stopPrice=-1 if s.stopOrder is None else s.stopOrder.data().stop_price,
+                    lastStop=str(s.lastStopUpdate),
+                    nextStop=str(s.nextStopUpdate),
+                    purchaseDate="" if s.order is None else s.order.data().filled_at
+                )
             else:
-                p = {
-                    NotifyKeys.Position.Symbol: s.symbol,
-                    NotifyKeys.Position.Qty: 0
-                }
-            positions.append(p)
+                self._next_notification.addPosition(s.symbol)
 
-        self._notif.update(self._prevEquity, curEquity,
-                           totalPL, self._trades, positions)
+        self._notif.update(self._next_notification)
+        self._next_notification = Notification()
         self._prevEquity = curEquity
-        self._trades = []
 
     def postTrade(self) -> None:
         if self._notif is not None:
@@ -212,11 +207,11 @@ class AlpacaBroker(Broker):
         return self._api.get_clock()  # type: ignore
 
     def buyPwr(self) -> float:
-        if self._account.buying_power is not None:
-            return round(float(self._account.buying_power), 2)
+        if self._account.cash is not None:
+            return round(float(self._account.cash), 2)
         else:
             # TODO make this not error? don't want it to die unexpectedly
-            raise CMError("AlpacaBroker.buyPwr() Cannot get buy pwr")
+            raise CMError("AlpacaBroker.buyPwr() Cannot get cash amount")
 
     async def _barUpdateHandler(self, data: dataModels.bars.Bar):
         self[data.symbol].updateBar(
@@ -268,15 +263,13 @@ class AlpacaBroker(Broker):
                 price = float(order.filledAvgPrice())
                 value = qty * price
 
-                t = {
-                    NotifyKeys.Trade.Symbol: order.symbol(),
-                    NotifyKeys.Trade.Side: order.side(),
-                    NotifyKeys.Trade.Qty: qty,
-                    NotifyKeys.Trade.Price: price,
-                    NotifyKeys.Trade.Value: value
-                }
-
-                self._trades.append(t)
+                self._next_notification.addTrade(
+                    symbol=order.symbol(),
+                    side=order.side(),
+                    qty=qty,
+                    price=price,
+                    value=value
+                )
 
         for x in filled:
             del self._openOrders[x]
@@ -419,7 +412,8 @@ class AlpacaBroker(Broker):
                 limit_price=stopLimit[1],
                 trail=None,
                 client_order_id=None)
-            order = self._api.trade.replace_order_by_id(stock.stopOrder.orderid(), req)
+            order = self._api.trade.replace_order_by_id(
+                stock.stopOrder.orderid(), req)
             if not isinstance(order, models.Order):
                 raise CMError()
 

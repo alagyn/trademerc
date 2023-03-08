@@ -12,7 +12,7 @@
             "justMyCode": true,
             "args": [
                 "-s",
-                "${workspaceFolder}/config/test2.strat",
+                "${workspaceFolder}/config/example_strat.strat",
                 "-stx",
                 "${workspaceFolder}/config/example_stocks.txt",
             ],
