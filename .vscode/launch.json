@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "BT no GUI",
+            "type": "python",
+            "request": "launch",
+            "module": "cash_money.cm_backtester",
+            "justMyCode": true,
+            "args": [
+                "-s",
+                "${workspaceFolder}/config/test2.strat",
+                "-stx",
+                "${workspaceFolder}/config/example_stocks.txt",
+            ],
+            "cwd": "${workspaceFolder}",
+        },
+        {
             "name": "Paper",
             "type": "python",
             "request": "launch",

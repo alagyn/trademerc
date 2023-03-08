@@ -32,3 +32,6 @@ Running LIVE trading:
 4) Setup GUI to create strategies
    1) Create structure similar to TrendSpidy that has "Entry" and "Exit" conditions. Multiple conditions can be included with and/or statement.	[BEN]
    2) Determine list of necessary indicators to use when setting up a procedure to test.	[JOHN]
+
+BUILDING TO EXE
+python setup.py build

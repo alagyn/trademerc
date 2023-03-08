@@ -7,6 +7,7 @@ from cash_money.utils.run_utils import runTradeBroker, setupStrategies
 from cash_money.utils.log_utils import CMLogger
 from cash_money.trading.brokers.backtest_broker import BacktestBroker
 from cash_money.trading.cm_trader import Trader
+from cash_money.utils.file_utils import loadStockFile
 
 from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
@@ -138,23 +139,19 @@ if __name__ == "__main__":
     def _main():
         parser = ArgumentParser()
 
-        parser.add_argument(
-            '--strategy', '-str',
-            required=True,
-            type=str
-        )
+        parser.add_argument('-s', '--strat', required=True)
+        parser.add_argument('-stx', '--stocks', required=True)
 
         args = parser.parse_args()
 
-        with open(args.strategy, mode='r') as f:
+        with open(args.strat, mode='r') as f:
             strat = json.load(f)
+
+        stocks = loadStockFile(args.stocks)
+        strats = {sym: NodeStrategy(strat['graph'], sym) for sym in stocks}
+
         start_date = datetime(2018, 1, 1)
         end_date = datetime.today()
-
-        strats = {
-            'QQQ': NodeStrategy(strat['graph'], "QQQ"),
-            'DIA': NodeStrategy(strat['graph'], "DIA"),
-        }
 
         backtest('TEST', strats=strats, masterFigure=None, symFigs=None,
                  startDate=start_date, endDate=end_date)

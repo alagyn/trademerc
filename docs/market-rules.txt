@@ -1,0 +1,36 @@
+Settlement
+    For most stock trades, settlement occurs two business days after the day the order executes, 
+    or T+2 (trade date plus two days). For example, if you were to execute an order on Monday, 
+    it would typically settle on Wednesday. 
+    For some products, such as mutual funds, settlement occurs on a different timeline
+
+Trades of US equities have what is termed T+2 settlement time. 
+So, if a stock is sold on Monday, two trading days later, on Wednesday, proceeds will be credited to one’s account. 
+Trades on Friday will settle the following Tuesday. This is the current industry standard (before 2017 it was T+3) and not specific to any broker. 
+However, this doesn’t exactly apply to Alpaca accounts.
+
+All Alpaca accounts are margin accounts and are extended credit to cover the ‘float’ between the time one sells a security and when they can use the funds. 
+For practical purposes the settlement time is T+0. 
+One can trade assuming they have immediate access to funds from sales and, conversely, are immediately debited for any purchases. 
+The only times the settlement date may be relevant is for certain corporate actions 
+(eg receiving dividends or applying a stock split) or determining when cash can be withdrawn from an account.
+
+Settlement time is completely separate from day trade rules.
+To be a day trade, a buy order needs to fill followed by a sell order 
+in the same day (for a short position it would be a sell then buy). 
+The key is 
+    1) it’s determined by the fill date and not the order submit date
+    2) the orders occurred on the same date as of US market time which is Eastern or New York time. 
+A buy made during market hours followed by a sell of the same security in after hours trading counts 
+as a day trade because they were both on the same date. This is independent of when the orders actually settle.
+
+So, the question “If I made a day trade on Jan 12th, 2020 and another on Jan 19th, 2020…
+would that count as 1 day trade cause the other settled? or two?”. 
+
+What might be the confusion is the FINRA “3 day trades in 5 days” rule. 
+This simply states that an account will be considered as “Pattern Day Trader” if one 
+makes more than 3 day trades in a rolling 5 day window (only trading days are counted). 
+Again, that’s independent of settlement dates. 
+Also, note if one make more than one day trade in a single day 
+those count as multiple day trades. If one buys, then sells, then buys, then sells, 
+the same stock in a single day that is considered two day trades and count against the 3 max.

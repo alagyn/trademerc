@@ -1,8 +1,10 @@
 import os.path
+import os
+from typing import List, Tuple
 
 from cx_Freeze import setup, Executable
 
-include_files = [("LICENSE", "LICENSE")]
+include_files: List[Tuple[str, str]] = [("LICENSE", "LICENSE")]
 
 for x in os.listdir("config"):
     if x.startswith("example_"):
@@ -10,12 +12,9 @@ for x in os.listdir("config"):
         include_files.append((os.path.abspath(path), path))
 
 options = {
-    "build":{
-        "build_exe": "build/CashMoney"
-    },
-    "build_exe":{
+    "build_exe": {
         "includes": "cash_money",
-        "excludes": "pyarrow,alabaster,altgraph,bcrypt,cloudpickle,PyQt5,sphinx",
+        "excludes": "pyarrow,alabaster,altgraph,bcrypt,cloudpickle,PyQt5,sphinx,setuptools",
 
         "include_files": include_files
     }
@@ -28,7 +27,7 @@ executables = [
 
 setup(
     name="cashmoney",
-    version="0.1.1",
+    version="0.2.1",
     description="Backtesting and Live Trading Application",
     options=options,
     executables=executables
