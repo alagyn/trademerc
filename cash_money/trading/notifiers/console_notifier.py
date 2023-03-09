@@ -58,5 +58,7 @@ class ConsoleNotifier(Notifier):
                     )
                 )
             msg.append("")
+        else:
+            msg.append("No Open Positions")
 
         log.info("\n\t".join(msg))

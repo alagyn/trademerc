@@ -39,6 +39,9 @@ class NodeStrategy:
         self.nodegraph.datamap[EXIT] = False
 
         if stock.bar is None:
+            log.warn(
+                f"stock.bar is None: {stock.symbol}, trade day: {tradeDay}"
+            )
             return HoldAction(stock)
 
         self.nodegraph.execute()

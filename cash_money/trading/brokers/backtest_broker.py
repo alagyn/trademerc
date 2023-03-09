@@ -71,10 +71,6 @@ class BackTestPosition(CMPosition):
         return self._qty
 
     def addNotification(self, n: Notification, bar: Bar):
-        if self.qty() == 0:
-            n.addPosition(self.symbol)
-            return
-
         purchaseValue = self.initUnitPrice * self._qty
         value = bar.close * self.qty()
         pl = value - purchaseValue
@@ -278,11 +274,9 @@ class BacktestBroker(Broker):
             if position.qty() > 0:
                 if bar is not None:
                     inMarketEquity += position.qty() * bar.close
-
-            if bar is None:
-                bar = Bar(0, 0, 0, 0)
-
-            position.addNotification(self._next_n, bar)
+                else:
+                    bar = Bar(0, 0, 0, 0)
+                position.addNotification(self._next_n, bar)
 
         # Update Graph Logs
         self.portfolio_cash[self.tradeDay] = round(self.totalCash, 2)
@@ -320,7 +314,7 @@ class BacktestBroker(Broker):
                 position.stats.addSell(self.curDate, newCash, sellPrice)
                 self.totalCash += newCash
                 log.info(
-                    f"    {sym}: Qty={position.qty}(), Value={newCash:.2f}"
+                    f"    [{sym}] Qty: {position.qty()}, Value: ${newCash:.2f}"
                 )
 
     def cash(self) -> float:

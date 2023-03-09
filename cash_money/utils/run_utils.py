@@ -175,38 +175,32 @@ def downloadDailyBars(
     # Dict of current indices for each symbol
     idxs = {sym: 0
             for sym in symbols}
+
     # We want to do them all at once so we can filter out holidays and
     # stuff by checking if every bar is none for a particular day
     while curDate <= endDate:
-        haveBar = False
         # check if we have at least one bar for this day
-        for sym, idx in idxs.items():
+        haveBar = False
+        for sym, idx in list(idxs.items()):
             bars = dirtyBars[sym]
             if idx >= len(bars):
                 continue
-            if bars[idx].bar is not None:
+            bar = bars[idx]
+            if bar.date == curDate:
+                cleanBarsDict[sym].append(bar)
                 haveBar = True
-                break
-
-        # Skip if we don't have any bars for this day
-        if not haveBar:
-            curDate = nextBusinessDay(curDate)
-
-        for sym, idx in list(idxs.items()):
-            cleanList = cleanBarsDict[sym]
-            dirtyList = dirtyBars[sym]
-            if idx >= len(dirtyList):
-                cleanList.append(BarEntry(None, curDate))
-                continue
-
-            bar = dirtyList[idx]
-            if bar is not None and bar.date == curDate:
-                cleanList.append(bar)
-                # inc the idx
                 idxs[sym] += 1
             else:
-                cleanList.append(BarEntry(None, curDate))
+                cleanBarsDict[sym].append(BarEntry(None, curDate))
 
+        # If we don't have any bars for this date (probably a holiday)
+        if not haveBar:
+            # Then we have a row of empty BarEntries
+            for sym in idxs:
+                # Remove them
+                cleanBarsDict[sym].pop()
+
+        # Go to next business day
         curDate = nextBusinessDay(curDate)
 
     return cleanBarsDict
