@@ -31,7 +31,7 @@ class Compare(CMNode):
         self.out = self.outputs[0]
 
     def setup(self) -> None:
-        if self._opType == "LESS THAN":
+        if self._opType.value == "LESS THAN":
             self.op = lt
         else:
             self.op = gt

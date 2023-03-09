@@ -9,6 +9,7 @@ from . import delayNode
 from . import emaNode
 from . import inputNode
 from . import invertNode
+from . import logicNode
 from . import macdNode
 from . import mathNode
 from . import parabolicSARNode
