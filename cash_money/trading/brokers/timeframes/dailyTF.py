@@ -6,6 +6,7 @@ from alpaca.trading.models import Clock
 
 
 class DailyTF(TimeFrame):
+
     def __init__(self, api: CMAPI, anchor: str, minoffset: float):
         super(DailyTF, self).__init__(api)
         if anchor == "open":
@@ -24,11 +25,11 @@ class DailyTF(TimeFrame):
             raise CMError()
 
         if self.anchorStart:
-            tfLog.logInfo(f"Sleeping until {self._min} after Open")
+            tfLog.info(f"Sleeping until {self._min} after Open")
             timeToOpen = toTS(clock.next_open)
             self._waitForTS(timeToOpen + self._secs)
         else:
-            tfLog.logInfo(f"Sleeping until {self._min} before close")
+            tfLog.info(f"Sleeping until {self._min} before close")
             timeToClose = toTS(clock.next_close)
             self._waitForTS(timeToClose - self._secs)
 
@@ -37,7 +38,7 @@ class DailyTF(TimeFrame):
         if not isinstance(clock, Clock):
             raise CMError()
 
-        tfLog.logInfo(f'Forcing sleep until open')
+        tfLog.info(f'Forcing sleep until open')
         timeToOpen = toTS(clock.next_open)
         self._waitForTS(timeToOpen)
 

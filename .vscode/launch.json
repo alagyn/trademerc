@@ -8,7 +8,7 @@
             "name": "BT no GUI",
             "type": "python",
             "request": "launch",
-            "module": "cash_money.cm_backtester",
+            "module": "cash_money.backtester",
             "justMyCode": true,
             "args": [
                 "-s",

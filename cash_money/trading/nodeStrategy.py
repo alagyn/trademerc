@@ -1,17 +1,17 @@
 from cash_money.nodes.cmNode import CMNode
-from cash_money.objects.bar import Bar
-from cash_money.objects.stock import Stock, StockStatus
-from cash_money.objects.action import Action
+from cash_money.objects import Bar, Stock, StockStatus, Action, BuyAction, UpdateStopAction, HoldAction, SellAction
 from cash_money.nodes.datakeys import *
 from cash_money.utils.node_utils import registerNodes
 
-from cash_money.utils.log_utils import CMLogger
+import logging
 
 from nodepasta.nodegraph import NodeGraph
 
-log = CMLogger("NodeStrategy")
+log = logging.getLogger("NodeStrategy")
+
 
 class NodeStrategy:
+
     def __init__(self, jGraph, symbol: str):
         self.nodegraph = NodeGraph()
         registerNodes(self.nodegraph)
@@ -35,6 +35,12 @@ class NodeStrategy:
         self.nodegraph.datamap[DRY_RUN] = False
 
     def nextAction(self, tradeDay: int, stock: Stock) -> Action:
+        self.nodegraph.datamap[ENTRY] = False
+        self.nodegraph.datamap[EXIT] = False
+
+        if stock.bar is None:
+            return HoldAction(stock)
+
         self.nodegraph.execute()
         pos = stock.status()
 
@@ -42,24 +48,23 @@ class NodeStrategy:
 
         if pos == StockStatus.InMarket:
             if self.nodegraph.datamap[EXIT]:
-                return stock.sell()
+                return SellAction(stock)
 
             if stop is not None and tradeDay >= self.nextStopUpdate:
                 self.nextStopUpdate = tradeDay + self.stopPeriod
-                return stock.updateStop(stop, stop * 0.8)
+                return UpdateStopAction(stock, (stop, stop * 0.8))
 
-            return stock.hold()
+            return HoldAction(stock)
 
         elif pos == StockStatus.OutMarket:
             if self.nodegraph.datamap[ENTRY]:
-
                 if stop is None:
-                    return stock.buy()
+                    return BuyAction(stock, None)
                 else:
                     self.nextStopUpdate = tradeDay + self.stopPeriod
-                    return stock.buyAndStop(stop, stop * 0.8)
+                    return BuyAction(stock, (stop, stop * 0.8))
 
-        return stock.hold()
+        return HoldAction(stock)
 
     def getSetupTime(self) -> int:
         stratNode: CMNode = self.nodegraph.datamap[STRAT_NODE]

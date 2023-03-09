@@ -51,14 +51,11 @@ class PositionNotification:
 
 
 class Notification:
-    def __init__(self,
-                 portfolio_start: float = 0,
-                 portfolio_cur: float = 0,
-                 portfolio_pl: float = 0
-                 ) -> None:
-        self.portfolio_start = portfolio_start
-        self.portfolio_cur = portfolio_cur
-        self.portfolio_pl = portfolio_pl
+    def __init__(self) -> None:
+        self.cash = 0.0
+        self.equity_prev = 0.0
+        self.equity_cur = 0.0
+        self.equity_pl = 0.0
 
         self.trades: List[TradeNotification] = []
         self.positions: List[PositionNotification] = []

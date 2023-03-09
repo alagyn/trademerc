@@ -4,7 +4,7 @@ from time import sleep
 
 import alpaca.trading.models as models
 
-from cash_money.utils.log_utils import CMLogger
+import logging
 from cash_money.cmErrors import CMError
 from cash_money.utils.api_utils import CMAPI
 
@@ -13,10 +13,11 @@ def toTS(t):
     return t.replace(tzinfo=datetime.timezone.utc).timestamp()
 
 
-tfLog = CMLogger("Timeframe")
+tfLog = logging.getLogger("Timeframe")
 
 
 class TimeFrame(ABC):
+
     def __init__(self, api: CMAPI):
         self._api = api
 
@@ -43,7 +44,7 @@ class TimeFrame(ABC):
 
             if diff > 6:
                 # TODO add current time to log
-                tfLog.logInfo(f'Sleeping {diff / 60:.2f}min')
+                tfLog.info(f'Sleeping {diff / 60:.2f}min')
                 timeToSleep = diff - 5
                 sleep(timeToSleep)
             else:

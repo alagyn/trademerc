@@ -1,4 +1,3 @@
-
 from configparser import ConfigParser
 from typing import Optional, Mapping
 
@@ -6,13 +5,14 @@ from alpaca.trading.client import TradingClient
 from alpaca.data.live.stock import StockDataStream
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
-from cash_money.objects.bar import Bar
-from cash_money.utils.log_utils import CMLogger
+from cash_money.objects import Bar
+import logging
 
-log = CMLogger("Alpaca API")
+log = logging.getLogger("Alpaca API")
 
 
 class CMAPI:
+
     def __init__(self, trade: TradingClient, data: StockDataStream) -> None:
         self.trade = trade
         self.data = data
@@ -24,7 +24,7 @@ def loadPaperAPI(apiCfg=None) -> CMAPI:
         apiCfg.read('config/system.cfg')
         apiCfg = apiCfg['Alpaca']
 
-    log.logInfo('Initializing Paper Account')
+    log.info('Initializing Paper Account')
     api_key = str(apiCfg['Paper_API_Key'])
     api_secret = str(apiCfg['Paper_API_Secret'])
 
@@ -34,7 +34,7 @@ def loadPaperAPI(apiCfg=None) -> CMAPI:
 
 
 def loadLiveAPI(apiCfg: Mapping[str, str]) -> CMAPI:
-    log.logInfo('Initializing Live Account')
+    log.info('Initializing Live Account')
     api_key = str(apiCfg['Live_API_Key'])
     api_secret = str(apiCfg['Live_API_Secret'])
 
@@ -46,7 +46,9 @@ def loadLiveAPI(apiCfg: Mapping[str, str]) -> CMAPI:
 
 def loadAPI(apiCfg, liveRun: bool = False) -> Optional[CMAPI]:
     if liveRun:
-        x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
+        x = input(
+            'Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):'
+        )
         if x != 'YES':
             return None
         else:

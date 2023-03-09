@@ -12,7 +12,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 from tkcalendar import DateEntry
 
-from cash_money import cm_backtester
+from cash_money import backtester
 from cash_money.cmErrors import StrategyError
 from cash_money.run_alpaca import runTrader
 from cash_money.trading.nodeStrategy import NodeStrategy
@@ -22,6 +22,7 @@ STRAT_FT = [('Strategy', '.strat')]
 
 
 class BTGUI(tk.Frame):
+
     def __init__(self, root):
         self.root = root
         super().__init__(self.root)
@@ -55,46 +56,86 @@ class BTGUI(tk.Frame):
 
         LOAD_BTN_ROW = 0
 
-        loadStratBtn = tk.Button(runFrame, text='Load Strategy', command=self.selectStrat)
-        loadStratBtn.grid(row=LOAD_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5, pady=2)
+        loadStratBtn = tk.Button(
+            runFrame, text='Load Strategy', command=self.selectStrat
+        )
+        loadStratBtn.grid(
+            row=LOAD_BTN_ROW,
+            column=0,
+            columnspan=2,
+            sticky='ew',
+            padx=5,
+            pady=2
+        )
 
         CUR_STRAT_ROW = LOAD_BTN_ROW + 1
 
-        tk.Label(runFrame, text='Current Strategy:').grid(row=CUR_STRAT_ROW, column=0)
+        tk.Label(
+            runFrame, text='Current Strategy:'
+        ).grid(
+            row=CUR_STRAT_ROW, column=0
+        )
         self.stratNameVar = tk.StringVar()
-        tk.Label(runFrame, textvariable=self.stratNameVar).grid(row=CUR_STRAT_ROW, column=1)
+        tk.Label(
+            runFrame, textvariable=self.stratNameVar
+        ).grid(
+            row=CUR_STRAT_ROW, column=1
+        )
 
         SEP0_ROW = CUR_STRAT_ROW + 1
 
-        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=SEP0_ROW, column=0,
-                                                           columnspan=2, sticky='ew',
-                                                           pady=10)
+        ttk.Separator(
+            runFrame, orient=tk.HORIZONTAL
+        ).grid(
+            row=SEP0_ROW, column=0, columnspan=2, sticky='ew', pady=10
+        )
 
         START_VAL_ROW = SEP0_ROW + 1
 
-        tk.Label(runFrame, text='Starting Value ($):').grid(
-            row=START_VAL_ROW, column=0, sticky='ew')
+        tk.Label(
+            runFrame, text='Starting Value ($):'
+        ).grid(
+            row=START_VAL_ROW, column=0, sticky='ew'
+        )
         self.startValVar = tk.IntVar(value=10000)
-        tk.Spinbox(runFrame, textvariable=self.startValVar).grid(
-            row=START_VAL_ROW, column=1, sticky='ew')
+        tk.Spinbox(
+            runFrame, textvariable=self.startValVar
+        ).grid(
+            row=START_VAL_ROW, column=1, sticky='ew'
+        )
 
         SYMBOL_BTN_ROW = START_VAL_ROW + 1
 
-        symbolBtn = tk.Button(runFrame, text='Load Symbols', command=self.selectSymbolFile)
-        symbolBtn.grid(row=SYMBOL_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5, pady=2)
+        symbolBtn = tk.Button(
+            runFrame, text='Load Symbols', command=self.selectSymbolFile
+        )
+        symbolBtn.grid(
+            row=SYMBOL_BTN_ROW,
+            column=0,
+            columnspan=2,
+            sticky='ew',
+            padx=5,
+            pady=2
+        )
 
         SYMBOL_IN_ROW = SYMBOL_BTN_ROW + 1
 
-        tk.Label(runFrame, text='Symbols:').grid(row=SYMBOL_IN_ROW, column=0, padx=2)
+        tk.Label(
+            runFrame, text='Symbols:'
+        ).grid(
+            row=SYMBOL_IN_ROW, column=0, padx=2
+        )
         self.symbolVar = tk.StringVar()
         symbolLabel = tk.Label(runFrame, textvariable=self.symbolVar)
         symbolLabel.grid(row=SYMBOL_IN_ROW, column=1, padx=2)
 
         SEP1_ROW = SYMBOL_IN_ROW + 1
 
-        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=SEP1_ROW, column=0,
-                                                           columnspan=2, sticky='ew',
-                                                           pady=10)
+        ttk.Separator(
+            runFrame, orient=tk.HORIZONTAL
+        ).grid(
+            row=SEP1_ROW, column=0, columnspan=2, sticky='ew', pady=10
+        )
 
         START_DATE_ROW = SEP1_ROW + 1
 
@@ -117,13 +158,17 @@ class BTGUI(tk.Frame):
         self.endInput.set_date(md)
 
         SEP2_ROW = END_DATE_ROW + 1
-        ttk.Separator(runFrame, orient=tk.HORIZONTAL).grid(row=SEP2_ROW, column=0,
-                                                           columnspan=2, sticky='ew',
-                                                           pady=10)
+        ttk.Separator(
+            runFrame, orient=tk.HORIZONTAL
+        ).grid(
+            row=SEP2_ROW, column=0, columnspan=2, sticky='ew', pady=10
+        )
 
         OUT_BTN_ROW = SEP2_ROW + 1
 
-        outbtn = tk.Button(runFrame, text='Select Output:', command=self.selectOut)
+        outbtn = tk.Button(
+            runFrame, text='Select Output:', command=self.selectOut
+        )
         outbtn.grid(row=OUT_BTN_ROW, column=0, padx=2)
         self.outVar = tk.StringVar()
         self.outVar.set('stats.json')
@@ -133,23 +178,34 @@ class BTGUI(tk.Frame):
         INDIV_TOGGLE_ROW = OUT_BTN_ROW + 1
 
         self.indivVar = tk.BooleanVar()
-        tk.Checkbutton(runFrame, text='Individual Runs?', variable=self.indivVar).grid(row=INDIV_TOGGLE_ROW, column=0,
-                                                                                       columnspan=2)
+        tk.Checkbutton(
+            runFrame, text='Individual Runs?', variable=self.indivVar
+        ).grid(
+            row=INDIV_TOGGLE_ROW, column=0, columnspan=2
+        )
 
         RUN_BTN_ROW = INDIV_TOGGLE_ROW + 1
 
         runBtn = tk.Button(runFrame, text='Run Backtest', command=self.runBT)
-        runBtn.grid(row=RUN_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
+        runBtn.grid(
+            row=RUN_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5
+        )
 
         LIVE_TOGGLE_ROW = RUN_BTN_ROW + 2
         self.liveToggleVar = tk.BooleanVar(value=False)
-        liveCheckBox = tk.Checkbutton(runFrame, text='LIVE Account?', variable=self.liveToggleVar)
+        liveCheckBox = tk.Checkbutton(
+            runFrame, text='LIVE Account?', variable=self.liveToggleVar
+        )
         liveCheckBox.grid(row=LIVE_TOGGLE_ROW, column=0, columnspan=2)
 
         RUN_LIVE_BTN_ROW = LIVE_TOGGLE_ROW + 1
 
-        liveBtn = tk.Button(runFrame, text='Run on Alpaca', command=self.runAlpaca)
-        liveBtn.grid(row=RUN_LIVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5)
+        liveBtn = tk.Button(
+            runFrame, text='Run on Alpaca', command=self.runAlpaca
+        )
+        liveBtn.grid(
+            row=RUN_LIVE_BTN_ROW, column=0, columnspan=2, sticky='ew', padx=5
+        )
         # endregion
 
         # GRID MAIN FRAMES
@@ -162,12 +218,20 @@ class BTGUI(tk.Frame):
 
         self.statVars: Dict[str, tk.Variable] = {}
 
-        for k, v in cm_backtester.STATS:
+        for k, v in backtester.STATS:
             var = tk.StringVar(value="0")
             self.statVars[k] = var
 
-            tk.Label(statFrame, text=v, anchor='e').grid(row=row, column=0, sticky='new')
-            tk.Label(statFrame, textvariable=var).grid(row=row, column=1, sticky='new')
+            tk.Label(
+                statFrame, text=v, anchor='e'
+            ).grid(
+                row=row, column=0, sticky='new'
+            )
+            tk.Label(
+                statFrame, textvariable=var
+            ).grid(
+                row=row, column=1, sticky='new'
+            )
 
             row += 1
 
@@ -219,13 +283,16 @@ class BTGUI(tk.Frame):
     def selectOut(self):
         # noinspection PyArgumentList
         ret = filedialog.askopenfilename(
-            filetypes=[('json', 'json')], initialdir='.')
+            filetypes=[('json', 'json')], initialdir='.'
+        )
         if len(ret) > 0:
             self.outVar.set(ret)
 
     def selectStrat(self):
         # noinspection PyArgumentList
-        ret = filedialog.askopenfilename(filetypes=STRAT_FT, initialdir='./config')
+        ret = filedialog.askopenfilename(
+            filetypes=STRAT_FT, initialdir='./config'
+        )
         if len(ret) > 0:
             try:
                 self.stratFile = ret
@@ -237,7 +304,8 @@ class BTGUI(tk.Frame):
     def selectSymbolFile(self):
         # noinspection PyArgumentList
         ret = filedialog.askopenfilename(
-            filetypes=[('.txt', '.txt')], initialdir='./config')
+            filetypes=[('.txt', '.txt')], initialdir='./config'
+        )
         if len(ret) > 0:
             self.stocks = loadStockFile(ret)
             _, f = os.path.split(ret)
@@ -263,9 +331,7 @@ class BTGUI(tk.Frame):
         toolbar = NavigationToolbar2Tk(canvas, frame, pack_toolbar=False)
         toolbar.update()
 
-        canvas.mpl_connect(
-            "key_press_event", key_press_handler
-        )
+        canvas.mpl_connect("key_press_event", key_press_handler)
 
         canvas.get_tk_widget().grid(row=0, column=0, sticky='nesw')
         toolbar.grid(row=1, column=0, sticky='ews')
@@ -286,7 +352,7 @@ class BTGUI(tk.Frame):
             self.figures[sym] = self.createPlotCanvas(sym)
 
     def runThreadFunc(self, args, strats):
-        self.stats = cm_backtester.backtest(**args, strats=strats)
+        self.stats = backtester.backtest(**args, strats=strats)
         self.threadRunning = False
 
     def runBT(self):
@@ -316,22 +382,29 @@ class BTGUI(tk.Frame):
             for x in self.stocks:
                 strats[x] = NodeStrategy(strat['graph'], x)
 
-            self.runThread = Thread(target=self.runThreadFunc, args=(args, strats))
+            self.runThread = Thread(
+                target=self.runThreadFunc, args=(args, strats)
+            )
             self.threadRunning = True
             self.runThread.start()
         else:
             for x in self.stocks:
-                strats = {x: NodeStrategy(strat['graph'], x)}
-                cm_backtester.backtest(**args, strats=strats)
+                strats = {
+                    x: NodeStrategy(strat['graph'], x)
+                }
+                backtester.backtest(**args, strats=strats)
 
     def runAlpaca(self):
-        if self.stocks is None or len(self.stocks) == 0 or len(self.stratFile) == 0:
+        if self.stocks is None or len(self.stocks) == 0 or len(self.stratFile
+                                                               ) == 0:
             return
 
         liveRun = self.liveToggleVar.get()
         if liveRun:
-            ret = messagebox.askyesno('Run LIVE Account?',
-                                      'Are you sure you want to run using the LIVE (real money) account?')
+            ret = messagebox.askyesno(
+                'Run LIVE Account?',
+                'Are you sure you want to run using the LIVE (real money) account?'
+            )
             if ret is None or not ret:
                 print('Cancelling Run')
                 return
@@ -339,9 +412,9 @@ class BTGUI(tk.Frame):
         with open(self.stratFile, mode='r') as f:
             strat = json.load(f)
 
-        runTrader(stratVars=strat['graph'],
-                  stocks=self.stocks,
-                  liveRun=liveRun)
+        runTrader(
+            stratVars=strat['graph'], stocks=self.stocks, liveRun=liveRun
+        )
 
 
 def main():
@@ -355,5 +428,8 @@ if __name__ == '__main__':
         loadSystem()
         main()
     except Exception as e:
-        showError("Error: Backtester", f"Fatal Error Has Occurred\n{type(e)}\n{str(e)}")
+        showError(
+            "Error: Backtester",
+            f"Fatal Error Has Occurred\n{type(e)}\n{str(e)}"
+        )
         exit(-1)

@@ -5,24 +5,91 @@ from sys import exit
 import os.path
 import traceback
 import colorama
+import tkinter.messagebox as dialog
+import logging
+import os
+import time
+import sys
 
 import yfinance as yf
+import pandas as pd
 
 from cash_money.consts import DATE_FMT
-from cash_money.objects.bar import Bar
+from cash_money.objects import Bar
 from cash_money.trading.brokers.broker import Broker
-from cash_money.trading.cm_trader import Trader
-from .log_utils import _setupLogger, CMLogger
+from cash_money.trading.trader import Trader
 from ..trading.nodeStrategy import NodeStrategy
+from .date_utils import nextBusinessDay, calcSetupStartDate
 
-import tkinter.messagebox as dialog
+logging.addLevelName(logging.WARNING, "WARN")
+
+log = logging.getLogger("Run Utils")
 
 _config = ConfigParser()
 _systemLoaded = False
 
 _configLoc = r"config/system.cfg"
 
-log = CMLogger("Run Utils")
+_ERR_C = '\x1b[1;31m'
+_DBG_C = '\x1b[1;32m'
+_WRN_C = "\x1b[1;33m"
+_END_C = '\x1b[0m'
+
+_DFLT = '{levelname:5s} [{name:^15s}] {message}'
+_FILE_FMT = logging.Formatter(
+    f'{{asctime}} {_DFLT}', datefmt='%b-%d %H:%M:%S', style="{"
+)
+
+_DFLT_LOG_FMT = logging.Formatter(_DFLT, style="{")
+_ERR_LOG_FMT = logging.Formatter(f"{_ERR_C}{_DFLT}{_END_C}", style="{")
+_DBG_LOG_FMT = logging.Formatter(f"{_DBG_C}{_DFLT}{_END_C}", style="{")
+_WRN_LOG_FMT = logging.Formatter(f"{_WRN_C}{_DFLT}{_END_C}", style="{")
+
+
+class _ConsoleFormatter(logging.Formatter):
+
+    def format(self, record: logging.LogRecord) -> str:
+        if record.levelno == logging.DEBUG:
+            return _DBG_LOG_FMT.format(record)
+        elif record.levelno == logging.WARNING:
+            return _WRN_LOG_FMT.format(record)
+        elif record.levelno == logging.ERROR:
+            return _ERR_LOG_FMT.format(record)
+        else:
+            return _DFLT_LOG_FMT.format(record)
+
+
+def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
+
+    root = logging.getLogger()
+    root.setLevel(loglevel)
+
+    if logToFile:
+        logname = time.strftime(r'%Y_%b_%dT%H_%M_%S')
+
+        os.makedirs(logDir, exist_ok=True)
+
+        # Terminal Log File
+        filehandler = logging.FileHandler(
+            filename=f'{logDir}/{logname}.log', mode='w'
+        )
+        filehandler.setLevel(level=loglevel)
+        filehandler.setFormatter(_FILE_FMT)
+        root.addHandler(filehandler)
+
+    console1 = logging.StreamHandler(sys.stdout)
+    console1.setLevel(loglevel)
+    console1.setFormatter(_ConsoleFormatter())
+    root.addHandler(console1)
+
+    log.debug("Setup logging")
+
+    # Disable logging for other libs
+    others = [logging.getLogger("urllib3.connectionpool")]
+
+    for x in others:
+        log.debug("Disabling logs for %s", x.name)
+        x.setLevel(logging.WARN)
 
 
 def loadSystem() -> ConfigParser:
@@ -35,75 +102,146 @@ def loadSystem() -> ConfigParser:
             _config.read(_configLoc)
         else:
             print(f"ERROR: Cannot find {_configLoc}")
-            dialog.showerror("Error: Cash Money", f"Cannot find \"{_configLoc}\"")
+            dialog.showerror(
+                "Error: Cash Money", f"Cannot find \"{_configLoc}\""
+            )
             exit(1)
 
         syscfg = _config['System']
 
-        _setupLogger(
-            syscfg.getboolean('DEBUG'),
-            syscfg.getboolean('LogToFile'),
-            syscfg['LogDirectory'])
+        loglevelStr = syscfg["LogLevel"].strip().lower()
+        if loglevelStr.startswith('d'):
+            loglevel = logging.DEBUG
+        elif loglevelStr.startswith("i"):
+            loglevel = logging.INFO
+        elif loglevelStr.startswith("w"):
+            loglevel = logging.WARN
+        elif loglevelStr.startswith('e'):
+            loglevel = logging.ERROR
+        else:
+            loglevel = logging.INFO
+
+        _setuplogging(
+            loglevel, syscfg.getboolean('LogToFile'), syscfg['LogDirectory']
+        )
 
     return _config
 
 
-def calcSetupStartDate(endDay: datetime.datetime, setupTime):
-    out = endDay
-    while out.weekday() >= 5:
-        out -= datetime.timedelta(1)
-
-    while setupTime >= 0 or out.weekday() >= 5:
-        out -= datetime.timedelta(1)
-        if out.weekday() < 5:
-            setupTime -= 1
-
-    return out
+def parseYFDate(d: pd.Timestamp) -> datetime.datetime:
+    return d.to_pydatetime()
 
 
-def setupStrategies(strats: Dict[str, NodeStrategy], afterSetupDate: datetime.datetime,
-                    endDate: Optional[datetime.datetime] = None) -> Tuple[Dict[str, List[Bar]], int]:
+class BarEntry:
+
+    def __init__(self, bar: Optional[Bar], date: datetime.datetime) -> None:
+        self.bar = bar
+        self.date = date
+
+
+BarDict = Dict[str, List[BarEntry]]
+
+
+def downloadDailyBars(
+    symbols: List[str], startDate: datetime.date, endDate: datetime.date
+) -> BarDict:
+    startStr = startDate.strftime(DATE_FMT)
+    endStr = endDate.strftime(DATE_FMT)
+
+    dirtyBars: Dict[str, List[BarEntry]] = {}
+    for sym in symbols:
+        b = yf.download(sym, startStr, endStr, progress=False)
+        bars = [
+            BarEntry(
+                Bar(
+                    b['Low'][x],
+                    b['Close'][x],
+                    b['High'][x],
+                    b['Volume'][x],
+                ),
+                parseYFDate(b.index[x])
+            ) for x in range(len(b))
+        ]
+
+        dirtyBars[sym] = bars
+
+    # Normalize all the bars
+    # Make the lists of bars have the same date at every index
+    # Bar entries won't have a bar if there was no data for that day
+    cleanBarsDict: BarDict = {sym: list()
+                              for sym in symbols}
+    curDate = min([x[0].date for x in dirtyBars.values()])
+
+    # Dict of current indices for each symbol
+    idxs = {sym: 0
+            for sym in symbols}
+    # We want to do them all at once so we can filter out holidays and
+    # stuff by checking if every bar is none for a particular day
+    while curDate <= endDate:
+        haveBar = False
+        # check if we have at least one bar for this day
+        for sym, idx in idxs.items():
+            bars = dirtyBars[sym]
+            if idx >= len(bars):
+                continue
+            if bars[idx].bar is not None:
+                haveBar = True
+                break
+
+        # Skip if we don't have any bars for this day
+        if not haveBar:
+            curDate = nextBusinessDay(curDate)
+
+        for sym, idx in list(idxs.items()):
+            cleanList = cleanBarsDict[sym]
+            dirtyList = dirtyBars[sym]
+            if idx >= len(dirtyList):
+                cleanList.append(BarEntry(None, curDate))
+                continue
+
+            bar = dirtyList[idx]
+            if bar is not None and bar.date == curDate:
+                cleanList.append(bar)
+                # inc the idx
+                idxs[sym] += 1
+            else:
+                cleanList.append(BarEntry(None, curDate))
+
+        curDate = nextBusinessDay(curDate)
+
+    return cleanBarsDict
+
+
+def setupStrategies(
+    strats: Dict[str, NodeStrategy], targetDate: datetime.datetime
+):
     """
-    Sets up the given strategies so that they are up to date with the
-    passed afterSetupDate
+    Sets up the given strategies so that they are up to date with the target start day
     :param strats: The strats to set up
-    :param afterSetupDate: The date up to which the strategies should be run
-    :param endDate: Optional, The date up to which bars should be retrieved
-    :return: All the retrieved bars and the number of days used to setup
+    :param targetDate: The date up to which the strategies should be run
     """
 
     setupTime = max([x.getSetupTime() for x in strats.values()])
-    setupStart = calcSetupStartDate(afterSetupDate - datetime.timedelta(1), setupTime)
+    setupStart = calcSetupStartDate(
+        targetDate - datetime.timedelta(1), setupTime
+    )
 
-    startstr = setupStart.strftime(DATE_FMT)
-    if endDate is None:
-        endstr = afterSetupDate.strftime(DATE_FMT)
-    else:
-        endstr = endDate.strftime(DATE_FMT)
-
-    allBars = {}
+    bars = downloadDailyBars([sym for sym in strats], setupStart, targetDate)
     for sym, strat in strats.items():
-        b = yf.download(sym, startstr, endstr, progress=False)
-        bars = [Bar(b['Low'][x], b['Close'][x], b['High'][x], b['Volume'][x], b.index[x])
-                for x in range(len(b))]
+        for bar in bars[sym]:
+            if bar.bar is not None:
+                strat.addData(bar.bar)
+                strat.dryRun()
 
-        allBars[sym] = bars
-
-        for x in bars[0:setupTime]:
-            strat.addData(x)
-            strat.dryRun()
-
-    log.logInfo(f"Strategies setup with {setupTime} days")
-
-    return allBars, setupTime
+    log.info(f"Strategies setup with {setupTime} days")
 
 
 def runTradeBroker(trader: Trader, broker: Broker):
     try:
-        log.logInfo("Broker Pre-run")
+        log.info("Broker Pre-run")
         broker.preRun()
 
-        log.logInfo("Starting Loop")
+        log.info("Starting Loop")
         while True:
             if not broker.preTrade():
                 break
@@ -112,15 +250,15 @@ def runTradeBroker(trader: Trader, broker: Broker):
             broker.postTrade()
             broker.incDay()
 
-        log.logInfo("Broker Post-run")
+        log.info("Broker Post-run")
         broker.postRun()
-        log.logInfo("Run Complete")
+        log.info("Run Complete")
     except Exception as err:
         # Catch errors to log them to file
         tb = traceback.TracebackException.from_exception(err).format()
         tb = "".join(tb)
         msg = f'ERROR:\n{tb}'
-        log.logErr(msg)
+        log.error(msg)
         # raise to propagate
         raise
 

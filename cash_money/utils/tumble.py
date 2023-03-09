@@ -43,7 +43,7 @@ class FloatColumn(Column):
 
 
 class Tumble:
-    def __init__(self, columns: List[Column], printHeader=False, stream: Optional[TextIO] = None) -> None:
+    def __init__(self, columns: List[Column]) -> None:
         """
         Create a new table to format
 
@@ -52,7 +52,7 @@ class Tumble:
 
         self._format_str = ''
         self._header = ''
-        self._stream: TextIO = stream if stream is not None else sys.stdout
+        self._breaker = ''
 
         # Init lists
         header_vals = [""] * len(columns)
@@ -65,20 +65,15 @@ class Tumble:
             format_vals[idx] = f'| {{{col.valFmt()}}} '
             line_vals[idx] = f'|{"-" * (len(header_vals[idx]) - 1)}'
 
-        self._header = "".join(header_vals) + "|\n" + "".join(line_vals) + "|"
+        self._header = "".join(header_vals) + "|"
+        self._breaker = "".join(line_vals) + "|"
         self._format_str = "".join(format_vals).strip() + " |"
-
-        if printHeader:
-            self.print_header()
-
-    def print_header(self) -> None:
-        print(self._header, file=self._stream)
 
     def header(self) -> str:
         return self._header
 
+    def breaker(self) -> str:
+        return self._breaker
+
     def row(self, *values) -> str:
         return self._format_str.format(*values)
-
-    def print_row(self, *values) -> None:
-        print(self.row(*values), file=self._stream)

@@ -1,14 +1,15 @@
 from abc import ABC
 from typing import List, Dict, Tuple, Iterator, Optional, Any
+import datetime
 
-from cash_money.utils.log_utils import CMLogger
-from cash_money.objects.order import Order
-from cash_money.objects.stock import Stock
+import logging
+from cash_money.objects import Order, Stock
 
-log = CMLogger("Broker")
+log = logging.getLogger("Broker")
 
 
 class Broker(ABC):
+
     def __init__(self, symbols: List[str]):
         self.symbols = symbols
         self._stocks = {}
@@ -18,7 +19,7 @@ class Broker(ABC):
         for x in self.symbols:
             self._stocks[x] = Stock(x)
 
-        log.logInfo(f"Loaded Symbols: {symbols}")
+        log.info(f"Loaded Symbols: {symbols}")
 
         self.tradeDay = 0
 
@@ -39,6 +40,12 @@ class Broker(ABC):
     def __iter__(self) -> Iterator[Stock]:
         return iter(self._stocks.values())
 
+    def now(self) -> datetime.datetime:
+        """
+        Return a datetime representing the current time as of trading
+        """
+        raise NotImplementedError
+
     def preRun(self):
         """
         Called once before any trades occur
@@ -49,6 +56,7 @@ class Broker(ABC):
     def preTrade(self) -> bool:
         """
         Called before the trader is run, all relevant data is updated for the trader to use
+        In particular, positions and stock bars should be updated
         :return: true if run should continue, else false
         """
         raise NotImplementedError
@@ -62,14 +70,14 @@ class Broker(ABC):
 
     def postRun(self) -> None:
         """
-        Called after run is complete, prior to exit
+        Called once after run is complete, prior to exit
         :return: None
         """
         raise NotImplementedError
 
-    def buyPwr(self) -> float:
+    def cash(self) -> float:
         """
-        Returns the account's current buying power
+        Returns the account's current cash value
         :return: the buying power
         """
         raise NotImplementedError
@@ -110,8 +118,12 @@ class Broker(ABC):
         """
         raise NotImplementedError
 
-    def submitBuy(self, stock: Stock, qty: int,
-                  stopLimit: Optional[Tuple[float, float]] = None) -> None:
+    def submitBuy(
+        self,
+        stock: Stock,
+        qty: int,
+        stopLimit: Optional[Tuple[float, float]] = None
+    ) -> None:
         """
         Submits a buy order for the given symbol and quantity
         :param stock: The stock to buy
@@ -138,7 +150,9 @@ class Broker(ABC):
         """
         raise NotImplementedError
 
-    def submitUpdateStop(self, stock: Stock, stopLimit: Optional[Tuple[float, float]]) -> None:
+    def submitUpdateStop(
+        self, stock: Stock, stopLimit: Optional[Tuple[float, float]]
+    ) -> None:
         """
         Replaces an existing stop order
         :param stock: The stock

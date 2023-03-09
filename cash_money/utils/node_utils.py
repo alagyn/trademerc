@@ -14,6 +14,7 @@ def registerNodes(nodegraph: NodeGraph):
         emaNode.EMANode,
         inputNode.InputNode,
         invertNode.InvertNode,
+        logicNode.LogicNode,
         macdNode.MACD,
         mathNode.MathNode,
         parabolicSARNode.ParabolicSAR,

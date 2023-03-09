@@ -8,6 +8,7 @@ from alpaca.trading.models import Clock
 
 
 class SecTF(TimeFrame):
+
     def __init__(self, api: CMAPI, secs: float):
         super().__init__(api)
         self.secs = secs
@@ -23,14 +24,14 @@ class SecTF(TimeFrame):
 
         if not clock.is_open or now + self.secs + 0.5 > timeToClose:
             # TODO add wait time
-            tfLog.logInfo(f"Sleeping until market opens")
+            tfLog.info(f"Sleeping until market opens")
             self._waitForTS(timeToOpen + 1)
         else:
-            tfLog.logInfo(f"Sleeping {self.secs}sec")
+            tfLog.info(f"Sleeping {self.secs}sec")
             time.sleep(self.secs)
 
     def notifyWait(self) -> None:
-        tfLog.logInfo(f"Sending Notification in {self.notifySec:.1f}s")
+        tfLog.info(f"Sending Notification in {self.notifySec:.1f}s")
         time.sleep(self.notifySec)
 
     def postWait(self) -> None:
