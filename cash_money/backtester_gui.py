@@ -142,11 +142,11 @@ class BTGUI(tk.Frame):
         startLabel = tk.Label(runFrame, text='Start Date:')
         startLabel.grid(row=START_DATE_ROW, column=0, sticky='ew')
 
-        md = datetime.datetime.today() - datetime.timedelta(1)
+        md = datetime.date.today() - datetime.timedelta(1)
 
         self.startInput = DateEntry(runFrame, maxdate=md)
         self.startInput.grid(row=START_DATE_ROW, column=1, sticky='ew', padx=5)
-        self.startInput.set_date(datetime.datetime(2018, 1, 1))
+        self.startInput.set_date(datetime.date(2018, 1, 1))
 
         END_DATE_ROW = START_DATE_ROW + 1
 

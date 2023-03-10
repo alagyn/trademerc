@@ -48,7 +48,7 @@ def runTrader(
         strats[sym] = NodeStrategy(stratVars, sym)
 
     log.info('Setting up strategies')
-    setupStrategies(strats, datetime.datetime.now())
+    setupStrategies(strats, datetime.date.today())
 
     notifyType = config['System']['Notify']
     # TODO error check ^^

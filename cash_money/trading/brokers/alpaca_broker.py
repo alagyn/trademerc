@@ -229,7 +229,7 @@ class AlpacaBroker(Broker):
         self._timeframe.postWait()
 
     def _clock(self) -> models.Clock:
-        """Shorcut to get the API clock"""
+        """Shortcut to get the API clock"""
         return self._api.get_clock()  # type: ignore
 
     def cash(self) -> float:
@@ -449,6 +449,6 @@ class AlpacaBroker(Broker):
 
             stock.stopOrder = AlpacaOrder(order)
 
-    def now(self) -> datetime.datetime:
-        tz = pytz.timezone("US/Eastern")
-        return datetime.datetime.now(tz)
+    def now(self) -> datetime.date:
+        clock = self._clock()
+        return clock.timestamp.astimezone(pytz.timezone("US/Eastern")).date()

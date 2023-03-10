@@ -115,8 +115,8 @@ class Stock:
 
         self.lastCloseOrder: Optional[Order] = None
 
-        self.lastStopUpdate: Optional[datetime.datetime] = None
-        self.nextStopUpdate: Optional[datetime.datetime] = None
+        self.lastStopUpdate: Optional[datetime.date] = None
+        self.nextStopUpdate: Optional[datetime.date] = None
 
         # Trader will add a new entry every day,
         # len == 2, after two days the unsettled funds will

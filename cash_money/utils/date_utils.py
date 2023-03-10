@@ -1,6 +1,5 @@
-# datetime utilities
-from typing import Union
-from datetime import datetime, timedelta, date
+# date utilities
+from datetime import timedelta, date
 
 
 def isBusinessDay(a: date):
