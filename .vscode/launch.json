@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Alpaca CMD",
+            "type": "python",
+            "request": "launch",
+            "module": "cash_money.alpaca_cmd",
+            "justMyCode": true
+        },
+        {
             "name": "BT no GUI",
             "type": "python",
             "request": "launch",
