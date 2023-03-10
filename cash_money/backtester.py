@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Dict, Optional, Any
-from datetime import datetime
+from datetime import date
 import logging
 
 from cash_money.trading.nodeStrategy import NodeStrategy
@@ -37,8 +37,8 @@ def backtest(
     strats: Dict[str, NodeStrategy],
     masterFigure: Optional[Figure],
     symFigs: Optional[Dict[str, Figure]],
-    startDate: datetime,
-    endDate: datetime,
+    startDate: date,
+    endDate: date,
     startingVal=10000,
     outputFile: str = 'stats.json'
 ) -> Dict[str, Any]:
@@ -172,8 +172,8 @@ if __name__ == "__main__":
         strats = {sym: NodeStrategy(strat['graph'], sym)
                   for sym in stocks}
 
-        start_date = datetime(2018, 1, 1)
-        end_date = datetime.today()
+        start_date = date(2018, 1, 1)
+        end_date = date.today()
 
         backtest(
             'TEST',

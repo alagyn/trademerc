@@ -229,7 +229,7 @@ class BacktestBroker(Broker):
 
         return total
 
-    def now(self) -> datetime.datetime:
+    def now(self) -> datetime.date:
         return self.curDate
 
     def preTrade(self) -> bool:

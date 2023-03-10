@@ -207,7 +207,7 @@ def downloadDailyBars(
 
 
 def setupStrategies(
-    strats: Dict[str, NodeStrategy], targetDate: datetime.datetime
+    strats: Dict[str, NodeStrategy], targetDate: datetime.date
 ):
     """
     Sets up the given strategies so that they are up to date with the target start day
