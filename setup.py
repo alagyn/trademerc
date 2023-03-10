@@ -4,6 +4,8 @@ from typing import List, Tuple
 
 from cx_Freeze import setup, Executable
 
+LOGO = "docs/CashMoneyLogo256.png"
+
 include_files: List[Tuple[str, str]] = [("LICENSE", "LICENSE")]
 
 for x in os.listdir("config"):
@@ -14,15 +16,15 @@ for x in os.listdir("config"):
 options = {
     "build_exe": {
         "includes": "cash_money",
-        "excludes": "pyarrow,alabaster,altgraph,bcrypt,cloudpickle,PyQt5,sphinx,setuptools",
-
+        "excludes":
+        "pyarrow,alabaster,altgraph,bcrypt,cloudpickle,PyQt5,sphinx,setuptools",
         "include_files": include_files
     }
 }
 
 executables = [
-    Executable("cash_money/backtester_gui.py", base=""),
-    Executable("cash_money/strategy_gui.py", base="Win32GUI")
+    Executable("cash_money/backtester_gui.py", base="", icon=LOGO),
+    Executable("cash_money/strategy_gui.py", base="Win32GUI", icon=LOGO)
 ]
 
 setup(
