@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Run Alpaca
+Comment=Quick Run Alpaca
+User=pi
+Exec=lxterminal -e @@home/run_alpaca.sh;bash
+Terminal=false
+Type=Application
+Icon=@@home/docs/CashMoneyLogo256.png

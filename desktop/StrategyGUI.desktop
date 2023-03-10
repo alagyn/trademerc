@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Strategy Maker
+Comment=Start Strat Maker
+User=pi
+Exec=lxterminal -e @@home/run_strategy_maker.sh;bash
+Terminal=false
+Type=Application
+Icon=@@home/docs/CashMoneyLogo256.png
