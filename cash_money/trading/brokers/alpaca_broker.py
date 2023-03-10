@@ -230,7 +230,10 @@ class AlpacaBroker(Broker):
 
     def _clock(self) -> models.Clock:
         """Shortcut to get the API clock"""
-        return self._api.get_clock()  # type: ignore
+        x = self._api.trade.get_clock()
+        if not isinstance(x, models.Clock):
+            raise RuntimeError()
+        return x
 
     def cash(self) -> float:
         if self._account.cash is not None:
