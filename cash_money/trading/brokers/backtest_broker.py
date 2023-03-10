@@ -381,6 +381,7 @@ class BacktestBroker(Broker):
 
         o = BacktestOrder(t, stock.symbol, qty, stock.bar.close, stopLimit)
         stock.order = o
+        stock.buyDate = self.curDate
 
         self._next_n.addTrade(
             symbol=stock.symbol,

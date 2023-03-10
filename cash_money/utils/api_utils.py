@@ -2,6 +2,7 @@ from configparser import ConfigParser
 from typing import Optional, Mapping
 
 from alpaca.trading.client import TradingClient
+from alpaca.trading.stream import TradingStream
 from alpaca.data.live.stock import StockDataStream
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
@@ -13,9 +14,15 @@ log = logging.getLogger("Alpaca API")
 
 class CMAPI:
 
-    def __init__(self, trade: TradingClient, data: StockDataStream) -> None:
+    def __init__(
+        self,
+        trade: TradingClient,
+        data: StockDataStream,
+        tradeStream: TradingStream
+    ) -> None:
         self.trade = trade
         self.data = data
+        self.trade_stream = tradeStream
 
 
 def loadPaperAPI(apiCfg=None) -> CMAPI:
@@ -30,7 +37,8 @@ def loadPaperAPI(apiCfg=None) -> CMAPI:
 
     trade = TradingClient(api_key, api_secret, paper=True)
     data = StockDataStream(api_key, api_secret)
-    return CMAPI(trade, data)
+    tStream = TradingStream(api_key, api_secret, paper=True)
+    return CMAPI(trade, data, tStream)
 
 
 def loadLiveAPI(apiCfg: Mapping[str, str]) -> CMAPI:
@@ -40,8 +48,8 @@ def loadLiveAPI(apiCfg: Mapping[str, str]) -> CMAPI:
 
     trade = TradingClient(api_key, api_secret, paper=False)
     data = StockDataStream(api_key, api_secret)
-
-    return CMAPI(trade, data)
+    tStream = TradingStream(api_key, api_secret, paper=False)
+    return CMAPI(trade, data, tStream)
 
 
 def loadAPI(apiCfg, liveRun: bool = False) -> Optional[CMAPI]:

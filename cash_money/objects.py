@@ -100,9 +100,6 @@ class CMPosition:
     def qty(self) -> int:
         raise NotImplementedError
 
-    def purchaseDate(self) -> datetime.date:
-        raise NotImplementedError
-
 
 class Stock:
 
@@ -110,7 +107,7 @@ class Stock:
         self.symbol: str = symbol
         self.order: Optional[Order] = None
         self.stopOrder: Optional[Order] = None
-        self.buyDate = ''
+        self.buyDate: Optional[datetime.date] = None
 
         self.position: Optional[CMPosition] = None
 

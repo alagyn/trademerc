@@ -30,16 +30,16 @@ def nextBusinessDay(a):
     return out
 
 
-def deltaBusinessDays(a: datetime, b: datetime) -> int:
-    if a.date() == b.date():
+def deltaBusinessDays(a: date, b: date) -> int:
+    if a == b:
         return 0
 
-    if a.date() < b.date():
-        cur = a.date()
-        last = b.date()
+    if a < b:
+        cur = a
+        last = b
     else:
-        cur = b.date()
-        last = a.date()
+        cur = b
+        last = a
 
     businessDays = 0
 

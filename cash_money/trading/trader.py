@@ -18,6 +18,8 @@ def calcQty(buyPwr: float, cost: float):
 
 log = logging.getLogger("Trader")
 
+MAX_DAY_TRADES = 3
+
 
 class Trader:
 
@@ -163,6 +165,20 @@ class Trader:
         self.broker.submitBuy(action.stock, qty, action.stop_limit)
 
     def submitSell(self, action: Action):
+        if action.stock.position is None:
+            raise RuntimeError()
+
+        if action.stock.buyDate is None:
+            raise RuntimeError()
+
+        if action.stock.buyDate == self.curDateTime:
+            if self.totalDayTrades >= MAX_DAY_TRADES:
+                log.info("Ignoring Sell, sell would go above max day trades")
+                return
+
+            action.stock.dayTrades[-1] += 1
+            self.totalDayTrades += 1
+
         self.broker.closePosition(action.stock)
 
     def submitUpdateStop(self, action: Action):
@@ -173,5 +189,10 @@ class Trader:
             raise cmErrors.ActionError(
                 f'Cannot Update stop, no stop created:\n\t{action}'
             )
+
+        if action.stop_limit == (action.stock.stopOrder.stopPrice(),
+                                 action.stock.stopOrder.limitPrice()):
+            log.info(f"Ignoring {action}, stop-limit is equal")
+            return
 
         self.broker.submitUpdateStop(action.stock, action.stop_limit)

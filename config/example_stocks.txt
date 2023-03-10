@@ -1,12 +1,12 @@
 # Lines beginning with # are ignored
 
 QQQ
+TSLA
 
 #DIA
 #SPY
 #SOXL
 #FVRR
-#TSLA
 #AAPL
 #DOCU
 #ZM

@@ -40,7 +40,7 @@ class Broker(ABC):
     def __iter__(self) -> Iterator[Stock]:
         return iter(self._stocks.values())
 
-    def now(self) -> datetime.datetime:
+    def now(self) -> datetime.date:
         """
         Return a datetime representing the current time as of trading
         """
