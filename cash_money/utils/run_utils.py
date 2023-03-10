@@ -128,13 +128,13 @@ def loadSystem() -> ConfigParser:
     return _config
 
 
-def parseYFDate(d: pd.Timestamp) -> datetime.datetime:
-    return d.to_pydatetime()
+def parseYFDate(d: pd.Timestamp) -> datetime.date:
+    return d.to_pydatetime().date()
 
 
 class BarEntry:
 
-    def __init__(self, bar: Optional[Bar], date: datetime.datetime) -> None:
+    def __init__(self, bar: Optional[Bar], date: datetime.date) -> None:
         self.bar = bar
         self.date = date
 
