@@ -4,14 +4,14 @@ from typing import List, Tuple
 
 from cx_Freeze import setup, Executable
 
-LOGO = "docs/CashMoneyLogo256.png"
+LOGO = "docs/CashMoneyLogo.ico"
 
-include_files: List[Tuple[str, str]] = [("LICENSE", "LICENSE")]
-
-for x in os.listdir("config"):
-    if x.startswith("example_"):
-        path = os.path.join("config", x)
-        include_files.append((os.path.abspath(path), path))
+include_files: List[Tuple[str, str]] = [
+    ("LICENSE", "LICENSE"),
+    ("config/example_system.cfg", "config/system.cfg"),
+    ("config/example_strat.strat", "config/example_strat.strat"),
+    ("config/example_stocks.txt", "config/example_stocks.txt")
+]
 
 options = {
     "build_exe": {
@@ -29,7 +29,7 @@ executables = [
 
 setup(
     name="cashmoney",
-    version="0.2.1",
+    version="0.2.2",
     description="Backtesting and Live Trading Application",
     options=options,
     executables=executables
