@@ -73,7 +73,7 @@ def backtest(
             dates = [b.date for b in bars[sym]]
             break
 
-        masterAxes = masterFigure.add_subplot()
+        masterAxes = masterFigure.add_subplot()  # type: ignore
         # r = range(len(portfolio_cash))
 
         portfolio_total = np.add(broker.portfolio_cash, broker.portfolio_value)
