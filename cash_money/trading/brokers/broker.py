@@ -122,7 +122,7 @@ class Broker(ABC):
         self,
         stock: Stock,
         qty: int,
-        stopLimit: Optional[Tuple[float, float]] = None
+        stopLoss: Optional[float] = None
     ) -> None:
         """
         Submits a buy order for the given symbol and quantity

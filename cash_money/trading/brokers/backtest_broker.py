@@ -104,7 +104,7 @@ class BacktestOrder(BacktestOrderStub):
         symbol: str,
         qty: int,
         price: float,
-        stopLimit: Optional[Tuple[float, float]] = None
+        stopLimit: Optional[float] = None
     ):
         super().__init__()
         self.stat = OrderStatus.UNFILLED
@@ -137,13 +137,7 @@ class BacktestOrder(BacktestOrderStub):
 
     def stopPrice(self) -> Union[float, None]:
         if self._sl is not None:
-            return self._sl[0]
-        else:
-            return None
-
-    def limitPrice(self) -> Union[float, None]:
-        if self._sl is not None:
-            return self._sl[1]
+            return self._sl
         else:
             return None
 
@@ -344,7 +338,7 @@ class BacktestBroker(Broker):
         self,
         stock: Stock,
         qty: int,
-        stopLimit: Optional[Tuple[float, float]] = None
+        stopLimit: Optional[float] = None
     ) -> None:
         if stock.bar is None:
             log.warn(f"Cannot submit buy for {stock.symbol}, bar is none")
@@ -354,8 +348,8 @@ class BacktestBroker(Broker):
         stock.position = self.positions[stock.symbol]
         if stopLimit is not None:
             # Set new stop
-            checkStop(stopLimit[0])
-            stock.position.stopPrice = stopLimit[0]
+            checkStop(stopLimit)
+            stock.position.stopPrice = stopLimit
             t = OrderType.BUY_AND_STOP
             stock.stopOrder = BacktestOrderStub()
         else:

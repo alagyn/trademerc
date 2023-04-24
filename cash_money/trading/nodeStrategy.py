@@ -65,7 +65,7 @@ class NodeStrategy:
                     return BuyAction(stock, None)
                 else:
                     self.nextStopUpdate = tradeDay + self.stopPeriod
-                    return BuyAction(stock, (stop, stop * 0.8))
+                    return BuyAction(stock, stop)
 
         return HoldAction(stock)
 

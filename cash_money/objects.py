@@ -171,7 +171,7 @@ class BuyAction(Action):
     def __init__(
         self,
         stock: 'Stock',
-        stop_limit: Optional[Tuple[float, float]] = None
+        stop_limit: Optional[float] = None
     ):
         self._init(stock, ActionEnum.Buy)
         self.stop_limit = stop_limit
