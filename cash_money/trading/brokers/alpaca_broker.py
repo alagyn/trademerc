@@ -351,6 +351,9 @@ class AlpacaBroker(Broker):
         stopLoss: Optional[float] = None
     ) -> None:
 
+        if stock.bar is None:
+            raise RuntimeError()
+
         if stopLoss is None:
             req = tradeReq.OrderRequest(
                 symbol=stock.symbol,
@@ -372,6 +375,8 @@ class AlpacaBroker(Broker):
 
             stock.stopOrder = None
         else:
+
+            stopPrice = min(stock.bar.close - 0.01, float(stopLoss))
             req = tradeReq.OrderRequest(
                 symbol=stock.symbol,
                 qty=qty,
@@ -384,7 +389,7 @@ class AlpacaBroker(Broker):
                 extended_hours=False,
                 client_order_id=None,
                 take_profit=None,
-                stop_loss=tradeReq.StopLossRequest(stop_price=float(stopLoss))
+                stop_loss=tradeReq.StopLossRequest(stop_price=float(stopPrice))
             )
             x = self._api.trade.submit_order(req)
             if not isinstance(x, models.Order):
