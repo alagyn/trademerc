@@ -376,7 +376,7 @@ class AlpacaBroker(Broker):
             stock.stopOrder = None
         else:
 
-            stopPrice = min(stock.bar.close - 0.01, float(stopLoss))
+            stopPrice = round(min(stock.bar.close - 0.01, float(stopLoss)), 2)
             req = tradeReq.OrderRequest(
                 symbol=stock.symbol,
                 qty=qty,
@@ -389,7 +389,7 @@ class AlpacaBroker(Broker):
                 extended_hours=False,
                 client_order_id=None,
                 take_profit=None,
-                stop_loss=tradeReq.StopLossRequest(stop_price=float(stopPrice))
+                stop_loss=tradeReq.StopLossRequest(stop_price=stopPrice)
             )
             x = self._api.trade.submit_order(req)
             if not isinstance(x, models.Order):
