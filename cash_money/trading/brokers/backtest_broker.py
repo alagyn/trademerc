@@ -350,7 +350,7 @@ class BacktestBroker(Broker):
             # Set new stop
             checkStop(stopLimit)
             stock.position.stopPrice = stopLimit
-            t = OrderType.BUY_AND_STOP
+            t = OrderType.BUY
             stock.stopOrder = BacktestOrderStub()
         else:
             t = OrderType.BUY

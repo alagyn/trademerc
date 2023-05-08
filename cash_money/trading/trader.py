@@ -185,13 +185,19 @@ class Trader:
         if not isinstance(action, UpdateStopAction):
             raise cmErrors.ActionError("Action not an UpdateStopAction")
 
-        if action.stock.stopOrder is None:
+        o = action.stock.stopOrder
+        if o is None:
             raise cmErrors.ActionError(
-                f'Cannot Update stop, no stop created:\n\t{action}'
+                f'Cannot Update stop, no stop order created:\n\t{action}'
             )
 
-        if action.stop_limit == (action.stock.stopOrder.stopPrice(),
-                                 action.stock.stopOrder.limitPrice()):
+        oldPrice = o.stopPrice()
+        if oldPrice is None:
+            raise cmErrors.ActionError(
+                f'Cannot Update stop, no invalid stop order:\n\t{action}'
+            )
+
+        if action.stop_limit == oldPrice:
             log.info(f"Ignoring {action}, stop-limit is equal")
             return
 

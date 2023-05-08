@@ -35,12 +35,14 @@ class AlpacaOrder(Order):
         super().__init__(o.id)
 
         self._data = o
-        if self._data.side == 'sell':
-            self._type = OrderType.SELL
-        elif self._data.legs is not None and len(self._data.legs) > 0:
-            self._type = OrderType.BUY_AND_STOP
-        else:
-            self._type = OrderType.BUY
+
+        if self._data.order_type == tradeEnum.OrderType.STOP:
+            self._type = OrderType.STOP
+        elif self._data.order_type == tradeEnum.OrderType.MARKET:
+            if self._data.side == tradeEnum.OrderSide.BUY:
+                self._type = OrderType.BUY
+            else:
+                self._type = OrderType.SELL
 
         if self._data.status == 'filled':
             self._status = OrderStatus.FILLED
@@ -256,10 +258,9 @@ class AlpacaBroker(Broker):
         if stock.order is None:
             raise RuntimeError()
 
-        if stock.order.orderid() == order.orderid():
+        if order.orderType() == OrderType.BUY and stock.order.orderid() == order.orderid():
             stock.order = order
-        elif stock.stopOrder is not None and stock.stopOrder.orderid(
-        ) == order.orderid():
+        elif order.orderType == OrderType.STOP and stock.stopOrder is not None and stock.stopOrder.orderid() == order.orderid():
             stock.stopOrder = order
         else:
             raise RuntimeError()

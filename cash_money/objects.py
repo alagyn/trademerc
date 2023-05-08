@@ -28,9 +28,9 @@ class OrderStatus(IntEnum):
 
 
 class OrderType(IntEnum):
-    BUY = 0
-    BUY_AND_STOP = 1
-    SELL = 2
+    BUY = enum.auto()
+    SELL = enum.auto()
+    STOP = enum.auto()
 
 
 class Order(ABC):
