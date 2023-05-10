@@ -85,7 +85,7 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
     log.debug("Setup logging")
 
     # Disable logging for other libs
-    others = [logging.getLogger("urllib3.connectionpool")]
+    others = [logging.getLogger("urllib3.connectionpool"), logging.getLogger("websockets.client")]
 
     for x in others:
         log.debug("Disabling logs for %s", x.name)
@@ -159,7 +159,7 @@ def downloadDailyBars(
                     b['High'][x],
                     b['Volume'][x],
                 ),
-                parseYFDate(b.index[x])
+                parseYFDate(b.index[x]) # type: ignore
             ) for x in range(len(b))
         ]
 

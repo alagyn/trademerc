@@ -151,7 +151,7 @@ class Broker(ABC):
         raise NotImplementedError
 
     def submitUpdateStop(
-        self, stock: Stock, stopLimit: Optional[Tuple[float, float]]
+        self, stock: Stock, stopPrice: float
     ) -> None:
         """
         Replaces an existing stop order

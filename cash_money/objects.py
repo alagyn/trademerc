@@ -25,6 +25,7 @@ class OrderStatus(IntEnum):
     UNFILLED = 0
     CANCELED = 1
     FILLED = 2
+    REPLACED = 3
 
 
 class OrderType(IntEnum):
@@ -171,13 +172,13 @@ class BuyAction(Action):
     def __init__(
         self,
         stock: 'Stock',
-        stop_limit: Optional[float] = None
+        stopPrice: Optional[float] = None
     ):
         self._init(stock, ActionEnum.Buy)
-        self.stop_limit = stop_limit
+        self.stopPrice = stopPrice
 
     def _str_args(self) -> str:
-        return f", stop-limit: {self.stop_limit}"
+        return f", stop-price: {self.stopPrice}"
 
 
 class SellAction(Action):
@@ -188,12 +189,12 @@ class SellAction(Action):
 
 class UpdateStopAction(Action):
 
-    def __init__(self, stock: 'Stock', stop_limit: Tuple[float, float]):
+    def __init__(self, stock: 'Stock', stopPrice: float):
         self._init(stock, ActionEnum.UpdateStop)
-        self.stop_limit = stop_limit
+        self.stopPrice = stopPrice
 
     def _str_args(self) -> str:
-        return f", stop-limit: {self.stop_limit}"
+        return f", stop-price: {self.stopPrice}"
 
 
 class HoldAction(Action):

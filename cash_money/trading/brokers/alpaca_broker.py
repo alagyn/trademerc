@@ -28,7 +28,11 @@ log = logging.getLogger("Alpaca Brkr")
 
 class AlpacaOrder(Order):
     _CANCEL_SET = {
-        "canceled", "expired", "replaced", "pending_cancel", "pending_replace"
+        "canceled", "expired", "pending_cancel"
+    }
+
+    _REPLACE_SET = {
+        "replaced", "pending_replace"
     }
 
     def __init__(self, o: models.Order):
@@ -48,6 +52,8 @@ class AlpacaOrder(Order):
             self._status = OrderStatus.FILLED
         elif self._data.status in AlpacaOrder._CANCEL_SET:
             self._status = OrderStatus.CANCELED
+        elif self._data.status in AlpacaOrder._REPLACE_SET:
+            self._status = OrderStatus.REPLACED
         else:
             self._status = OrderStatus.UNFILLED
 
@@ -213,7 +219,7 @@ class AlpacaBroker(Broker):
                     value=float(data.market_value),
                     purchaseValue=float(data.avg_entry_price),
                     stopPrice=-1
-                    if s.stopOrder is None else s.stopOrder.data().stop_price,
+                    if s.stopOrder is None else float(s.stopOrder.data().stop_price),
                     lastStop=str(s.lastStopUpdate),
                     nextStop=str(s.nextStopUpdate),
                     purchaseDate=""
@@ -254,33 +260,33 @@ class AlpacaBroker(Broker):
         # Wrap in our object
         order = AlpacaOrder(data.order)
 
+        log.debug("Trade Update: Sym: %s, type: %s, id: %s, status: %s", order.symbol(), order.orderType().name, order.orderid(), order.data().status)
+
         stock = self._stocks[order.symbol()]
         if stock.order is None:
-            raise RuntimeError()
+            raise RuntimeError("Stock.order is None")
 
-        if order.orderType() == OrderType.BUY and stock.order.orderid() == order.orderid():
-            stock.order = order
-        elif order.orderType == OrderType.STOP and stock.stopOrder is not None and stock.stopOrder.orderid() == order.orderid():
-            stock.stopOrder = order
+        if order.status() != OrderStatus.FILLED:
+            return
+        
+        qty = order.filledQty()
+        price = order.filledAvgPrice()
+        value = qty * price
+
+        self._next_notification.addTrade(
+            stock.symbol, order.side(), qty, price, value
+        )
+
+        if order.side() == OrderType.BUY:
+            stock.buyDate = self._curDate
         else:
-            raise RuntimeError()
+            stock.buyDate = None
 
-        if order.status() == OrderStatus.FILLED:
-            qty = order.filledQty()
-            price = order.filledAvgPrice()
-            value = qty * price
+        if order.orderType() == OrderType.BUY:
+            stock.order = order
+        elif order.orderType() == OrderType.STOP:
+            stock.stopOrder = order
 
-            self._next_notification.addTrade(
-                stock.symbol, order.side(), qty, price, value
-            )
-
-            if order.side() == OrderType.BUY:
-                stock.buyDate = self._curDate
-            else:
-                stock.buyDate = None
-
-        elif order.status() == OrderStatus.CANCELED:
-            log.warn(f"Order Cancelled: {order}")
 
     def _updatePositions(self):
         x = self._api.trade.get_all_positions()
@@ -440,14 +446,15 @@ class AlpacaBroker(Broker):
         raise NotImplementedError
 
     def submitUpdateStop(
-        self, stock: Stock, stopLimit: Optional[Tuple[float, float]]
+        self, stock: Stock, stopPrice: float
     ) -> None:
-        if stopLimit is not None and stock.stopOrder is not None:
+        if stock.stopOrder is not None:
+            oldID = stock.stopOrder.orderid()
             req = tradeReq.ReplaceOrderRequest(
                 qty=None,
                 time_in_force=None,
-                stop_price=stopLimit[0],
-                limit_price=stopLimit[1],
+                stop_price=f"{stopPrice:.2f}", # type: ignore
+                limit_price=None,
                 trail=None,
                 client_order_id=None
             )
@@ -457,7 +464,8 @@ class AlpacaBroker(Broker):
             if not isinstance(order, models.Order):
                 raise CMError()
 
-            stock.stopOrder = AlpacaOrder(order)
+            stock.stopOrder =  AlpacaOrder(order)
+            
 
     def now(self) -> datetime.date:
         clock = self._clock()

@@ -148,7 +148,7 @@ class BacktestOrder(BacktestOrderStub):
 statLog = logging.getLogger("Stats")
 
 
-def checkStop(stop):
+def checkStop(stop: float):
     if stop < 0:
         raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
 
@@ -442,13 +442,9 @@ class BacktestBroker(Broker):
         stock.unsettledFunds[-1] += soldValue
 
     def submitUpdateStop(
-        self, stock: Stock, stopLimit: Optional[Tuple[float, float]]
+        self, stock: Stock, stopPrice: float
     ) -> None:
-        if stopLimit is None:
-            log.warn("Cannot update stop, stopLimit is None")
-            return
-
-        checkStop(stopLimit[0])
+        checkStop(stopPrice)
         stock.position.stopPrice = stopLimit[0]  # type: ignore
 
     def getRunStats(self, logToConsole: bool) -> Dict[str, Any]:

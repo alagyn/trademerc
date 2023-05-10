@@ -55,7 +55,7 @@ class NodeStrategy:
 
             if stop is not None and tradeDay >= self.nextStopUpdate:
                 self.nextStopUpdate = tradeDay + self.stopPeriod
-                return UpdateStopAction(stock, (stop, stop * 0.8))
+                return UpdateStopAction(stock, stop)
 
             return HoldAction(stock)
 

@@ -65,7 +65,7 @@ class Trader:
         actions = self.getDailyActions()
 
         # Run actions
-        log.debug('Running Daily Actions')
+        log.info('Running Actions')
         self.runActions(actions)
 
     def updateStocks(self):
@@ -135,6 +135,7 @@ class Trader:
         log.info(f"Unsettled Day trades: {self.totalDayTrades}")
 
         for a in actions:
+            log.debug("\tSymbol: %s, Action: %s", a.stock.symbol, a.action.name)
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
                     log.info(f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
@@ -162,7 +163,7 @@ class Trader:
             )
             return
 
-        self.broker.submitBuy(action.stock, qty, action.stop_limit)
+        self.broker.submitBuy(action.stock, qty, action.stopPrice)
 
     def submitSell(self, action: Action):
         if action.stock.position is None:
@@ -197,8 +198,8 @@ class Trader:
                 f'Cannot Update stop, no invalid stop order:\n\t{action}'
             )
 
-        if action.stop_limit == oldPrice:
-            log.info(f"Ignoring {action}, stop-limit is equal")
+        if action.stopPrice == oldPrice:
+            log.info(f"Ignoring {action}, stop-price is equal")
             return
 
-        self.broker.submitUpdateStop(action.stock, action.stop_limit)
+        self.broker.submitUpdateStop(action.stock, action.stopPrice)
