@@ -6,13 +6,15 @@ import logging
 
 from cash_money import cmErrors
 from cash_money.objects import Bar, Order, OrderType, OrderStatus, Stock, CMPosition, StockStatus
-from .broker import Broker
+from cash_money.trading.trader import Trader
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.notifiers.notifier import Notification
 from cash_money.utils.run_utils import BarDict
 from cash_money.utils.date_utils import nextBusinessDay
+from cash_money.trading.nodeStrategy import NodeStrategy
 
 log = logging.getLogger("Backtest Brkr")
+statLog = logging.getLogger("Stats")
 
 
 class Stats:
@@ -145,9 +147,6 @@ class BacktestOrder(BacktestOrderStub):
         return None
 
 
-statLog = logging.getLogger("Stats")
-
-
 def checkStop(stop: float):
     if stop < 0:
         raise cmErrors.BacktestError(f'Stop Price Below zero: ${stop:.2f}')
@@ -170,17 +169,17 @@ def calcSQN(tradeList) -> float:
     return float(a * b / c)
 
 
-class BacktestBroker(Broker):
+class BacktestTrader(Trader):
 
     def __init__(
         self,
+        strats: Dict[str, NodeStrategy],
         startingValue: float,
-        symbols: List[str],
         bars: BarDict,
     ):
-        super().__init__(symbols)
+        super().__init__(strats)
 
-        if len(symbols) == 0:
+        if len(strats) == 0:
             raise cmErrors.CMError("Cannot backtest, no symbols provided")
 
         self.startingVal = startingValue
@@ -188,7 +187,7 @@ class BacktestBroker(Broker):
 
         self.positions: Dict[str, BackTestPosition] = {
             sym: BackTestPosition(sym)
-            for sym in symbols
+            for sym in strats.keys()
         }
 
         self.bars = bars
@@ -205,7 +204,7 @@ class BacktestBroker(Broker):
         self.portfolio_value = np.array([0.0] * self.runtime)
 
         # Get the first date
-        self.curDate = self.bars[symbols[0]][0].date
+        self.curDate = self.bars[list(self.strats.keys())[0]][0].date
 
         self.notif = ConsoleNotifier()
         self._next_n = Notification()
@@ -217,7 +216,7 @@ class BacktestBroker(Broker):
 
     def getTotalMarketValue(self) -> float:
         total = 0.0
-        for stock in self:
+        for stock in self.stocks.values():
             if stock.position is not None and stock.bar is not None:
                 total += stock.position.qty() * stock.bar.close
 
@@ -230,14 +229,14 @@ class BacktestBroker(Broker):
         if self.barIdx >= self.endIdx:
             return False
 
-        log.info(f"Begin Trade Day: {self.tradeDay}, Date: {self.curDate}")
+        log.info(f"Begin Trade Day: {self.tradeStep}, Date: {self.curDate}")
 
         self.prevEquity = self.totalCash + self.getTotalMarketValue()
 
         # Update bars and check stops
         for sym in self.symbols:
             newBarEntry = self.bars[sym][self.barIdx]
-            self[sym].updateBar(newBarEntry.bar)
+            self.stocks[sym].updateBar(newBarEntry.bar)
 
             position = self.positions[sym]
 
@@ -264,7 +263,7 @@ class BacktestBroker(Broker):
 
         inMarketEquity = 0
         for sym, position in self.positions.items():
-            bar = self[sym].bar
+            bar = self.stocks[sym].bar
             if position.qty() > 0:
                 if bar is not None:
                     inMarketEquity += position.qty() * bar.close
@@ -273,8 +272,8 @@ class BacktestBroker(Broker):
                 position.addNotification(self._next_n, bar)
 
         # Update Graph Logs
-        self.portfolio_cash[self.tradeDay] = round(self.totalCash, 2)
-        self.portfolio_value[self.tradeDay] = round(inMarketEquity, 2)
+        self.portfolio_cash[self.tradeStep] = round(self.totalCash, 2)
+        self.portfolio_value[self.tradeStep] = round(inMarketEquity, 2)
 
         cur_equity = self.totalCash + inMarketEquity
 
@@ -394,7 +393,7 @@ class BacktestBroker(Broker):
             )
 
     def closeAllPositions(self) -> None:
-        for stock in self:
+        for stock in self.stocks.values():
             if stock.position is not None and stock.position.qty() > 0:
                 self.closePosition(stock)
 

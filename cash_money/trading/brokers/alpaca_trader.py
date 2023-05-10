@@ -21,7 +21,8 @@ from cash_money.trading.notifiers.notifier import Notifier, Notification
 import logging
 from cash_money.cmErrors import CMError
 from cash_money.utils.api_utils import CMAPI
-from .broker import Broker
+from cash_money.trading.trader import Trader
+from cash_money.trading.nodeStrategy import NodeStrategy
 
 log = logging.getLogger("Alpaca Brkr")
 
@@ -105,16 +106,17 @@ class AlpacaPosition(CMPosition):
             return StockStatus.Pending
 
 
-class AlpacaBroker(Broker):
+class AlpacaTrader(Trader):
 
     def __init__(
         self,
+        strats: Dict[str, NodeStrategy],
         api: CMAPI,
         symbols: List[str],
         notifier: Notifier,
         timeframe: TimeFrame
     ):
-        super().__init__(symbols)
+        super().__init__(strats)
 
         self._notif = notifier
 
@@ -180,7 +182,7 @@ class AlpacaBroker(Broker):
         self.updateAccount()
         self._curDate = datetime.date.today()
 
-        log.info(f"Begin Trade Step: {self.tradeDay}")
+        log.info(f"Begin Trade Step: {self.tradeStep}")
 
         # Wait for the next TF cycle
         self._timeframe.wait()
@@ -207,7 +209,7 @@ class AlpacaBroker(Broker):
         self._next_notification.equity_cur = curEquity
         self._next_notification.equity_pl = totalPL
 
-        for sym, s in self._stocks.items():
+        for sym, s in self.stocks.items():
             if s.position is not None:
                 data: models.Position = s.position.data()
 
@@ -252,7 +254,7 @@ class AlpacaBroker(Broker):
             raise CMError("AlpacaBroker.buyPwr() Cannot get cash amount")
 
     async def _barUpdateHandler(self, data: dataModels.bars.Bar):
-        self[data.symbol].updateBar(
+        self.stocks[data.symbol].updateBar(
             Bar(data.low, data.close, data.high, data.volume)
         )
 
@@ -262,7 +264,7 @@ class AlpacaBroker(Broker):
 
         log.debug("Trade Update: Sym: %s, type: %s, id: %s, status: %s", order.symbol(), order.orderType().name, order.orderid(), order.data().status)
 
-        stock = self._stocks[order.symbol()]
+        stock = self.stocks[order.symbol()]
         if stock.order is None:
             raise RuntimeError("Stock.order is None")
 
@@ -298,13 +300,13 @@ class AlpacaBroker(Broker):
         for p in positions:
             openset.add(p.symbol)
             try:
-                self[p.symbol].position = AlpacaPosition(p)
+                self.stocks[p.symbol].position = AlpacaPosition(p)
             except KeyError:
                 pass
 
-        closed = self._stocks.keys() - openset
+        closed = self.stocks.keys() - openset
         for s in closed:
-            self[s].position = None
+            self.stocks[s].position = None
 
     def cancelAllOrders(self) -> None:
         self._api.trade.cancel_orders()

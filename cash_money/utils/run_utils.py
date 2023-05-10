@@ -16,7 +16,6 @@ import pandas as pd
 
 from cash_money.consts import DATE_FMT
 from cash_money.objects import Bar
-from cash_money.trading.brokers.broker import Broker
 from cash_money.trading.trader import Trader
 from ..trading.nodeStrategy import NodeStrategy
 from .date_utils import nextBusinessDay, calcSetupStartDate
@@ -85,7 +84,7 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
     log.debug("Setup logging")
 
     # Disable logging for other libs
-    others = [logging.getLogger("urllib3.connectionpool"), logging.getLogger("websockets.client")]
+    others = [logging.getLogger("urllib3.connectionpool"), logging.getLogger("websockets.client"), logging.getLogger("asyncio")]
 
     for x in others:
         log.debug("Disabling logs for %s", x.name)
@@ -230,22 +229,22 @@ def setupStrategies(
     log.info(f"Strategies setup with {setupTime} days")
 
 
-def runTradeBroker(trader: Trader, broker: Broker):
+def runTrader(trader: Trader):
     try:
-        log.info("Broker Pre-run")
-        broker.preRun()
+        log.info("Trader Pre-run")
+        trader.preRun()
 
         log.info("Starting Loop")
         while True:
-            if not broker.preTrade():
+            if not trader.preTrade():
                 break
 
             trader.trade()
-            broker.postTrade()
-            broker.incDay()
+            trader.postTrade()
+            trader.incStep()
 
-        log.info("Broker Post-run")
-        broker.postRun()
+        log.info("Trader Post-run")
+        trader.postRun()
         log.info("Run Complete")
     except Exception as err:
         # Catch errors to log them to file

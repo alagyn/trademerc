@@ -1,11 +1,12 @@
-from typing import Dict, List
-
+from typing import List, Dict, Optional, Any
 import math
+import datetime
 
 from cash_money import cmErrors
 from cash_money.trading.nodeStrategy import NodeStrategy
-from cash_money.trading.brokers.broker import Broker
 from cash_money.objects import ActionEnum, Action, BuyAction, UpdateStopAction, StockStatus
+from cash_money.objects import Order, Stock
+from cash_money.events import *
 import logging
 from cash_money.utils.date_utils import deltaBusinessDays
 
@@ -22,31 +23,46 @@ MAX_DAY_TRADES = 3
 
 
 class Trader:
+    """
+    Abstract class with the non-broker specific logic
+    """
 
-    def __init__(self, strats: Dict[str, NodeStrategy], broker: Broker):
-
-        self.broker = broker
+    def __init__(self, strats: Dict[str, NodeStrategy]):
 
         # setup initial buying power
-        self.cash = 0
-        self.updateCash()
+        self.buying_power = 0
+        self.updateBuyPower()
 
         # Dict of symb->strat
         self.strats = strats
 
+        self.tradeStep = 0
+
         # This should be using the US market time, ES
         # UTC-5, or UTC-4 for Daylight savings time
         # values are provided by the broker
-        self.lastUpdateTime = self.curDateTime = broker.now()
+        self.lastUpdateTime = self.curDateTime = self.now()
 
         # Total amount of unsettled funds
         self.totalUnsettled = 0
         # Total number of day trades in the last 5 days
         self.totalDayTrades = 0
 
+        self.listeners: List[CMEventListener] = []
+
+        self.symbols = strats.keys()
+        # Dict of symb->stock
+        self.stocks: Dict[str, Stock] = {x: Stock(x) for x in self.symbols}
+
+    def incStep(self):
+        self.tradeStep += 1
+
+    def addListener(self, listener: CMEventListener):
+        self.listeners.append(listener)
+
     def trade(self):
         # Update the trader's time
-        self.curDateTime = self.broker.now()
+        self.curDateTime = self.now()
 
         # Update stock queues
         self.updateStocks()
@@ -57,20 +73,31 @@ class Trader:
 
         # Update positions and BP
         log.debug('Updating Positions')
-        self.updateCash()
+        self.updateBuyPower()
         log.info(f"Cycle Cash: ${self.cash}")
 
         # Calculate today's actions
         log.debug('Calculating Daily Actions')
-        actions = self.getDailyActions()
+        actions = self.getStepActions()
 
         # Run actions
         log.info('Running Actions')
         self.runActions(actions)
+        self.notifyEndOfTradeStep()
+
+    def notifyEndOfTradeStep(self):
+        event = EndOfTradeStepEvent()
+        for x in self.listeners:
+            x.onEndOfTradeStep(event)
+
+    def notifyAction(self, action: Action):
+        event = ActionEvent(action)
+        for x in self.listeners:
+            x.onAction(event)
 
     def updateStocks(self):
         """
-        Updates each stock usng the cur date.
+        Updates each stock using the cur date.
         Append a new entry to daytrade and unsettled fund queues
         for each business day that has passed since the last update
         It's up to the broker to set these values so that they use
@@ -84,7 +111,7 @@ class Trader:
         self.totalUnsettled = 0
         self.totalDayTrades = 0
 
-        for stock in self.broker:
+        for stock in self.stocks.values():
             for i in range(bDays):
                 # Add a new entry to drop off old ones
                 stock.unsettledFunds.append(0)
@@ -98,33 +125,33 @@ class Trader:
 
     def updateGraphs(self):
         for sym, strat in self.strats.items():
-            bar = self.broker[sym].bar
+            bar = self.stocks[sym].bar
             if bar is not None:
                 strat.addData(bar)
 
-    def updateCash(self):
-        self.cash = round(self.broker.cash() * BUY_PWR_SAFETY, 2)
+    def updateBuyPower(self):
+        self.buying_power = round(self.cash() * BUY_PWR_SAFETY, 2)
 
-    def getDailyActions(self) -> List[Action]:
+    def getStepActions(self) -> List[Action]:
         actions = []
         for sym, strat in self.strats.items():
-            stk = self.broker[sym]
-            actions.append(strat.nextAction(self.broker.tradeDay, stk))
+            stk = self.stocks[sym]
+            actions.append(strat.nextAction(self.tradeStep, stk))
 
         return actions
 
     def runActions(self, actions: List[Action]):
         numOutOfMarket = 0
-        for stock in self.broker:
+        for stock in self.stocks.values():
             if stock.status() == StockStatus.OutMarket:
                 numOutOfMarket += 1
 
-        usableCash = self.cash - self.totalUnsettled
+        usableCash = self.buying_power - self.totalUnsettled
 
         if numOutOfMarket > 0:
             buyPwr = usableCash / numOutOfMarket
         else:
-            buyPwr = 0
+            buyPwr = 0.0
 
         log.info(
             f"Unsettled Funds: ${self.totalUnsettled:.2f}, usable cash: ${usableCash:.2f}"
@@ -136,20 +163,23 @@ class Trader:
 
         for a in actions:
             log.debug("\tSymbol: %s, Action: %s", a.stock.symbol, a.action.name)
+
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
                     log.info(f"\t\tBuy Power is <= 0: ${buyPwr:.2f}, skipping")
                     continue
-                self.submitBuy(a, buyPwr)
+                self._submitBuy(a, buyPwr)
             elif a.action == ActionEnum.Sell:
-                self.submitSell(a)
+                self._submitSell(a)
             elif a.action == ActionEnum.UpdateStop:
-                self.submitUpdateStop(a)
+                self._submitUpdateStop(a)
             elif a.action == ActionEnum.HoldInMarket or a.action == ActionEnum.HoldOutMarket:
                 # ILB
                 pass
 
-    def submitBuy(self, action: Action, buyPwr):
+            self.notifyAction(a)
+
+    def _submitBuy(self, action: Action, buyPwr):
         if not isinstance(action, BuyAction):
             raise cmErrors.ActionError("Action not a BuyAction")
 
@@ -163,9 +193,9 @@ class Trader:
             )
             return
 
-        self.broker.submitBuy(action.stock, qty, action.stopPrice)
+        self.submitBuy(action.stock, qty, action.stopPrice)
 
-    def submitSell(self, action: Action):
+    def _submitSell(self, action: Action):
         if action.stock.position is None:
             raise RuntimeError()
 
@@ -180,9 +210,9 @@ class Trader:
             action.stock.dayTrades[-1] += 1
             self.totalDayTrades += 1
 
-        self.broker.closePosition(action.stock)
+        self.closePosition(action.stock)
 
-    def submitUpdateStop(self, action: Action):
+    def _submitUpdateStop(self, action: Action):
         if not isinstance(action, UpdateStopAction):
             raise cmErrors.ActionError("Action not an UpdateStopAction")
 
@@ -202,4 +232,128 @@ class Trader:
             log.info(f"Ignoring {action}, stop-price is equal")
             return
 
-        self.broker.submitUpdateStop(action.stock, action.stopPrice)
+        self.submitUpdateStop(action.stock, action.stopPrice)
+
+    
+    ## ABSTRACT FUNCTIONS
+
+    def now(self) -> datetime.date:
+        """
+        Return a datetime representing the current time as of trading
+        """
+        raise NotImplementedError
+
+    def preRun(self):
+        """
+        Called once before any trades occur
+        :return:
+        """
+        raise NotImplementedError
+
+    def preTrade(self) -> bool:
+        """
+        Called before the trader is run, all relevant data is updated for the trader to use
+        In particular, positions and stock bars should be updated
+        :return: true if run should continue, else false
+        """
+        raise NotImplementedError
+
+    def postTrade(self) -> None:
+        """
+        Called after the trader is run
+        :return: None
+        """
+        raise NotImplementedError
+
+    def postRun(self) -> None:
+        """
+        Called once after run is complete, prior to exit
+        :return: None
+        """
+        raise NotImplementedError
+
+    def cash(self) -> float:
+        """
+        Returns the account's current cash value
+        :return: the buying power
+        """
+        raise NotImplementedError
+
+    def cancelAllOrders(self) -> None:
+        """
+        Cancels all unfilled orders
+        :return: None
+        """
+        raise NotImplementedError
+
+    def closeAllPositions(self) -> None:
+        """
+        Closes all open positions
+        :return: None
+        """
+        raise NotImplementedError
+
+    def getOrder(self, orderid: int) -> Order:
+        """
+        Returns the order for the given id
+        :param orderid: The order's id
+        :return: The order
+        """
+        raise NotImplementedError
+
+    def getAllOrders(self) -> List[Order]:
+        """
+        Returns a list of all open orders
+        :return: The orders
+        """
+        raise NotImplementedError
+
+    def getOpenPositions(self) -> Dict[str, Any]:
+        """
+        Returns a dict of all open positions
+        :return: the positions
+        """
+        raise NotImplementedError
+
+    def submitBuy(
+        self,
+        stock: Stock,
+        qty: int,
+        stopLoss: Optional[float] = None
+    ) -> None:
+        """
+        Submits a buy order for the given symbol and quantity
+        :param stock: The stock to buy
+        :param qty: The quantity to buy
+        :param stopLimit: An optional tuple to place a stop-limit order [stop, limit]
+        :return: The new order
+        """
+        raise NotImplementedError
+
+    def closePosition(self, stock: Stock) -> None:
+        """
+        Closes a position and sells all shares at current market price
+        :param stock: The stock
+        :return: None
+        """
+        raise NotImplementedError
+
+    def submitSell(self, stock: Stock, qty: int) -> Order:
+        """
+        Sumbits a sell order for the given symbol and quantity
+        :param stock: The stock
+        :param qty: The quantity
+        :return: The sell order
+        """
+        raise NotImplementedError
+
+    def submitUpdateStop(
+        self, stock: Stock, stopPrice: float
+    ) -> None:
+        """
+        Replaces an existing stop order
+        :param stock: The stock
+        :param stopLimit: A tuple to place a stop-limit order [stop, limit]
+        :return: The new order
+        """
+        raise NotImplementedError

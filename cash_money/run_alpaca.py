@@ -8,18 +8,18 @@ from cash_money.trading.trader import Trader
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.trading.notifiers.emailer import CMEmailer
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
-from cash_money.trading.brokers.alpaca_broker import AlpacaBroker
+from cash_money.trading.brokers.alpaca_trader import AlpacaTrader
 from cash_money.trading.brokers.timeframes.dailyTF import DailyTF
 from cash_money.trading.brokers.timeframes.secondTF import SecTF
 from cash_money.utils.file_utils import loadStockFile, loadStratFile
-from cash_money.utils.run_utils import runTradeBroker, loadSystem, setupStrategies
+from cash_money.utils.run_utils import runTrader, loadSystem, setupStrategies
 from cash_money.utils.api_utils import loadLiveAPI, loadPaperAPI
 from cash_money.cmErrors import CMError
 
 log = logging.getLogger("Run Alpaca")
 
 
-def runTrader(
+def runAlpacaTrader(
     *,
     stratFile: Optional[str] = None,
     stockFile: Optional[str] = None,
@@ -83,14 +83,13 @@ def runTrader(
     else:
         raise RuntimeError("Invalid Timeframe type")
 
-    broker = AlpacaBroker(api, stocks, notifier, tf)
-    trader = Trader(strats, broker)
+    trader = AlpacaTrader(strats, api, stocks, notifier, tf)
 
     try:
-        runTradeBroker(trader, broker)
+        runTrader(trader)
     except:
         # Errors will be logged in runTradeBroker
-        broker.postRun()
+        trader.postRun()
 
 
 if __name__ == '__main__':
@@ -104,7 +103,7 @@ if __name__ == '__main__':
         # parser.add_argument('-c', '--cashOnly', action='store_true')
 
         args = parser.parse_args()
-        runTrader(
+        runAlpacaTrader(
             stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun
         )
 

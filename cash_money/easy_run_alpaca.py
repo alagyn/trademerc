@@ -1,7 +1,7 @@
 from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import askyesnocancel
 import tkinter as tk
-from cash_money.run_alpaca import runTrader
+from cash_money.run_alpaca import runAlpacaTrader
 
 STRAT_FT = [('Strategy', '.strat')]
 
@@ -39,7 +39,7 @@ def main():
     root.update()
     root.destroy()
 
-    runTrader(stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper)
+    runAlpacaTrader(stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper)
 
 
 if __name__ == '__main__':

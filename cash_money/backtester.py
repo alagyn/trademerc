@@ -4,8 +4,8 @@ from datetime import date
 import logging
 
 from cash_money.trading.nodeStrategy import NodeStrategy
-from cash_money.utils.run_utils import runTradeBroker, setupStrategies, downloadDailyBars
-from cash_money.trading.brokers.backtest_broker import BacktestBroker
+from cash_money.utils.run_utils import runTrader, setupStrategies, downloadDailyBars
+from cash_money.trading.brokers.backtest_trader import BacktestTrader
 from cash_money.trading.trader import Trader
 from cash_money.utils.file_utils import loadStockFile
 
@@ -46,13 +46,11 @@ def backtest(
     setupStrategies(strats, startDate)
     bars = downloadDailyBars([sym for sym in strats], startDate, endDate)
 
-    log.info("Initializing Broker")
-    broker = BacktestBroker(startingVal, list(strats.keys()), bars)
     log.info("Initializing Trader")
-    trader = Trader(strats, broker)
+    broker = BacktestTrader(strats, startingVal, bars)
 
     log.info("Running Backtest")
-    runTradeBroker(trader, broker)
+    runTrader(broker)
 
     log.info("Calculating Stats")
     runStats = broker.getRunStats(True)

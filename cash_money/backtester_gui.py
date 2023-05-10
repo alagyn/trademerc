@@ -14,7 +14,7 @@ from tkcalendar import DateEntry
 
 from cash_money import backtester
 from cash_money.cmErrors import StrategyError
-from cash_money.run_alpaca import runTrader
+from cash_money.run_alpaca import runAlpacaTrader
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.utils.file_utils import loadStockFile
 
@@ -412,7 +412,7 @@ class BTGUI(tk.Frame):
         with open(self.stratFile, mode='r') as f:
             strat = json.load(f)
 
-        runTrader(
+        runAlpacaTrader(
             stratVars=strat['graph'], stocks=self.stocks, liveRun=liveRun
         )
 
