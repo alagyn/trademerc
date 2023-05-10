@@ -31,7 +31,6 @@ class Trader:
 
         # setup initial buying power
         self.buying_power = 0
-        self.updateBuyPower()
 
         # Dict of symb->strat
         self.strats = strats
@@ -40,8 +39,8 @@ class Trader:
 
         # This should be using the US market time, ES
         # UTC-5, or UTC-4 for Daylight savings time
-        # values are provided by the broker
-        self.lastUpdateTime = self.curDateTime = self.now()
+        # values are provided by the subclass
+        self.lastUpdateTime = self.curDateTime = datetime.date(1, 1, 1)
 
         # Total amount of unsettled funds
         self.totalUnsettled = 0
@@ -56,6 +55,10 @@ class Trader:
             x: Stock(x)
             for x in self.symbols
         }
+
+    def init(self):
+        self.updateBuyPower()
+        self.lastUpdateTime = self.curDateTime = self.now()
 
     def incStep(self):
         self.tradeStep += 1

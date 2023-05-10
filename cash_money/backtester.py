@@ -2,12 +2,15 @@ import numpy as np
 from typing import Dict, Optional, Any
 from datetime import date
 import logging
+from threading import Thread
 
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.utils.run_utils import runTrader, setupStrategies, downloadDailyBars
 from cash_money.trading.brokers.backtest_trader import BacktestTrader
 from cash_money.trading.trader import Trader
 from cash_money.utils.file_utils import loadStockFile
+from cash_money.gui.cm_window import CMWindow
+from cash_money.gui.listener_gui import ListenerGUI
 
 from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
@@ -48,6 +51,13 @@ def backtest(
 
     log.info("Initializing Trader")
     broker = BacktestTrader(strats, startingVal, bars)
+
+    window = CMWindow(800, 600, "Test")
+    listener = ListenerGUI()
+
+    broker.addListener(listener)
+
+    Thread(target=window.run, args=(listener.render, )).start()
 
     log.info("Running Backtest")
     runTrader(broker)

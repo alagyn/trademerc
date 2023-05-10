@@ -84,7 +84,11 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
     log.debug("Setup logging")
 
     # Disable logging for other libs
-    others = [logging.getLogger("urllib3.connectionpool"), logging.getLogger("websockets.client"), logging.getLogger("asyncio")]
+    others = [
+        logging.getLogger("urllib3.connectionpool"),
+        logging.getLogger("websockets.client"),
+        logging.getLogger("asyncio")
+    ]
 
     for x in others:
         log.debug("Disabling logs for %s", x.name)
@@ -158,7 +162,7 @@ def downloadDailyBars(
                     b['High'][x],
                     b['Volume'][x],
                 ),
-                parseYFDate(b.index[x]) # type: ignore
+                parseYFDate(b.index[x])  # type: ignore
             ) for x in range(len(b))
         ]
 
@@ -167,13 +171,17 @@ def downloadDailyBars(
     # Normalize all the bars
     # Make the lists of bars have the same date at every index
     # Bar entries won't have a bar if there was no data for that day
-    cleanBarsDict: BarDict = {sym: list()
-                              for sym in symbols}
+    cleanBarsDict: BarDict = {
+        sym: list()
+        for sym in symbols
+    }
     curDate = min([x[0].date for x in dirtyBars.values()])
 
     # Dict of current indices for each symbol
-    idxs = {sym: 0
-            for sym in symbols}
+    idxs = {
+        sym: 0
+        for sym in symbols
+    }
 
     # We want to do them all at once so we can filter out holidays and
     # stuff by checking if every bar is none for a particular day
@@ -231,6 +239,8 @@ def setupStrategies(
 
 def runTrader(trader: Trader):
     try:
+        log.info("Trader init")
+        trader.init()
         log.info("Trader Pre-run")
         trader.preRun()
 
