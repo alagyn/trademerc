@@ -52,7 +52,10 @@ class Trader:
 
         self.symbols = strats.keys()
         # Dict of symb->stock
-        self.stocks: Dict[str, Stock] = {x: Stock(x) for x in self.symbols}
+        self.stocks: Dict[str, Stock] = {
+            x: Stock(x)
+            for x in self.symbols
+        }
 
     def incStep(self):
         self.tradeStep += 1
@@ -94,6 +97,21 @@ class Trader:
         event = ActionEvent(action)
         for x in self.listeners:
             x.onAction(event)
+
+    def notifyStockUpdate(self, symbol: str, bar: Bar):
+        event = StockUpdateEvent(symbol, bar)
+        for x in self.listeners:
+            x.onStockUpdate(event)
+
+    def notifyOrderEvent(self, order):
+        event = OrderEvent(order)
+        for x in self.listeners:
+            x.onOrder(event)
+
+    def notifyPositionUpdate(self, position):
+        event = PositionUpdateEvent(position)
+        for x in self.listeners:
+            x.onPositionUpdate(event)
 
     def updateStocks(self):
         """
@@ -162,7 +180,9 @@ class Trader:
         log.info(f"Unsettled Day trades: {self.totalDayTrades}")
 
         for a in actions:
-            log.debug("\tSymbol: %s, Action: %s", a.stock.symbol, a.action.name)
+            log.debug(
+                "\tSymbol: %s, Action: %s", a.stock.symbol, a.action.name
+            )
 
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
@@ -234,7 +254,6 @@ class Trader:
 
         self.submitUpdateStop(action.stock, action.stopPrice)
 
-    
     ## ABSTRACT FUNCTIONS
 
     def now(self) -> datetime.date:
@@ -347,9 +366,7 @@ class Trader:
         """
         raise NotImplementedError
 
-    def submitUpdateStop(
-        self, stock: Stock, stopPrice: float
-    ) -> None:
+    def submitUpdateStop(self, stock: Stock, stopPrice: float) -> None:
         """
         Replaces an existing stop order
         :param stock: The stock

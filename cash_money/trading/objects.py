@@ -169,11 +169,7 @@ class Action:
 
 class BuyAction(Action):
 
-    def __init__(
-        self,
-        stock: 'Stock',
-        stopPrice: Optional[float] = None
-    ):
+    def __init__(self, stock: 'Stock', stopPrice: Optional[float] = None):
         self._init(stock, ActionEnum.Buy)
         self.stopPrice = stopPrice
 

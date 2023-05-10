@@ -440,9 +440,7 @@ class BacktestTrader(Trader):
 
         stock.unsettledFunds[-1] += soldValue
 
-    def submitUpdateStop(
-        self, stock: Stock, stopPrice: float
-    ) -> None:
+    def submitUpdateStop(self, stock: Stock, stopPrice: float) -> None:
         checkStop(stopPrice)
         stock.position.stopPrice = stopLimit[0]  # type: ignore
 

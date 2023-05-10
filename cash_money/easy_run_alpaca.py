@@ -39,7 +39,9 @@ def main():
     root.update()
     root.destroy()
 
-    runAlpacaTrader(stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper)
+    runAlpacaTrader(
+        stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper
+    )
 
 
 if __name__ == '__main__':

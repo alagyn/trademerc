@@ -167,8 +167,10 @@ if __name__ == "__main__":
             strat = json.load(f)
 
         stocks = loadStockFile(args.stocks)
-        strats = {sym: NodeStrategy(strat['graph'], sym)
-                  for sym in stocks}
+        strats = {
+            sym: NodeStrategy(strat['graph'], sym)
+            for sym in stocks
+        }
 
         start_date = date(2018, 1, 1)
         end_date = date.today()

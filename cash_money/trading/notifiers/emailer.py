@@ -7,6 +7,7 @@ from .html_generator import HTMLGen
 
 
 class CMEmailer(Notifier):
+
     def __init__(self, config):
         self._fromAddr = config['SendingEmailAddr']
         self._fromPass = config['SendingEmailPass']
@@ -17,8 +18,12 @@ class CMEmailer(Notifier):
 
         self.gen = HTMLGen()
 
-    def update(self, portfolio_start, portfolio_cur, portfolio_pl, trades, positions):
-        content = self.gen.generate(portfolio_start, portfolio_cur, portfolio_pl, trades, positions)
+    def update(
+        self, portfolio_start, portfolio_cur, portfolio_pl, trades, positions
+    ):
+        content = self.gen.generate(
+            portfolio_start, portfolio_cur, portfolio_pl, trades, positions
+        )
 
         header = f'Stock Algo Daily Update: {datetime.datetime.today()}'
 

@@ -2,13 +2,10 @@ from typing import List
 
 
 class TradeNotification:
-    def __init__(self,
-                 symbol: str,
-                 side: str,
-                 qty: int,
-                 price: float,
-                 value: float
-                 ) -> None:
+
+    def __init__(
+        self, symbol: str, side: str, qty: int, price: float, value: float
+    ) -> None:
         self.symbol = symbol
         self.side = side
         self.qty = qty
@@ -17,18 +14,20 @@ class TradeNotification:
 
 
 class PositionNotification:
-    def __init__(self,
-                 symbol: str,
-                 qty: int,
-                 pl: float,
-                 price: float,
-                 value: float,
-                 purchaseValue: float,
-                 stopPrice: float,
-                 lastStop: str,
-                 nextStop: str,
-                 purchaseDate: str
-                 ) -> None:
+
+    def __init__(
+        self,
+        symbol: str,
+        qty: int,
+        pl: float,
+        price: float,
+        value: float,
+        purchaseValue: float,
+        stopPrice: float,
+        lastStop: str,
+        nextStop: str,
+        purchaseDate: str
+    ) -> None:
         self.symbol = symbol
         # Total quantity
         self.qty = qty
@@ -51,6 +50,7 @@ class PositionNotification:
 
 
 class Notification:
+
     def __init__(self) -> None:
         self.cash = 0.0
         self.equity_prev = 0.0
@@ -60,48 +60,46 @@ class Notification:
         self.trades: List[TradeNotification] = []
         self.positions: List[PositionNotification] = []
 
-    def addPosition(self,
-                    symbol: str,
-                    qty: int = 0,
-                    pl: float = 0,
-                    price: float = 0,
-                    value: float = 0,
-                    purchaseValue: float = 0,
-                    stopPrice: float = 0,
-                    lastStop: str = "",
-                    nextStop: str = "",
-                    purchaseDate: str = ""
-                    ):
-        self.positions.append(PositionNotification(
-            symbol=symbol,
-            qty=qty,
-            pl=pl,
-            price=price,
-            value=value,
-            purchaseValue=purchaseValue,
-            stopPrice=stopPrice,
-            lastStop=lastStop,
-            nextStop=nextStop,
-            purchaseDate=purchaseDate
-        ))
+    def addPosition(
+        self,
+        symbol: str,
+        qty: int = 0,
+        pl: float = 0,
+        price: float = 0,
+        value: float = 0,
+        purchaseValue: float = 0,
+        stopPrice: float = 0,
+        lastStop: str = "",
+        nextStop: str = "",
+        purchaseDate: str = ""
+    ):
+        self.positions.append(
+            PositionNotification(
+                symbol=symbol,
+                qty=qty,
+                pl=pl,
+                price=price,
+                value=value,
+                purchaseValue=purchaseValue,
+                stopPrice=stopPrice,
+                lastStop=lastStop,
+                nextStop=nextStop,
+                purchaseDate=purchaseDate
+            )
+        )
 
-    def addTrade(self,
-                 symbol: str,
-                 side: str,
-                 qty: int,
-                 price: float,
-                 value: float
-                 ) -> None:
-        self.trades.append(TradeNotification(
-            symbol=symbol,
-            side=side,
-            qty=qty,
-            price=price,
-            value=value
-        ))
+    def addTrade(
+        self, symbol: str, side: str, qty: int, price: float, value: float
+    ) -> None:
+        self.trades.append(
+            TradeNotification(
+                symbol=symbol, side=side, qty=qty, price=price, value=value
+            )
+        )
 
 
 class NotifyKeys:
+
     class Portfolio:
         START = "portfolio_start"
         CUR = "portfolio_cur"
@@ -132,5 +130,6 @@ class NotifyKeys:
 
 
 class Notifier:
+
     def update(self, n: Notification):
         raise NotImplementedError
