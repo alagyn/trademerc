@@ -1,4 +1,4 @@
-from cash_money.objects import Action
+from cash_money.trading.objects import Action, Bar
 
 class ActionEvent:
     def __init__(self, action: Action) -> None:
@@ -11,7 +11,9 @@ class PositionUpdateEvent:
     pass
 
 class StockUpdateEvent:
-    pass
+    def __init__(self, symbol: str, bar: Bar) -> None:
+        self.bar = bar
+        self.symbol = symbol
 
 class CMEventListener:
     """

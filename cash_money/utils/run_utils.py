@@ -15,7 +15,7 @@ import yfinance as yf
 import pandas as pd
 
 from cash_money.consts import DATE_FMT
-from cash_money.objects import Bar
+from cash_money.trading.objects import Bar
 from cash_money.trading.trader import Trader
 from ..trading.nodeStrategy import NodeStrategy
 from .date_utils import nextBusinessDay, calcSetupStartDate

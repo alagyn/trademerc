@@ -5,7 +5,7 @@ import datetime
 import logging
 
 from cash_money import cmErrors
-from cash_money.objects import Bar, Order, OrderType, OrderStatus, Stock, CMPosition, StockStatus
+from cash_money.trading.objects import Bar, Order, OrderType, OrderStatus, Stock, CMPosition, StockStatus
 from cash_money.trading.trader import Trader
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.notifiers.notifier import Notification

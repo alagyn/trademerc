@@ -1,5 +1,5 @@
 from cash_money.nodes.cmNode import CMNode
-from cash_money.objects import Bar, Stock, StockStatus, Action, BuyAction, UpdateStopAction, HoldAction, SellAction
+from cash_money.trading.objects import Bar, Stock, StockStatus, Action, BuyAction, UpdateStopAction, HoldAction, SellAction
 from cash_money.nodes.datakeys import *
 from cash_money.utils.node_utils import registerNodes
 

@@ -6,7 +6,7 @@ from alpaca.trading.stream import TradingStream
 from alpaca.data.live.stock import StockDataStream
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
-from cash_money.objects import Bar
+from cash_money.trading.objects import Bar
 import logging
 
 log = logging.getLogger("Alpaca API")

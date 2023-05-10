@@ -16,7 +16,7 @@ import alpaca.trading.models as models
 import alpaca.data.models as dataModels
 
 
-from cash_money.objects import Order, OrderStatus, OrderType, Bar, Stock, CMPosition, StockStatus
+from cash_money.trading.objects import Order, OrderStatus, OrderType, Bar, Stock, CMPosition, StockStatus
 from cash_money.trading.notifiers.notifier import Notifier, Notification
 import logging
 from cash_money.cmErrors import CMError
@@ -254,9 +254,9 @@ class AlpacaTrader(Trader):
             raise CMError("AlpacaBroker.buyPwr() Cannot get cash amount")
 
     async def _barUpdateHandler(self, data: dataModels.bars.Bar):
-        self.stocks[data.symbol].updateBar(
-            Bar(data.low, data.close, data.high, data.volume)
-        )
+        newBar = Bar(data.low, data.close, data.high, data.volume)
+        self.stocks[data.symbol].updateBar(newBar)
+
 
     async def _tradeUpdateHandler(self, data: models.TradeUpdate):
         # Wrap in our object
