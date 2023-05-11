@@ -48,7 +48,7 @@ def runAlpacaTrader(
         strats[sym] = NodeStrategy(stratVars, sym)
 
     log.info('Setting up strategies')
-    setupStrategies(strats, datetime.date.today())
+    setupStrategies(strats, datetime.datetime.today())
 
     notifyType = config['System']['Notify']
     # TODO error check ^^

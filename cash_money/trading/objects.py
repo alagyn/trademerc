@@ -11,11 +11,19 @@ from typing import Union, Any
 
 class Bar:
 
-    def __init__(self, lo, close, hi, vol):
+    def __init__(
+        self,
+        lo: float,
+        close: float,
+        hi: float,
+        vol: float,
+        date: datetime.datetime
+    ):
         self.lo = lo
         self.close = close
         self.hi = hi
         self.vol = vol
+        self.date: datetime.datetime = date
 
     def __str__(self) -> str:
         return f"(L:{self.lo}, C:{self.close}, H:{self.hi}, V:{self.vol})"

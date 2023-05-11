@@ -204,7 +204,11 @@ class BacktestTrader(Trader):
         self.portfolio_value = np.array([0.0] * self.runtime)
 
         # Get the first date
-        self.curDate = self.bars[list(self.strats.keys())[0]][0].date
+        self.curDate = datetime.datetime(1, 1, 1)
+        for sym, barlist in self.bars.items():
+            if barlist[0] is not None:
+                self.curDate = barlist[0].date
+                break
 
         self.notif = ConsoleNotifier()
         self._next_n = Notification()
@@ -235,13 +239,15 @@ class BacktestTrader(Trader):
 
         # Update bars and check stops
         for sym in self.symbols:
-            newBarEntry = self.bars[sym][self.barIdx]
-            self.stocks[sym].updateBar(newBarEntry.bar)
+            newBar = self.bars[sym][self.barIdx]
+            self.stocks[sym].updateBar(newBar)
+            if newBar is not None:
+                self.notifyStockUpdate(sym, newBar)
 
             position = self.positions[sym]
 
-            if position.stopPrice is not None and newBarEntry.bar is not None:
-                if position.stopPrice > newBarEntry.bar.lo:
+            if position.stopPrice is not None and newBar is not None:
+                if position.stopPrice > newBar.lo:
                     newCash = position.qty() * position.stopPrice
                     self.totalCash += newCash
                     position.stats.addSell(
@@ -268,7 +274,7 @@ class BacktestTrader(Trader):
                 if bar is not None:
                     inMarketEquity += position.qty() * bar.close
                 else:
-                    bar = Bar(0, 0, 0, 0)
+                    bar = Bar(0, 0, 0, 0, self.curDate)
                 position.addNotification(self._next_n, bar)
 
         # Update Graph Logs
@@ -295,9 +301,9 @@ class BacktestTrader(Trader):
             if position.qty() > 0:
                 sellPrice = -1
                 for x in reversed(self.bars[sym]):
-                    if x.bar is None:
+                    if x is None:
                         continue
-                    sellPrice = x.bar.close
+                    sellPrice = x.close
                     break
 
                 if sellPrice < 0:

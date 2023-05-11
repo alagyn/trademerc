@@ -250,7 +250,9 @@ class AlpacaTrader(Trader):
             raise CMError("AlpacaBroker.buyPwr() Cannot get cash amount")
 
     async def _barUpdateHandler(self, data: dataModels.bars.Bar):
-        newBar = Bar(data.low, data.close, data.high, data.volume)
+        newBar = Bar(
+            data.low, data.close, data.high, data.volume, data.timestamp
+        )
         self.stocks[data.symbol].updateBar(newBar)
         self.notifyStockUpdate(data.symbol, newBar)
 
@@ -450,6 +452,13 @@ class AlpacaTrader(Trader):
 
     def submitUpdateStop(self, stock: Stock, stopPrice: float) -> None:
         if stock.stopOrder is not None:
+            oldStop = stock.stopOrder.stopPrice()
+            if oldStop is None:
+                raise RuntimeError()
+            if round(oldStop, 2) == round(stopPrice, 2):
+                log.debug("Stop value is the same, not updating")
+                return
+
             oldID = stock.stopOrder.orderid()
             req = tradeReq.ReplaceOrderRequest(
                 qty=None,

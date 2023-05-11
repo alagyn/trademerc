@@ -131,18 +131,11 @@ def loadSystem() -> ConfigParser:
     return _config
 
 
-def parseYFDate(d: pd.Timestamp) -> datetime.date:
-    return d.to_pydatetime().date()
+def parseYFDate(d: pd.Timestamp) -> datetime.datetime:
+    return d.to_pydatetime()
 
 
-class BarEntry:
-
-    def __init__(self, bar: Optional[Bar], date: datetime.date) -> None:
-        self.bar = bar
-        self.date = date
-
-
-BarDict = Dict[str, List[BarEntry]]
+BarDict = Dict[str, List[Optional[Bar]]]
 
 
 def downloadDailyBars(
@@ -151,17 +144,15 @@ def downloadDailyBars(
     startStr = startDate.strftime(DATE_FMT)
     endStr = endDate.strftime(DATE_FMT)
 
-    dirtyBars: Dict[str, List[BarEntry]] = {}
+    dirtyBars: Dict[str, List[Bar]] = {}
     for sym in symbols:
         b = yf.download(sym, startStr, endStr, progress=False)
         bars = [
-            BarEntry(
-                Bar(
-                    b['Low'][x],
-                    b['Close'][x],
-                    b['High'][x],
-                    b['Volume'][x],
-                ),
+            Bar(
+                b['Low'][x],
+                b['Close'][x],
+                b['High'][x],
+                b['Volume'][x],
                 parseYFDate(b.index[x])  # type: ignore
             ) for x in range(len(b))
         ]
@@ -171,17 +162,15 @@ def downloadDailyBars(
     # Normalize all the bars
     # Make the lists of bars have the same date at every index
     # Bar entries won't have a bar if there was no data for that day
-    cleanBarsDict: BarDict = {
+    cleanBarsDict: Dict[str, List[Optional[Bar]]] = {
         sym: list()
         for sym in symbols
     }
     curDate = min([x[0].date for x in dirtyBars.values()])
 
     # Dict of current indices for each symbol
-    idxs = {
-        sym: 0
-        for sym in symbols
-    }
+    idxs = {sym: 0
+            for sym in symbols}
 
     # We want to do them all at once so we can filter out holidays and
     # stuff by checking if every bar is none for a particular day
@@ -198,7 +187,7 @@ def downloadDailyBars(
                 haveBar = True
                 idxs[sym] += 1
             else:
-                cleanBarsDict[sym].append(BarEntry(None, curDate))
+                cleanBarsDict[sym].append(None)
 
         # If we don't have any bars for this date (probably a holiday)
         if not haveBar:
@@ -214,7 +203,7 @@ def downloadDailyBars(
 
 
 def setupStrategies(
-    strats: Dict[str, NodeStrategy], targetDate: datetime.date
+    strats: Dict[str, NodeStrategy], targetDate: datetime.datetime
 ):
     """
     Sets up the given strategies so that they are up to date with the target start day
@@ -230,8 +219,8 @@ def setupStrategies(
     bars = downloadDailyBars([sym for sym in strats], setupStart, targetDate)
     for sym, strat in strats.items():
         for bar in bars[sym]:
-            if bar.bar is not None:
-                strat.addData(bar.bar)
+            if bar is not None:
+                strat.addData(bar)
                 strat.dryRun()
 
     log.info(f"Strategies setup with {setupTime} days")

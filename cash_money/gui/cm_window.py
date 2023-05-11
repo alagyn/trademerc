@@ -2,40 +2,37 @@ from typing import Callable
 import logging
 
 import imgui as im
+import imgui.implot as implot
 import imgui.glfw as glfw
 
 log = logging.getLogger("CM Window")
 
 
-class CMWindow:
+def run_window(
+    width: int, height: int, title: str, renderFunc: Callable[[], None]
+):
+    window = glfw.Init(window_width=width, window_height=height, title=title)
 
-    def __init__(self, width: int, height: int, title: str) -> None:
-        self.window = glfw.Init(
-            window_width=width, window_height=height, title=title
-        )
+    if window is None:
+        msg = "Error during GLFW init, unable to open window"
+        log.fatal(msg)
+        raise RuntimeError(msg)
 
-        if self.window is None:
-            msg = "Error during GLFW init, unable to open window"
-            log.fatal(msg)
-            raise RuntimeError(msg)
+    im.CreateContext()
+    implot.CreateContext()
+    glfw.InitContextForGLFW(window)
+    im.StyleColorsDark()
+    clearColor = im.Vec4(0.45, 0.55, 0.6, 1.0)
 
-        im.CreateContext()
-        glfw.InitContextForGLFW(self.window)
-        im.StyleColorsDark()
-        self.clearColor = im.Vec4(0.45, 0.55, 0.6, 1.0)
+    while not glfw.ShouldClose(window):
+        glfw.NewFrame()
+        im.NewFrame()
 
-    def run(self, renderFunc: Callable[[], None]):
-        while True:
-            glfw.NewFrame()
-            im.NewFrame()
+        renderFunc()
 
-            renderFunc()
+        im.Render()
+        glfw.Render(window, clearColor)
 
-            im.Render()
-            glfw.Render(self.window, self.clearColor)
-
-            if glfw.ShouldClose(self.window):
-                break
-
-        im.DestroyContext()
-        glfw.Shutdown(self.window)
+    implot.DestroyContext()
+    im.DestroyContext()
+    glfw.Shutdown(window)

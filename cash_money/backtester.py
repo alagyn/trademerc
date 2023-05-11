@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Dict, Optional, Any
-from datetime import date
+from datetime import datetime
 import logging
 from threading import Thread
 
@@ -9,7 +9,7 @@ from cash_money.utils.run_utils import runTrader, setupStrategies, downloadDaily
 from cash_money.trading.brokers.backtest_trader import BacktestTrader
 from cash_money.trading.trader import Trader
 from cash_money.utils.file_utils import loadStockFile
-from cash_money.gui.cm_window import CMWindow
+from cash_money.gui.cm_window import run_window
 from cash_money.gui.listener_gui import ListenerGUI
 
 from matplotlib.figure import Figure
@@ -40,8 +40,8 @@ def backtest(
     strats: Dict[str, NodeStrategy],
     masterFigure: Optional[Figure],
     symFigs: Optional[Dict[str, Figure]],
-    startDate: date,
-    endDate: date,
+    startDate: datetime,
+    endDate: datetime,
     startingVal=10000,
     outputFile: str = 'stats.json'
 ) -> Dict[str, Any]:
@@ -52,12 +52,18 @@ def backtest(
     log.info("Initializing Trader")
     broker = BacktestTrader(strats, startingVal, bars)
 
-    window = CMWindow(800, 600, "Test")
     listener = ListenerGUI()
 
     broker.addListener(listener)
 
-    Thread(target=window.run, args=(listener.render, )).start()
+    Thread(
+        target=run_window, args=(
+            800,
+            600,
+            "Test",
+            listener.render,
+        )
+    ).start()
 
     log.info("Running Backtest")
     runTrader(broker)
@@ -78,7 +84,7 @@ def backtest(
 
         dates = []
         for sym in bars:
-            dates = [b.date for b in bars[sym]]
+            dates = [b.date for b in bars[sym] if b is not None]
             break
 
         masterAxes = masterFigure.add_subplot()  # type: ignore
@@ -109,8 +115,8 @@ def backtest(
             topPlot = axes['top']  # type: ignore
             botPlot = axes['bot']  # type: ignore
 
-            dates = [x.date for x in bars[sym] if x.bar is not None]
-            closes = [x.bar.close for x in bars[sym] if x.bar is not None]
+            dates = [x.date for x in bars[sym] if x is not None]
+            closes = [x.close for x in bars[sym] if x is not None]
 
             plotLog.info(f"{sym}: Dates vs Closes")
             botPlot.plot(dates, closes, label=sym, color=(0, 0, 0))
@@ -177,13 +183,11 @@ if __name__ == "__main__":
             strat = json.load(f)
 
         stocks = loadStockFile(args.stocks)
-        strats = {
-            sym: NodeStrategy(strat['graph'], sym)
-            for sym in stocks
-        }
+        strats = {sym: NodeStrategy(strat['graph'], sym)
+                  for sym in stocks}
 
-        start_date = date(2018, 1, 1)
-        end_date = date.today()
+        start_date = datetime(2018, 1, 1)
+        end_date = datetime(2019, 1, 1)
 
         backtest(
             'TEST',

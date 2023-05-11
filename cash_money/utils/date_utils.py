@@ -1,12 +1,12 @@
 # date utilities
-from datetime import timedelta, date
+from datetime import timedelta, datetime
 
 
-def isBusinessDay(a: date):
+def isBusinessDay(a: datetime):
     return 0 <= a.weekday() <= 4
 
 
-def calcSetupStartDate(endDay: date, setupTime):
+def calcSetupStartDate(endDay: datetime, setupTime):
     out = endDay
     # find the first business day
     while not isBusinessDay(out):
@@ -21,7 +21,7 @@ def calcSetupStartDate(endDay: date, setupTime):
     return out
 
 
-def nextBusinessDay(a):
+def nextBusinessDay(a: datetime):
     out = a + timedelta(1)
     while not isBusinessDay(out):
         out += timedelta(1)
@@ -29,7 +29,7 @@ def nextBusinessDay(a):
     return out
 
 
-def deltaBusinessDays(a: date, b: date) -> int:
+def deltaBusinessDays(a: datetime, b: datetime) -> int:
     if a == b:
         return 0
 

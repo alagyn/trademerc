@@ -40,7 +40,7 @@ class Trader:
         # This should be using the US market time, ES
         # UTC-5, or UTC-4 for Daylight savings time
         # values are provided by the subclass
-        self.lastUpdateTime = self.curDateTime = datetime.date(1, 1, 1)
+        self.lastUpdateTime = self.curDateTime = datetime.datetime(1, 1, 1)
 
         # Total amount of unsettled funds
         self.totalUnsettled = 0
@@ -51,10 +51,8 @@ class Trader:
 
         self.symbols = strats.keys()
         # Dict of symb->stock
-        self.stocks: Dict[str, Stock] = {
-            x: Stock(x)
-            for x in self.symbols
-        }
+        self.stocks: Dict[str, Stock] = {x: Stock(x)
+                                         for x in self.symbols}
 
     def init(self):
         self.updateBuyPower()
@@ -80,7 +78,7 @@ class Trader:
         # Update positions and BP
         log.debug('Updating Positions')
         self.updateBuyPower()
-        log.info(f"Cycle Cash: ${self.cash}")
+        log.info(f"Cycle Cash: ${self.cash()}")
 
         # Calculate today's actions
         log.debug('Calculating Daily Actions')
@@ -259,7 +257,7 @@ class Trader:
 
     ## ABSTRACT FUNCTIONS
 
-    def now(self) -> datetime.date:
+    def now(self) -> datetime.datetime:
         """
         Return a datetime representing the current time as of trading
         """
