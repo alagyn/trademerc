@@ -218,10 +218,10 @@ class Trader:
 
     def _submitSell(self, action: Action):
         if action.stock.position is None:
-            raise RuntimeError()
+            raise RuntimeError("position is None")
 
         if action.stock.buyDate is None:
-            raise RuntimeError()
+            raise RuntimeError("buyDate is None")
 
         if action.stock.buyDate == self.curDateTime:
             if self.totalDayTrades >= MAX_DAY_TRADES:

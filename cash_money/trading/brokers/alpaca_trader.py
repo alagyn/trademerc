@@ -307,10 +307,11 @@ class AlpacaTrader(Trader):
             try:
                 self.stocks[p.symbol].position = AlpacaPosition(p)
             except KeyError:
-                pass
+                log.warn(f"Found position for an un-managed symbol: \"{p.symbol}\", ignoring")
+                continue
             self.notifyPositionUpdate(p)
 
-        closed = self.stocks.keys() - openset
+        closed = set(self.stocks.keys()).difference(openset)
         for s in closed:
             self.stocks[s].position = None
 

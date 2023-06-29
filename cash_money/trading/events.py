@@ -30,6 +30,12 @@ class StockUpdateEvent:
         self.symbol = symbol
 
 
+class ErrorEvent:
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+
+
 class CMEventListener:
     """
     CashMoney Event Listener interface
@@ -48,4 +54,7 @@ class CMEventListener:
         pass
 
     def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
+        pass
+
+    def onError(self, event: ErrorEvent):
         pass

@@ -13,7 +13,6 @@ class CMEmailer(Notifier):
         self._fromPass = config['SendingEmailPass']
         self._server = config['SMTP_Server']
         self._port = int(config['SMTP_Port'])
-
         self._toAddr = config['RecievingEmail']
 
         self.gen = HTMLGen()
