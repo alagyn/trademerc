@@ -288,6 +288,7 @@ class AlpacaTrader(Trader):
         if order.side() == OrderType.BUY:
             stock.buyDate = self._curDate
         else:
+            log.warning(f"Resetting buy date ", order.status().name)
             stock.buyDate = None
 
         if order.orderType() == OrderType.BUY:
