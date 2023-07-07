@@ -70,11 +70,13 @@ def runAlpacaTrader(
     trader = AlpacaTrader(strats, api, stocks, tf)
 
     notifyType = config['System']['Notify']
+    notifier = None
     # TODO error check ^^
     if notifyType == "None":
         # notifier = CMEmailer(config['Email'])
         pass
     elif notifyType == "PushBullet":
+        log.info("Loading PushBullet Notifier")
         notifier = PushBulletNotifier(config)
         trader.addListener(notifier)
     else:
@@ -89,6 +91,8 @@ def runAlpacaTrader(
         pass
     except Exception as err:
         print(err)
+        if isinstance(notifier, PushBulletNotifier):
+            notifier.send_message("Error", str(err))
 
     finally:
         # Errors will be logged in runTradeBroker
