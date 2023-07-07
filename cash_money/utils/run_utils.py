@@ -83,7 +83,9 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
     others = [
         logging.getLogger("urllib3.connectionpool"),
         logging.getLogger("websockets.client"),
-        logging.getLogger("asyncio")
+        logging.getLogger("asyncio"),
+        logging.getLogger('matplotlib'),
+        logging.getLogger('PIL')
     ]
 
     for x in others:
