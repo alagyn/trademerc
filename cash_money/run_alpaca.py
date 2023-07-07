@@ -4,9 +4,8 @@ from argparse import ArgumentParser
 from typing import List, Optional
 import logging
 
-from cash_money.trading.trader import Trader
 from cash_money.trading.nodeStrategy import NodeStrategy
-from cash_money.trading.notifiers.emailer import CMEmailer
+from cash_money.trading.notifiers.push_bullet_notifier import PushBulletNotifier
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.brokers.alpaca_trader import AlpacaTrader
 from cash_money.trading.brokers.timeframes.dailyTF import DailyTF
@@ -39,9 +38,7 @@ def runAlpacaTrader(
             log.info('Loading Stocks')
             stocks = loadStockFile(stockFile)
         else:
-            raise CMError(
-                "run_alpaca.runTrader() No stocks or stock file provided"
-            )
+            raise CMError("run_alpaca.runTrader() No stocks or stock file provided")
 
     strats = {}
     for sym in stocks:
@@ -50,21 +47,8 @@ def runAlpacaTrader(
     log.info('Setting up strategies')
     setupStrategies(strats, datetime.datetime.today())
 
-    notifyType = config['System']['Notify']
-    # TODO error check ^^
-    if notifyType == "Email":
-        notifier = CMEmailer(config['Email'])
-    elif notifyType == "Console":
-        notifier = ConsoleNotifier()
-    else:
-        raise CMError(
-            f"run_alpaca.runTrader() Invalid notifier type \"{notifyType}\""
-        )
-
     if liveRun:
-        x = input(
-            'Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):'
-        )
+        x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
         if x != 'YES':
             sys.exit()
         else:
@@ -83,11 +67,30 @@ def runAlpacaTrader(
     else:
         raise RuntimeError("Invalid Timeframe type")
 
-    trader = AlpacaTrader(strats, api, stocks, notifier, tf)
+    trader = AlpacaTrader(strats, api, stocks, tf)
+
+    notifyType = config['System']['Notify']
+    # TODO error check ^^
+    if notifyType == "None":
+        # notifier = CMEmailer(config['Email'])
+        pass
+    elif notifyType == "PushBullet":
+        notifier = PushBulletNotifier(config)
+        trader.addListener(notifier)
+    else:
+        raise CMError(f"run_alpaca.runTrader() Invalid notifier type \"{notifyType}\"")
+
+    # Always add a console notifier for now
+    trader.addListener(ConsoleNotifier())
 
     try:
         runTrader(trader)
-    except:
+    except KeyboardInterrupt:
+        pass
+    except Exception as err:
+        print(err)
+
+    finally:
         # Errors will be logged in runTradeBroker
         trader.postRun()
 
@@ -103,8 +106,6 @@ if __name__ == '__main__':
         # parser.add_argument('-c', '--cashOnly', action='store_true')
 
         args = parser.parse_args()
-        runAlpacaTrader(
-            stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun
-        )
+        runAlpacaTrader(stratFile=args.strat, stockFile=args.stocks, liveRun=args.liveRun)
 
     main()

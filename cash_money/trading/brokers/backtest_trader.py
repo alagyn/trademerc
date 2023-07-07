@@ -8,7 +8,7 @@ from cash_money import cmErrors
 from cash_money.trading.objects import Bar, Order, OrderType, OrderStatus, Stock, CMPosition, StockStatus
 from cash_money.trading.trader import Trader
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
-from cash_money.trading.notifiers.notifier import Notification
+from cash_money.trading.events import Notification
 from cash_money.utils.run_utils import BarDict
 from cash_money.utils.date_utils import nextBusinessDay
 from cash_money.trading.nodeStrategy import NodeStrategy
@@ -93,28 +93,25 @@ class BackTestPosition(CMPosition):
 class BacktestOrderStub(Order):
     _ID_GEN = 0
 
-    def __init__(self):
+    def __init__(self, stopPrice: Optional[float]):
         super().__init__(BacktestOrderStub._ID_GEN)
         BacktestOrderStub._ID_GEN += 1
+
+        self._sl = stopPrice
+
+    def stopPrice(self) -> Union[float, None]:
+        return self._sl
 
 
 class BacktestOrder(BacktestOrderStub):
 
-    def __init__(
-        self,
-        orderT: OrderType,
-        symbol: str,
-        qty: int,
-        price: float,
-        stopLimit: Optional[float] = None
-    ):
-        super().__init__()
+    def __init__(self, orderT: OrderType, symbol: str, qty: int, price: float, stopLimit: Optional[float] = None):
+        super().__init__(stopLimit)
         self.stat = OrderStatus.UNFILLED
         self.price = price
         self._sym = symbol
         self._qty = qty
         self._orderType = orderT
-        self._sl = stopLimit
 
     def status(self) -> OrderStatus:
         return self.stat
@@ -136,12 +133,6 @@ class BacktestOrder(BacktestOrderStub):
 
     def filledAvgPrice(self) -> float:
         return self.price
-
-    def stopPrice(self) -> Union[float, None]:
-        if self._sl is not None:
-            return self._sl
-        else:
-            return None
 
     def data(self) -> Any:
         return None
@@ -210,7 +201,7 @@ class BacktestTrader(Trader):
                 self.curDate = barlist[0].date
                 break
 
-        self.notif = ConsoleNotifier()
+        self.addListener(ConsoleNotifier())
         self._next_n = Notification()
 
         self.prevEquity = startingValue
@@ -250,9 +241,7 @@ class BacktestTrader(Trader):
                 if position.stopPrice > newBar.lo:
                     newCash = position.qty() * position.stopPrice
                     self.totalCash += newCash
-                    position.stats.addSell(
-                        self.curDate, newCash, position.stopPrice
-                    )
+                    position.stats.addSell(self.curDate, newCash, position.stopPrice)
                     # Reset position
                     position._qty = 0
                     position.stopPrice = None
@@ -263,9 +252,7 @@ class BacktestTrader(Trader):
 
     def postTrade(self) -> None:
         if self.totalCash < 0:
-            raise cmErrors.BacktestError(
-                'BacktestBroker.postTrade() Negative Buy Power, Strategy Failure?'
-            )
+            raise cmErrors.BacktestError('BacktestBroker.postTrade() Negative Buy Power, Strategy Failure?')
 
         inMarketEquity = 0
         for sym, position in self.positions.items():
@@ -288,7 +275,7 @@ class BacktestTrader(Trader):
         self._next_n.equity_prev = self.prevEquity
         self._next_n.equity_pl = cur_equity - self.prevEquity
 
-        self.notif.update(self._next_n)
+        self.notifyEndOfTradeStep(self._next_n)
         self._next_n = Notification()
 
         self.barIdx += 1
@@ -312,9 +299,7 @@ class BacktestTrader(Trader):
                 newCash = position.qty() * sellPrice
                 position.stats.addSell(self.curDate, newCash, sellPrice)
                 self.totalCash += newCash
-                log.info(
-                    f"    [{sym}] Qty: {position.qty()}, Value: ${newCash:.2f}"
-                )
+                log.info(f"    [{sym}] Qty: {position.qty()}, Value: ${newCash:.2f}")
 
     def cash(self) -> float:
         return self.totalCash
@@ -339,12 +324,7 @@ class BacktestTrader(Trader):
         # TODO
         raise NotImplementedError
 
-    def submitBuy(
-        self,
-        stock: Stock,
-        qty: int,
-        stopLimit: Optional[float] = None
-    ) -> None:
+    def submitBuy(self, stock: Stock, qty: int, stopLimit: Optional[float] = None) -> None:
         if stock.bar is None:
             log.warn(f"Cannot submit buy for {stock.symbol}, bar is none")
             return
@@ -356,7 +336,7 @@ class BacktestTrader(Trader):
             checkStop(stopLimit)
             stock.position.stopPrice = stopLimit
             t = OrderType.BUY
-            stock.stopOrder = BacktestOrderStub()
+            stock.stopOrder = BacktestOrderStub(stopLimit)
         else:
             t = OrderType.BUY
 
@@ -383,20 +363,14 @@ class BacktestTrader(Trader):
         stock.buyDate = self.curDate
 
         self._next_n.addTrade(
-            symbol=stock.symbol,
-            side="Buy",
-            qty=qty,
-            price=stock.bar.close,
-            value=stock.bar.close * qty
+            symbol=stock.symbol, side="Buy", qty=qty, price=stock.bar.close, value=stock.bar.close * qty
         )
 
     def closePosition(self, stock: Stock) -> None:
         if stock.position is not None:
             self.submitSell(stock, stock.position.qty())
         else:
-            log.warn(
-                f"Cannot close position for {stock.symbol}, no position open"
-            )
+            log.warn(f"Cannot close position for {stock.symbol}, no position open")
 
     def closeAllPositions(self) -> None:
         for stock in self.stocks.values():
@@ -410,9 +384,7 @@ class BacktestTrader(Trader):
             return
 
         if stock.position is None:
-            log.warn(
-                f"Cannot submit sell for {stock.symbol}, no position open"
-            )
+            log.warn(f"Cannot submit sell for {stock.symbol}, no position open")
             return
 
         if not isinstance(stock.position, BackTestPosition):
@@ -436,19 +408,16 @@ class BacktestTrader(Trader):
 
         position.stats.addSell(self.curDate, soldValue, stock.bar.close)
 
-        self._next_n.addTrade(
-            symbol=stock.symbol,
-            side="Sell",
-            qty=qty,
-            price=stock.bar.close,
-            value=soldValue
-        )
+        self._next_n.addTrade(symbol=stock.symbol, side="Sell", qty=qty, price=stock.bar.close, value=soldValue)
 
         stock.unsettledFunds[-1] += soldValue
 
     def submitUpdateStop(self, stock: Stock, stopPrice: float) -> None:
         checkStop(stopPrice)
-        stock.position.stopPrice = stopLimit[0]  # type: ignore
+        if not isinstance(stock.position, BackTestPosition):
+            return
+
+        stock.position.stopPrice = stopPrice
 
     def getRunStats(self, logToConsole: bool) -> Dict[str, Any]:
         wins = 0
@@ -480,15 +449,9 @@ class BacktestTrader(Trader):
         winPercent = 0 if numTrades == 0 else wins / (wins + losses)
 
         if logToConsole:
-            statLog.info(
-                f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}'
-            )
-            statLog.info(
-                f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}'
-            )
-            statLog.info(
-                f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}'
-            )
+            statLog.info(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
+            statLog.info(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
+            statLog.info(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
             statLog.info(f'Win %: {winPercent:.2%}')
             statLog.info(f'Avg Gain: ${avgGain:,.2f}')
             statLog.info(f'Avg Loss: ${avgLoss:,.2f}')

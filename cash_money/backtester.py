@@ -47,6 +47,7 @@ def backtest(
 ) -> Dict[str, Any]:
     log.info("Setting up strategies")
     setupStrategies(strats, startDate)
+    # TODO this is doing the same thing?
     bars = downloadDailyBars([sym for sym in strats], startDate, endDate)
 
     log.info("Initializing Trader")
@@ -108,9 +109,7 @@ def backtest(
 
         for sym in strats.keys():
             # symFigs[sym].clear()
-            axes = symFigs[sym].subplot_mosaic(
-                [['top'], ['bot'], ['bot']], sharex=True
-            )
+            axes = symFigs[sym].subplot_mosaic([['top'], ['bot'], ['bot']], sharex=True)
 
             topPlot = axes['top']  # type: ignore
             botPlot = axes['bot']  # type: ignore
@@ -151,12 +150,7 @@ def backtest(
             color = ['g' if x > 0 else 'r' for x in stat.sellDeltas]
 
             plotLog.info(f"{sym}: Sell deltas")
-            topPlot.scatter(
-                stat.sellDays,
-                stat.sellDeltas,
-                color=color,
-                label='Profit/Loss'
-            )
+            topPlot.scatter(stat.sellDays, stat.sellDeltas, color=color, label='Profit/Loss')
             topPlot.set_yticks([0])
             topPlot.grid(True)
 
@@ -183,19 +177,14 @@ if __name__ == "__main__":
             strat = json.load(f)
 
         stocks = loadStockFile(args.stocks)
-        strats = {sym: NodeStrategy(strat['graph'], sym)
-                  for sym in stocks}
+        strats = {
+            sym: NodeStrategy(strat['graph'], sym)
+            for sym in stocks
+        }
 
         start_date = datetime(2018, 1, 1)
         end_date = datetime(2019, 1, 1)
 
-        backtest(
-            'TEST',
-            strats=strats,
-            masterFigure=None,
-            symFigs=None,
-            startDate=start_date,
-            endDate=end_date
-        )
+        backtest('TEST', strats=strats, masterFigure=None, symFigs=None, startDate=start_date, endDate=end_date)
 
     _main()

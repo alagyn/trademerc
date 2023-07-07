@@ -17,7 +17,7 @@ import alpaca.data.models as dataModels
 
 
 from cash_money.trading.objects import Order, OrderStatus, OrderType, Bar, Stock, CMPosition, StockStatus
-from cash_money.trading.notifiers.notifier import Notifier, Notification
+from cash_money.trading.events import Notification
 import logging
 from cash_money.cmErrors import CMError
 from cash_money.utils.api_utils import CMAPI
@@ -109,12 +109,9 @@ class AlpacaTrader(Trader):
         strats: Dict[str, NodeStrategy],
         api: CMAPI,
         symbols: List[str],
-        notifier: Notifier,
         timeframe: TimeFrame
     ):
         super().__init__(strats)
-
-        self._notif = notifier
 
         self._api = api
         self._timeframe = timeframe
@@ -226,13 +223,12 @@ class AlpacaTrader(Trader):
             else:
                 self._next_notification.addPosition(s.symbol)
 
-        self._notif.update(self._next_notification)
+        self.notifyEndOfTradeStep(self._next_notification)
         self._next_notification = Notification()
         self._prevEquity = curEquity
 
     def postTrade(self) -> None:
-        if self._notif is not None:
-            threading.Thread(target=self._notifyThread).start()
+        threading.Thread(target=self._notifyThread, daemon=True).start()
         self._timeframe.postWait()
 
     def _clock(self) -> models.Clock:

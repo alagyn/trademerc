@@ -87,10 +87,9 @@ class Trader:
         # Run actions
         log.info('Running Actions')
         self.runActions(actions)
-        self.notifyEndOfTradeStep()
 
-    def notifyEndOfTradeStep(self):
-        event = EndOfTradeStepEvent()
+    def notifyEndOfTradeStep(self, notif: Notification):
+        event = EndOfTradeStepEvent(notif)
         for x in self.listeners:
             x.onEndOfTradeStep(event)
 

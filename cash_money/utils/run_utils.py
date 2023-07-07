@@ -35,9 +35,7 @@ _WRN_C = "\x1b[1;33m"
 _END_C = '\x1b[0m'
 
 _DFLT = '{levelname:5s} [{name:^15s}] {message}'
-_FILE_FMT = logging.Formatter(
-    f'{{asctime}} {_DFLT}', datefmt='%b-%d %H:%M:%S', style="{"
-)
+_FILE_FMT = logging.Formatter(f'{{asctime}} {_DFLT}', datefmt='%b-%d %H:%M:%S', style="{")
 
 _DFLT_LOG_FMT = logging.Formatter(_DFLT, style="{")
 _ERR_LOG_FMT = logging.Formatter(f"{_ERR_C}{_DFLT}{_END_C}", style="{")
@@ -69,9 +67,7 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
         os.makedirs(logDir, exist_ok=True)
 
         # Terminal Log File
-        filehandler = logging.FileHandler(
-            filename=f'{logDir}/{logname}.log', mode='w'
-        )
+        filehandler = logging.FileHandler(filename=f'{logDir}/{logname}.log', mode='w')
         filehandler.setLevel(level=loglevel)
         filehandler.setFormatter(_FILE_FMT)
         root.addHandler(filehandler)
@@ -105,9 +101,7 @@ def loadSystem() -> ConfigParser:
             _config.read(_configLoc)
         else:
             print(f"ERROR: Cannot find {_configLoc}")
-            dialog.showerror(
-                "Error: Cash Money", f"Cannot find \"{_configLoc}\""
-            )
+            dialog.showerror("Error: Cash Money", f"Cannot find \"{_configLoc}\"")
             exit(1)
 
         syscfg = _config['System']
@@ -124,9 +118,9 @@ def loadSystem() -> ConfigParser:
         else:
             loglevel = logging.INFO
 
-        _setuplogging(
-            loglevel, syscfg.getboolean('LogToFile'), syscfg['LogDirectory']
-        )
+        _setuplogging(loglevel, syscfg.getboolean('LogToFile'), syscfg['LogDirectory'])
+
+        #email_manager.setupEmailManager(syscfg)
 
     return _config
 
@@ -138,9 +132,7 @@ def parseYFDate(d: pd.Timestamp) -> datetime.datetime:
 BarDict = Dict[str, List[Optional[Bar]]]
 
 
-def downloadDailyBars(
-    symbols: List[str], startDate: datetime.date, endDate: datetime.date
-) -> BarDict:
+def downloadDailyBars(symbols: List[str], startDate: datetime.datetime, endDate: datetime.datetime) -> BarDict:
     startStr = startDate.strftime(DATE_FMT)
     endStr = endDate.strftime(DATE_FMT)
 
@@ -169,8 +161,10 @@ def downloadDailyBars(
     curDate = min([x[0].date for x in dirtyBars.values()])
 
     # Dict of current indices for each symbol
-    idxs = {sym: 0
-            for sym in symbols}
+    idxs = {
+        sym: 0
+        for sym in symbols
+    }
 
     # We want to do them all at once so we can filter out holidays and
     # stuff by checking if every bar is none for a particular day
@@ -202,9 +196,7 @@ def downloadDailyBars(
     return cleanBarsDict
 
 
-def setupStrategies(
-    strats: Dict[str, NodeStrategy], targetDate: datetime.datetime
-):
+def setupStrategies(strats: Dict[str, NodeStrategy], targetDate: datetime.datetime):
     """
     Sets up the given strategies so that they are up to date with the target start day
     :param strats: The strats to set up
@@ -212,9 +204,7 @@ def setupStrategies(
     """
 
     setupTime = max([x.getSetupTime() for x in strats.values()])
-    setupStart = calcSetupStartDate(
-        targetDate - datetime.timedelta(1), setupTime
-    )
+    setupStart = calcSetupStartDate(targetDate - datetime.timedelta(1), setupTime)
 
     bars = downloadDailyBars([sym for sym in strats], setupStart, targetDate)
     for sym, strat in strats.items():
