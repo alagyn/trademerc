@@ -11,14 +11,7 @@ from typing import Union, Any
 
 class Bar:
 
-    def __init__(
-        self,
-        lo: float,
-        close: float,
-        hi: float,
-        vol: float,
-        date: datetime.datetime
-    ):
+    def __init__(self, lo: float, close: float, hi: float, vol: float, date: datetime.datetime):
         self.lo = lo
         self.close = close
         self.hi = hi

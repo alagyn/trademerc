@@ -262,7 +262,7 @@ class AlpacaTrader(Trader):
 
         self._next_notification.addTrade(stock.symbol, order.side(), qty, price, value)
 
-        if order.side() == OrderType.BUY:
+        if order.orderType() == OrderType.BUY:
             log.warning(f"Setting buy date {order.status().name} {order.symbol()} {order.side()}")
             stock.buyDate = self._curDate
         else:
