@@ -124,9 +124,11 @@ class Stock:
         # len == 2, after two days the unsettled funds will
         # be popped
         self.unsettledFunds = deque(maxlen=2)
+        self.unsettledFunds.append(0)
         # Acts the same as the unsettled funds
         # Keeps track of day trades specific to this stock
         self.dayTrades = deque(maxlen=5)
+        self.dayTrades.append(0)
 
     def updateBar(self, bar: Optional[Bar]):
         self.bar = bar
