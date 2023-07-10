@@ -69,4 +69,5 @@ class PushBulletNotifier(CMEventListener):
         )
 
     def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
-        Thread(target=self._updateThread, args=(event.notif, ), daemon=True).start()
+        # Thread(target=self._updateThread, args=(event.notif, ), daemon=True).start()
+        pass

@@ -15,7 +15,6 @@ import alpaca.trading.enums as tradeEnum
 import alpaca.trading.models as models
 import alpaca.data.models as dataModels
 
-
 from cash_money.trading.objects import Order, OrderStatus, OrderType, Bar, Stock, CMPosition, StockStatus
 from cash_money.trading.events import Notification
 import logging
@@ -104,13 +103,7 @@ class AlpacaPosition(CMPosition):
 
 class AlpacaTrader(Trader):
 
-    def __init__(
-        self,
-        strats: Dict[str, NodeStrategy],
-        api: CMAPI,
-        symbols: List[str],
-        timeframe: TimeFrame
-    ):
+    def __init__(self, strats: Dict[str, NodeStrategy], api: CMAPI, symbols: List[str], timeframe: TimeFrame):
         super().__init__(strats)
 
         self._api = api
@@ -130,18 +123,12 @@ class AlpacaTrader(Trader):
 
         self._api.data.subscribe_bars(self._barUpdateHandler, *symbols)
         log.info("Starting Stock Data Websocket")
-        self._dataThread = threading.Thread(
-            name="Alpaca Data", target=self._api.data.run
-        )
+        self._dataThread = threading.Thread(name="Alpaca Data", target=self._api.data.run)
         self._dataThread.start()
 
-        self._api.trade_stream.subscribe_trade_updates(
-            self._tradeUpdateHandler
-        )
+        self._api.trade_stream.subscribe_trade_updates(self._tradeUpdateHandler)
         log.info("Starting Trade Update Websocket")
-        self._tradeThread = threading.Thread(
-            name="Alpaca Trade", target=self._api.trade_stream.run
-        )
+        self._tradeThread = threading.Thread(name="Alpaca Trade", target=self._api.trade_stream.run)
         self._tradeThread.start()
 
         self._curDate = datetime.date.today()
@@ -213,12 +200,10 @@ class AlpacaTrader(Trader):
                     price=float(data.current_price),
                     value=float(data.market_value),
                     purchaseValue=float(data.avg_entry_price),
-                    stopPrice=-1 if s.stopOrder is None else
-                    float(s.stopOrder.data().stop_price),
+                    stopPrice=-1 if s.stopOrder is None else float(s.stopOrder.data().stop_price),
                     lastStop=str(s.lastStopUpdate),
                     nextStop=str(s.nextStopUpdate),
-                    purchaseDate=""
-                    if s.order is None else s.order.data().filled_at
+                    purchaseDate="" if s.order is None else s.order.data().filled_at
                 )
             else:
                 self._next_notification.addPosition(s.symbol)
@@ -246,9 +231,7 @@ class AlpacaTrader(Trader):
             raise CMError("AlpacaBroker.buyPwr() Cannot get cash amount")
 
     async def _barUpdateHandler(self, data: dataModels.bars.Bar):
-        newBar = Bar(
-            data.low, data.close, data.high, data.volume, data.timestamp
-        )
+        newBar = Bar(data.low, data.close, data.high, data.volume, data.timestamp)
         self.stocks[data.symbol].updateBar(newBar)
         self.notifyStockUpdate(data.symbol, newBar)
 
@@ -277,14 +260,12 @@ class AlpacaTrader(Trader):
         price = order.filledAvgPrice()
         value = qty * price
 
-        self._next_notification.addTrade(
-            stock.symbol, order.side(), qty, price, value
-        )
+        self._next_notification.addTrade(stock.symbol, order.side(), qty, price, value)
 
         if order.side() == OrderType.BUY:
             stock.buyDate = self._curDate
         else:
-            log.warning("Resetting buy date {}", order.status().name)
+            log.warning(f"Resetting buy date {order.status().name}")
             stock.buyDate = None
 
         if order.orderType() == OrderType.BUY:
@@ -357,12 +338,7 @@ class AlpacaTrader(Trader):
         # TODO
         raise NotImplementedError
 
-    def submitBuy(
-        self,
-        stock: Stock,
-        qty: int,
-        stopLoss: Optional[float] = None
-    ) -> None:
+    def submitBuy(self, stock: Stock, qty: int, stopLoss: Optional[float] = None) -> None:
 
         if stock.bar is None:
             raise RuntimeError()
@@ -402,9 +378,8 @@ class AlpacaTrader(Trader):
                 extended_hours=False,
                 client_order_id=None,
                 take_profit=None,
-                stop_loss=tradeReq.StopLossRequest(
-                    stop_price=stopPrice  # type: ignore
-                )
+                stop_loss=tradeReq.StopLossRequest(stop_price=stopPrice  # type: ignore
+                                                   )
             )
             x = self._api.trade.submit_order(req)
             if not isinstance(x, models.Order):
@@ -466,9 +441,7 @@ class AlpacaTrader(Trader):
                 trail=None,
                 client_order_id=None
             )
-            order = self._api.trade.replace_order_by_id(
-                stock.stopOrder.orderid(), req
-            )
+            order = self._api.trade.replace_order_by_id(stock.stopOrder.orderid(), req)
             if not isinstance(order, models.Order):
                 raise CMError()
 
