@@ -263,9 +263,10 @@ class AlpacaTrader(Trader):
         self._next_notification.addTrade(stock.symbol, order.side(), qty, price, value)
 
         if order.side() == OrderType.BUY:
+            log.warning(f"Setting buy date {order.status().name} {order.symbol()} {order.side()}")
             stock.buyDate = self._curDate
         else:
-            log.warning(f"Resetting buy date {order.status().name}")
+            log.warning(f"Resetting buy date {order.status().name} {order.symbol()} {order.side()}")
             stock.buyDate = None
 
         if order.orderType() == OrderType.BUY:
@@ -365,7 +366,7 @@ class AlpacaTrader(Trader):
             stock.stopOrder = None
         else:
 
-            stopPrice = f"{min(stock.bar.close - 0.01, float(stopLoss)):.2f}"
+            stopPrice = f"{min(stock.bar.close - 0.02, float(stopLoss)):.2f}"
             req = tradeReq.OrderRequest(
                 symbol=stock.symbol,
                 qty=qty,
