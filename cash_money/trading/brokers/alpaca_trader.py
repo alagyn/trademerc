@@ -203,7 +203,7 @@ class AlpacaTrader(Trader):
                     stopPrice=-1 if s.stopOrder is None else float(s.stopOrder.data().stop_price),
                     lastStop=str(s.lastStopUpdate),
                     nextStop=str(s.nextStopUpdate),
-                    purchaseDate="" if s.order is None else s.order.data().filled_at
+                    purchaseDate="" if s.buyOrder is None else s.buyOrder.data().filled_at
                 )
             else:
                 self._next_notification.addPosition(s.symbol)
@@ -248,8 +248,13 @@ class AlpacaTrader(Trader):
         )
 
         stock = self.stocks[order.symbol()]
-        if stock.order is None:
-            raise RuntimeError("Stock.order is None")
+        orderType = order.orderType()
+        if orderType == OrderType.BUY and stock.buyOrder is None:
+            raise RuntimeError("Unknown BUY trade update, Stock.buyOrder is None")
+        elif orderType == OrderType.SELL and stock.sellOrder is None:
+            raise RuntimeError("Unkown SELL trade update, Stock.sellOrder is None")
+        elif orderType == OrderType.STOP and stock.stopOrder is None:
+            raise RuntimeError("Unkown STOP trade update, Stock.stopOrder is None")
 
         self.notifyOrderEvent(order)
 
@@ -262,17 +267,19 @@ class AlpacaTrader(Trader):
 
         self._next_notification.addTrade(stock.symbol, order.side(), qty, price, value)
 
-        if order.orderType() == OrderType.BUY:
+        if orderType == OrderType.BUY:
             log.warning(f"Setting buy date {order.status().name} {order.symbol()} {order.side()}")
             stock.buyDate = self._curDate
         else:
             log.warning(f"Resetting buy date {order.status().name} {order.symbol()} {order.side()}")
             stock.buyDate = None
 
-        if order.orderType() == OrderType.BUY:
-            stock.order = order
-        elif order.orderType() == OrderType.STOP:
+        if orderType == OrderType.BUY:
+            stock.buyOrder = order
+        elif orderType == OrderType.STOP:
             stock.stopOrder = order
+        elif orderType == OrderType.SELL:
+            stock.sellOrder = order
 
     def _updatePositions(self):
         x = self._api.trade.get_all_positions()
@@ -392,7 +399,7 @@ class AlpacaTrader(Trader):
             o = AlpacaOrder(order.legs[0])
             stock.stopOrder = o
 
-        stock.order = AlpacaOrder(order)
+        stock.buyOrder = AlpacaOrder(order)
 
     def closePosition(self, stock: Stock):
         if stock.stopOrder is not None:
@@ -402,9 +409,7 @@ class AlpacaTrader(Trader):
         if not isinstance(order, models.Order):
             raise CMError()
 
-        stock.order = None
-        stock.stopOrder = None
-        stock.lastCloseOrder = AlpacaOrder(order)
+        stock.sellOrder = AlpacaOrder(order)
 
     def submitSell(self, symbol: str, qty: int) -> Order:
         """

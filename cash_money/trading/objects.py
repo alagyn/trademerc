@@ -107,15 +107,14 @@ class Stock:
 
     def __init__(self, symbol: str):
         self.symbol: str = symbol
-        self.order: Optional[Order] = None
+        self.buyOrder: Optional[Order] = None
+        self.sellOrder: Optional[Order] = None
         self.stopOrder: Optional[Order] = None
         self.buyDate: Optional[datetime.date] = None
 
         self.position: Optional[CMPosition] = None
 
         self.bar: Optional[Bar] = None
-
-        self.lastCloseOrder: Optional[Order] = None
 
         self.lastStopUpdate: Optional[datetime.date] = None
         self.nextStopUpdate: Optional[datetime.date] = None

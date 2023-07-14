@@ -359,7 +359,7 @@ class BacktestTrader(Trader):
         self.totalCash -= trueCost
 
         o = BacktestOrder(t, stock.symbol, qty, stock.bar.close, stopLimit)
-        stock.order = o
+        stock.buyOrder = o
         stock.buyDate = self.curDate
 
         self._next_n.addTrade(
