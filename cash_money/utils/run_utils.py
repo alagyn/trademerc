@@ -34,13 +34,14 @@ _DBG_C = '\x1b[1;32m'
 _WRN_C = "\x1b[1;33m"
 _END_C = '\x1b[0m'
 
+_DATE_FMT = '%b-%d %H:%M:%S'
 _DFLT = '{asctime} {levelname:5s} [{name:^15s}] {message}'
-_FILE_FMT = logging.Formatter(_DFLT, datefmt='%b-%d %H:%M:%S', style="{")
+_FILE_FMT = logging.Formatter(_DFLT, datefmt=_DATE_FMT, style="{")
 
-_DFLT_LOG_FMT = logging.Formatter(_DFLT, style="{")
-_ERR_LOG_FMT = logging.Formatter(f"{_ERR_C}{_DFLT}{_END_C}", style="{")
-_DBG_LOG_FMT = logging.Formatter(f"{_DBG_C}{_DFLT}{_END_C}", style="{")
-_WRN_LOG_FMT = logging.Formatter(f"{_WRN_C}{_DFLT}{_END_C}", style="{")
+_DFLT_LOG_FMT = logging.Formatter(_DFLT, style="{", datefmt=_DATE_FMT)
+_ERR_LOG_FMT = logging.Formatter(f"{_ERR_C}{_DFLT}{_END_C}", style="{", datefmt=_DATE_FMT)
+_DBG_LOG_FMT = logging.Formatter(f"{_DBG_C}{_DFLT}{_END_C}", style="{", datefmt=_DATE_FMT)
+_WRN_LOG_FMT = logging.Formatter(f"{_WRN_C}{_DFLT}{_END_C}", style="{", datefmt=_DATE_FMT)
 
 
 class _ConsoleFormatter(logging.Formatter):
