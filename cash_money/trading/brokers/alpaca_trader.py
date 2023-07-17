@@ -2,7 +2,7 @@ import time
 from typing import List, Union, Dict, Tuple, Optional, Any
 from .timeframes.timeframe import TimeFrame
 import threading
-
+import concurrent.futures.thread  # Keep this import to resolve errors in py3.9 /shrug
 import asyncio
 import datetime
 from uuid import UUID
@@ -451,6 +451,7 @@ class AlpacaTrader(Trader):
             if not isinstance(order, models.Order):
                 raise CMError()
 
+            log.debug("Submitting update stop, oldID: %s newID: %s", oldID, order.id)
             stock.stopOrder = AlpacaOrder(order)
 
     def now(self) -> datetime.date:
