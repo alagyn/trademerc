@@ -34,8 +34,8 @@ _DBG_C = '\x1b[1;32m'
 _WRN_C = "\x1b[1;33m"
 _END_C = '\x1b[0m'
 
-_DFLT = '{levelname:5s} [{name:^15s}] {message}'
-_FILE_FMT = logging.Formatter(f'{{asctime}} {_DFLT}', datefmt='%b-%d %H:%M:%S', style="{")
+_DFLT = '{asctime} {levelname:5s} [{name:^15s}] {message}'
+_FILE_FMT = logging.Formatter(_DFLT, datefmt='%b-%d %H:%M:%S', style="{")
 
 _DFLT_LOG_FMT = logging.Formatter(_DFLT, style="{")
 _ERR_LOG_FMT = logging.Formatter(f"{_ERR_C}{_DFLT}{_END_C}", style="{")
