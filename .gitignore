@@ -6,6 +6,8 @@ stats.json
 .spyproject/
 logs/
 
+imgui.ini
+
 testnotebook.py
 
 dist/
