@@ -2,6 +2,7 @@ from .ema import EMA
 
 class SMMA:
     """
+    Smoothed Moving Average
     SMMA is equivalent to an EMA with alpha = 1/period
     """
 

@@ -1,5 +1,6 @@
 from typing import List
 from cash_money.trading.objects import Action, Bar, Order, CMPosition
+from datetime import datetime
 
 
 class TradeNotification:
@@ -52,7 +53,7 @@ class PositionNotification:
 
 class Notification:
 
-    def __init__(self) -> None:
+    def __init__(self, date: datetime) -> None:
         self.cash = 0.0
         self.equity_prev = 0.0
         self.equity_cur = 0.0
@@ -60,6 +61,7 @@ class Notification:
 
         self.trades: List[TradeNotification] = []
         self.positions: List[PositionNotification] = []
+        self.date = date
 
     def addPosition(
         self,

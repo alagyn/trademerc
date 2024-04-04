@@ -3,7 +3,7 @@ from collections import defaultdict
 import logging
 from threading import Semaphore
 
-from cash_money.trading.events import ActionEvent, CMEventListener, StockUpdateEvent
+from cash_money.trading.events import ActionEvent, CMEventListener, EndOfTradeStepEvent, StockUpdateEvent
 
 import imgui as im
 import imgui.implot as implot
@@ -23,6 +23,8 @@ class ListenerGUI(CMEventListener):
         self.actions: List[ActionEvent] = []
         self.stock_closes: Dict[str, np.ndarray] = defaultdict(_array)
         self.stock_closes_ts: Dict[str, np.ndarray] = defaultdict(_array)
+        self.portfolio = _array()
+        self.portfolio_ts = _array()
         self.data_lock = Semaphore()
         self.reset_axes = False
 
@@ -33,8 +35,10 @@ class ListenerGUI(CMEventListener):
                 implot.SetNextAxesToFit()
             implot.BeginPlot("Closes")
             implot.SetupAxisScale(implot.Axis.X1, implot.Scale.Time)
+            implot.SetupAxisScale(implot.Axis.Y1, implot.Scale.Log10)
             for symbol, arr in self.stock_closes.items():
                 implot.PlotLine(symbol, self.stock_closes_ts[symbol], arr)
+            implot.PlotLine("Portfolio", self.portfolio_ts, self.portfolio)
             implot.EndPlot()
             im.End()
 
@@ -42,14 +46,22 @@ class ListenerGUI(CMEventListener):
         self.actions.append(event)
 
     def onStockUpdate(self, event: StockUpdateEvent):
-        log.warn("Update %s %f", event.symbol, event.bar.close)
+        #log.warn("Update %s %f", event.symbol, event.bar.close)
         with self.data_lock:
             self.reset_axes = True
             arr = self.stock_closes[event.symbol]
+            # this makes copies... ugh
+            # TODO change these to be list wrappers...
             self.stock_closes[event.symbol] = np.append(arr, [event.bar.close])
             arr = self.stock_closes_ts[event.symbol]
             self.stock_closes_ts[
                 event.symbol] = np.append(arr, [event.bar.date.timestamp()])
+            
+    def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
+        log.warn("End of trade step")
+        with self.data_lock:
+            self.portfolio = np.append(self.portfolio, [event.notif.equity_cur])
+            self.portfolio_ts = np.append(self.portfolio_ts, [event.notif.date.timestamp()])
 
 
 if __name__ == '__main__':

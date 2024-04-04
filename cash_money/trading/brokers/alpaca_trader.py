@@ -119,7 +119,7 @@ class AlpacaTrader(Trader):
         self._bars = {}
 
         # List of trades to send in next update
-        self._next_notification = Notification()
+        self._next_notification = Notification(self.curDateTime)
 
         self._api.data.subscribe_bars(self._barUpdateHandler, *symbols)
         log.info("Starting Stock Data Websocket")
@@ -209,7 +209,8 @@ class AlpacaTrader(Trader):
                 self._next_notification.addPosition(s.symbol)
 
         self.notifyEndOfTradeStep(self._next_notification)
-        self._next_notification = Notification()
+        # TODO This is probably the wrong date
+        self._next_notification = Notification(self.curDateTime)
         self._prevEquity = curEquity
 
     def postTrade(self) -> None:

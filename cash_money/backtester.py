@@ -53,10 +53,10 @@ def backtest(
     log.info("Initializing Trader")
     broker = BacktestTrader(strats, startingVal, bars)
 
+    # TODO Listener framework needs work.
+    """
     listener = ListenerGUI()
-
     broker.addListener(listener)
-
     Thread(
         target=run_window, args=(
             800,
@@ -65,6 +65,7 @@ def backtest(
             listener.render,
         )
     ).start()
+    """
 
     log.info("Running Backtest")
     runTrader(broker)

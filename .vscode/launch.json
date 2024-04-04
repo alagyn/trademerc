@@ -6,21 +6,21 @@
     "configurations": [
         {
             "name": "Easy Alpaca",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "cash_money.easy_run_alpaca",
             "justMyCode": true
         },
         {
             "name": "Alpaca CMD",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "cash_money.alpaca_cmd",
             "justMyCode": true
         },
         {
             "name": "BT no GUI",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "cash_money.backtester",
             "justMyCode": true,
@@ -34,7 +34,7 @@
         },
         {
             "name": "Paper",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "cash_money.run_alpaca",
             "args": [
@@ -48,14 +48,14 @@
         },
         {
             "name": "Backtester",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "cash_money.backtester_gui",
             "justMyCode": true
         },
         {
             "name": "Strategy",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "cash_money.strategy_gui",
             "justMyCode": true

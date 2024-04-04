@@ -202,7 +202,7 @@ class BacktestTrader(Trader):
                 break
 
         self.addListener(ConsoleNotifier())
-        self._next_n = Notification()
+        self._next_n = Notification(self.curDate)
 
         self.prevEquity = startingValue
 
@@ -276,7 +276,7 @@ class BacktestTrader(Trader):
         self._next_n.equity_pl = cur_equity - self.prevEquity
 
         self.notifyEndOfTradeStep(self._next_n)
-        self._next_n = Notification()
+        self._next_n = Notification(self.curDate)
 
         self.barIdx += 1
         self.curDate = nextBusinessDay(self.curDate)
