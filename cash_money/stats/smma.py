@@ -1,5 +1,6 @@
 from .ema import EMA
 
+
 class SMMA:
     """
     Smoothed Moving Average

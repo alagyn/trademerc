@@ -16,14 +16,10 @@ DEFAULT_AF_MAX = 0.2
 
 class ParabolicSAR(CMNode):
     DESCRIPTION = "Calculates the Parabolic Stop-And-Release (PSAR).\nIt's complicated, google it."
-    _OUTPUTS = [
-        Port("PSAR", FLOAT, "The PSAR")
-    ]
+    _OUTPUTS = [Port("PSAR", FLOAT, "The PSAR")]
     _ARGS = [
-        NodeArg(_AF, FLOAT, "AF Start",
-                "The starting AF value", value=DEFAULT_AF_START),
-        NodeArg(_AFMAX, FLOAT, "AF Max",
-                "The maximum AF value", value=DEFAULT_AF_MAX)
+        NodeArg(_AF, FLOAT, "AF Start", "The starting AF value", value=DEFAULT_AF_START),
+        NodeArg(_AFMAX, FLOAT, "AF Max", "The maximum AF value", value=DEFAULT_AF_MAX)
     ]
     NODETYPE = "PSAR"
 

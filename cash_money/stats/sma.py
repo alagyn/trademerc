@@ -6,6 +6,7 @@ class SMA:
     """
     Simple Moving Average
     """
+
     def __init__(self, period: int):
         self.avg = 0
         self.vals = deque()

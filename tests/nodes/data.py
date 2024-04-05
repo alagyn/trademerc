@@ -1,5 +1,6 @@
 from cash_money.nodes.cmNode import CMNode
 from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
+# yapf: disable
 RAW_TEST_DATA = [
     (156.17, 158.49, 158.53),
     (158.61, 160.03, 160.17),
@@ -63,9 +64,11 @@ S_TEST_DATA = [
     1.5,
     1.4
 ]
+# yapf: enable
 
 
 class DatamapIter:
+
     def __init__(self, node: CMNode, data):
         self.datamap = {}
         node.datamap._datamap = self.datamap  # type: ignore

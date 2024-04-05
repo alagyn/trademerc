@@ -13,20 +13,12 @@ def main():
     root = tk.Tk()
     root.withdraw()
 
-    stratFile = askopenfilename(
-        filetypes=STRAT_FT,
-        title="Select Strategy",
-        parent=root,
-        initialdir='config'
-    )
+    stratFile = askopenfilename(filetypes=STRAT_FT, title="Select Strategy", parent=root, initialdir='config')
     if stratFile is None or len(stratFile) == 0:
         return
 
     stockFile = askopenfilename(
-        filetypes=[('Text', '.txt')],
-        title="Select stock list",
-        parent=root,
-        initialdir='config'
+        filetypes=[('Text', '.txt')], title="Select stock list", parent=root, initialdir='config'
     )
     if stockFile is None or len(stockFile) == 0:
         return
@@ -39,9 +31,7 @@ def main():
     root.update()
     root.destroy()
 
-    runAlpacaTrader(
-        stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper
-    )
+    runAlpacaTrader(stratFile=stratFile, stockFile=stockFile, liveRun=not runPaper)
 
 
 if __name__ == '__main__':

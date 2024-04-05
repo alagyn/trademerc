@@ -18,10 +18,7 @@ class MACD(CMNode):
                   "Uses two Exponential Moving Averages (EMA) over the cycle's close value.\n" \
                   'One EMA is "fast", the other is "slow".\n' \
                   'MACD = fast - slow. Signal is another EMA over the MACD'
-    _OUTPUTS = [
-        Port("MACD", FLOAT, "The MACD value"),
-        Port("Signal", FLOAT, "The Signal value")
-    ]
+    _OUTPUTS = [Port("MACD", FLOAT, "The MACD value"), Port("Signal", FLOAT, "The Signal value")]
     _ARGS = [
         NodeArg(_FP, INT, "Fast Period", "Period of the fast EMA", 5),
         NodeArg(_SP, INT, "Slow Period", "Period of the slow EMA", 10),

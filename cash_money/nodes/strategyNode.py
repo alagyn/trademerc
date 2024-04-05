@@ -16,8 +16,9 @@ class StrategyNode(CMNode):
         Port("Stop-Loss Price", FLOAT, "Used to set the value of the stop-loss order when buying/updating")
     ]
     _ARGS = [
-        NodeArg(_STOP_P, INT, "Stop Update Period", "The number of cycles before the stop-loss order is updated",
-                value=1)
+        NodeArg(
+            _STOP_P, INT, "Stop Update Period", "The number of cycles before the stop-loss order is updated", value=1
+        )
     ]
     NODETYPE = "Strategy"
 
@@ -28,9 +29,12 @@ class StrategyNode(CMNode):
 
     def setup(self) -> None:
         if STRAT_NODE in self.datamap:
-            raise NodeDefError("StrategyNode.init()", f"More than one strategy node defined:\n"
-                                                      f"{self.datamap[STRAT_NODE]}\n"
-                                                      f"{self}")
+            raise NodeDefError(
+                "StrategyNode.init()",
+                f"More than one strategy node defined:\n"
+                f"{self.datamap[STRAT_NODE]}\n"
+                f"{self}"
+            )
         self.datamap[STRAT_NODE] = self
         self.datamap[STOP_PERIOD] = self.args[_STOP_P].value
 

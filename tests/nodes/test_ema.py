@@ -5,6 +5,7 @@ from cash_money.stats.ema import EMA
 
 
 class EMATest(unittest.TestCase):
+
     def test_7Day(self):
         ema = EMA(period=7, smoothing=2)
 

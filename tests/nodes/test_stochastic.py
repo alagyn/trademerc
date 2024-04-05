@@ -3,7 +3,9 @@ from .data import RAW_TEST_DATA, DatamapIter
 from cash_money.nodes.stochasticNode import Stochastic, DP, KP, SP
 from collections import deque
 
+
 class StochTest(unittest.TestCase):
+
     def test_Stoch(self):
         expected = []
 

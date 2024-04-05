@@ -13,15 +13,9 @@ class SMANode(CMNode):
     """
 
     DESCRIPTION = "Calculates the Simple Moving Average (SMA)"
-    _INPUTS = [
-        Port("Value", FLOAT, "The input value")
-    ]
-    _OUTPUTS = [
-        Port("SMA", FLOAT, "The averaged value")
-    ]
-    _ARGS = [
-        NodeArg(_P, INT, "Period", "The period of the moving average", 5)
-    ]
+    _INPUTS = [Port("Value", FLOAT, "The input value")]
+    _OUTPUTS = [Port("SMA", FLOAT, "The averaged value")]
+    _ARGS = [NodeArg(_P, INT, "Period", "The period of the moving average", 5)]
     NODETYPE = "Simple Moving Avg"
 
     def init(self):

@@ -51,8 +51,10 @@ class Trader:
 
         self.symbols = strats.keys()
         # Dict of symb->stock
-        self.stocks: Dict[str, Stock] = {x: Stock(x)
-                                         for x in self.symbols}
+        self.stocks: Dict[str, Stock] = {
+            x: Stock(x)
+            for x in self.symbols
+        }
 
     def init(self):
         self.updateBuyPower()
@@ -171,18 +173,12 @@ class Trader:
         else:
             buyPwr = 0.0
 
-        log.info(
-            f"Unsettled Funds: ${self.totalUnsettled:.2f}, usable cash: ${usableCash:.2f}"
-        )
-        log.info(
-            f"Num out of market: {numOutOfMarket}, per-stock cash: ${buyPwr:.2f}"
-        )
+        log.info(f"Unsettled Funds: ${self.totalUnsettled:.2f}, usable cash: ${usableCash:.2f}")
+        log.info(f"Num out of market: {numOutOfMarket}, per-stock cash: ${buyPwr:.2f}")
         log.info(f"Unsettled Day trades: {self.totalDayTrades}")
 
         for a in actions:
-            log.debug(
-                "\tSymbol: %s, Action: %s", a.stock.symbol, a.action.name
-            )
+            log.debug("\tSymbol: %s, Action: %s", a.stock.symbol, a.action.name)
 
             if a.action == ActionEnum.Buy:
                 if buyPwr <= 0:
@@ -208,9 +204,7 @@ class Trader:
 
         qty = calcQty(buyPwr, action.stock.bar.close)
         if qty <= 0:
-            log.info(
-                f"Qty <= 0: {qty}, not submitting Buy request:\n\t{str(action)}"
-            )
+            log.info(f"Qty <= 0: {qty}, not submitting Buy request:\n\t{str(action)}")
             return
 
         self.submitBuy(action.stock, qty, action.stopPrice)
@@ -238,15 +232,11 @@ class Trader:
 
         o = action.stock.stopOrder
         if o is None:
-            raise cmErrors.ActionError(
-                f'Cannot Update stop, no stop order created:\n\t{action}'
-            )
+            raise cmErrors.ActionError(f'Cannot Update stop, no stop order created:\n\t{action}')
 
         oldPrice = o.stopPrice()
         if oldPrice is None:
-            raise cmErrors.ActionError(
-                f'Cannot Update stop, no invalid stop order:\n\t{action}'
-            )
+            raise cmErrors.ActionError(f'Cannot Update stop, no invalid stop order:\n\t{action}')
 
         if action.stopPrice == oldPrice:
             log.info(f"Ignoring {action}, stop-price is equal")
@@ -334,12 +324,7 @@ class Trader:
         """
         raise NotImplementedError
 
-    def submitBuy(
-        self,
-        stock: Stock,
-        qty: int,
-        stopLoss: Optional[float] = None
-    ) -> None:
+    def submitBuy(self, stock: Stock, qty: int, stopLoss: Optional[float] = None) -> None:
         """
         Submits a buy order for the given symbol and quantity
         :param stock: The stock to buy

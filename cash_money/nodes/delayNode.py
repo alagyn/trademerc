@@ -10,15 +10,9 @@ _D = '_D'
 
 class DelayNode(CMNode):
     DESCRIPTION = "Inputs are stored and then output at a specific delay"
-    _INPUTS = [
-        Port("In", FLOAT, "The input value")
-    ]
-    _OUTPUTS = [
-        Port("Out", FLOAT, "The output value")
-    ]
-    _ARGS = [
-        NodeArg(_D, INT, "Delay", "The number of cycles to delay outputs", 1)
-    ]
+    _INPUTS = [Port("In", FLOAT, "The input value")]
+    _OUTPUTS = [Port("Out", FLOAT, "The output value")]
+    _ARGS = [NodeArg(_D, INT, "Delay", "The number of cycles to delay outputs", 1)]
     NODETYPE = "Delay"
 
     def init(self):

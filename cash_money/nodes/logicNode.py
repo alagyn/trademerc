@@ -14,14 +14,7 @@ class LogicNode(CMNode):
                    "Performs A (operation) B")
     _INPUTS = [Port("A", BOOL, "Input A"), Port("B", BOOL, "Input B")]
     _OUTPUTS = [Port("Result", BOOL, "Output of operation")]
-    _ARGS = [
-        EnumNodeArg(
-            _OP,
-            "Type",
-            "The operation to perform",
-            "OR", ["OR", "AND", "XOR"]
-        )
-    ]
+    _ARGS = [EnumNodeArg(_OP, "Type", "The operation to perform", "OR", ["OR", "AND", "XOR"])]
     NODETYPE = "Logic"
 
     def init(self) -> None:
@@ -39,6 +32,4 @@ class LogicNode(CMNode):
         elif self._opType.value == "XOR":
             self.op = xor
         else:
-            raise NodeDefError(
-                "logicNode.setup()", f"Invalid option '{self._opType.value}'"
-            )
+            raise NodeDefError("logicNode.setup()", f"Invalid option '{self._opType.value}'")

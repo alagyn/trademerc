@@ -13,12 +13,8 @@ class EMANode(CMNode):
     Exponential Moving Average
     """
     DESCRIPTION = "Calculates the Exponential Moving Average"
-    _INPUTS = [
-        Port("Value", FLOAT, "The input value")
-    ]
-    _OUTPUTS = [
-        Port("EMA", FLOAT, "The averaged value")
-    ]
+    _INPUTS = [Port("Value", FLOAT, "The input value")]
+    _OUTPUTS = [Port("EMA", FLOAT, "The averaged value")]
     _ARGS = [
         NodeArg(_P, INT, "Period", "The period of the moving average", 5),
         NodeArg(_S, FLOAT, "Smoothing", "The smoothing factor", 2.0)

@@ -17,24 +17,12 @@ class ConfidenceNode(CMNode):
                   "Inputs do not have to sum to 1"
     _INPUTS = [Port("Weights", FLOAT, "The input weights", variable=True)]
     _OUTPUTS = [
-        Port(
-            "Enter",
-            BOOL,
-            'Outputs "true" if and only if the sum is greater than the enter threshold'
-        ),
-        Port(
-            "Exit",
-            BOOL,
-            'Outputs "true" if and only if the sum is less than the exit threshold'
-        )
+        Port("Enter", BOOL, 'Outputs "true" if and only if the sum is greater than the enter threshold'),
+        Port("Exit", BOOL, 'Outputs "true" if and only if the sum is less than the exit threshold')
     ]
     _ARGS = [
-        NodeArg(
-            _EnterThresh, FLOAT, "Enter Threshold", "The entry theshold", 0.5
-        ),
-        NodeArg(
-            _ExitThresh, FLOAT, "Exit Threshold", "The exit threshold", 0.5
-        )
+        NodeArg(_EnterThresh, FLOAT, "Enter Threshold", "The entry theshold", 0.5),
+        NodeArg(_ExitThresh, FLOAT, "Exit Threshold", "The exit threshold", 0.5)
     ]
     NODETYPE = "Confidence"
 

@@ -8,16 +8,10 @@ import operator
 
 class MathNode(CMNode):
     DESCRIPTION = "Calculates basic math operations on two operands.\nA (operation) B"
-    _INPUTS = [
-        Port("A", FLOAT, "The first operand"),
-        Port("B", FLOAT, "The second operand")
-    ]
-    _OUTPUTS = [
-        Port("Out", FLOAT, "The output of the operation")
-    ]
+    _INPUTS = [Port("A", FLOAT, "The first operand"), Port("B", FLOAT, "The second operand")]
+    _OUTPUTS = [Port("Out", FLOAT, "The output of the operation")]
     _ARGS = [
-        EnumNodeArg("op", "Operation", "The operation to perform",
-                    "ADD", ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"])
+        EnumNodeArg("op", "Operation", "The operation to perform", "ADD", ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"])
     ]
     NODETYPE = "Math"
 

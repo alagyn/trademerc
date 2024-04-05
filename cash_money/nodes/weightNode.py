@@ -9,15 +9,9 @@ _W = '_wgt'
 
 class WeightNode(CMNode):
     DESCRIPTION = "Takes in a boolean (true/false) and outputs a constant value, or zero"
-    _INPUTS = [
-        Port("Condition", BOOL, "The boolean condition")
-    ]
-    _OUTPUTS = [
-        Port("Value", FLOAT, 'Outputs zero if input is false, else outputs the value of "Weight"')
-    ]
-    _ARGS = [
-        NodeArg(_W, FLOAT, "Weight", "The value to output when the condition is true")
-    ]
+    _INPUTS = [Port("Condition", BOOL, "The boolean condition")]
+    _OUTPUTS = [Port("Value", FLOAT, 'Outputs zero if input is false, else outputs the value of "Weight"')]
+    _ARGS = [NodeArg(_W, FLOAT, "Weight", "The value to output when the condition is true")]
 
     NODETYPE = "Weight"
 

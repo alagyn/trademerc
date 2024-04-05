@@ -13,9 +13,7 @@ class BollingerNode(CMNode):
     Bollinger Bands
     """
     DESCRIPTION = 'Calculates Bollinger bands'
-    _INPUTS = [
-        Port("Input", FLOAT, "The input value")
-    ]
+    _INPUTS = [Port("Input", FLOAT, "The input value")]
     _OUTPUTS = [
         Port("Top", FLOAT, "The top band"),
         Port("Bottom", FLOAT, "The bottom band"),
@@ -25,8 +23,7 @@ class BollingerNode(CMNode):
     ]
     _ARGS = [
         NodeArg(_Period, INT, 'Period', 'The period of the center SMA', 20),
-        NodeArg(_StdDev, FLOAT, 'Std Devs',
-                'The number of standard deviations to use', 2)
+        NodeArg(_StdDev, FLOAT, 'Std Devs', 'The number of standard deviations to use', 2)
     ]
     NODETYPE = 'Bollinger Bands'
 

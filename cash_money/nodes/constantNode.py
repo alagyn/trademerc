@@ -7,12 +7,8 @@ from cash_money.nodes.cmNode import CMNode
 class ConstantNode(CMNode):
     DESCRIPTION = "Outputs a constant value"
     _INPUTS = []
-    _OUTPUTS = [
-        Port("Value", FLOAT, "The value")
-    ]
-    _ARGS = [
-        NodeArg("value", FLOAT, "Value", "The value", 1)
-    ]
+    _OUTPUTS = [Port("Value", FLOAT, "The value")]
+    _ARGS = [NodeArg("value", FLOAT, "Value", "The value", 1)]
     NODETYPE = 'Constant'
 
     def init(self):

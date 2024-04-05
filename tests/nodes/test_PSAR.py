@@ -6,12 +6,12 @@ from nodepasta.testing.tester import Tester
 
 
 class PSARTest(unittest.TestCase):
+
     def test_uptrend(self):
         sar = ParabolicSAR()
         sar.setup()
 
-        self.assertEqual(DEFAULT_AF_START, sar._af,
-                         "The start AF is not correct")
+        self.assertEqual(DEFAULT_AF_START, sar._af, "The start AF is not correct")
 
         datamap = {}
         sar.datamap._datamap = datamap  # type: ignore
@@ -19,6 +19,7 @@ class PSARTest(unittest.TestCase):
         tester = Tester(sar)
 
         # HI, LO, Expected
+        # yapf: disable
         testvals = [
             (47.85, 47.48, None),
             (47.83, 47.55, None),
@@ -40,6 +41,7 @@ class PSARTest(unittest.TestCase):
             (49.20, 48.94, 48.13),
             (49.35, 48.86, 48.28)
         ]
+        # yapf: enable
 
         for i, x in enumerate(testvals):
             datamap[LOW] = x[1]
@@ -58,14 +60,14 @@ class PSARTest(unittest.TestCase):
         sar = ParabolicSAR()
         sar.setup()
 
-        self.assertEqual(DEFAULT_AF_START, sar._af,
-                         "The start AF is not correct")
+        self.assertEqual(DEFAULT_AF_START, sar._af, "The start AF is not correct")
 
         datamap = {}
         sar.datamap._datamap = datamap  # type: ignore
 
         tester = Tester(sar)
 
+        # yapf: disable
         testvals = [
             (46.44, 45.56, None),
             (46.47, 46.17, None),
@@ -87,6 +89,7 @@ class PSARTest(unittest.TestCase):
             (43.13, 42.59, 43.84),
             (43.46, 42.71, 43.56)
         ]
+        # yapf: enable
 
         out = sar.out
 

@@ -41,6 +41,7 @@ class ListenerGUI(CMEventListener):
             implot.PlotLine("Portfolio", self.portfolio_ts, self.portfolio)
             implot.EndPlot()
             im.End()
+        return False
 
     def onAction(self, event: ActionEvent):
         self.actions.append(event)
@@ -54,9 +55,8 @@ class ListenerGUI(CMEventListener):
             # TODO change these to be list wrappers...
             self.stock_closes[event.symbol] = np.append(arr, [event.bar.close])
             arr = self.stock_closes_ts[event.symbol]
-            self.stock_closes_ts[
-                event.symbol] = np.append(arr, [event.bar.date.timestamp()])
-            
+            self.stock_closes_ts[event.symbol] = np.append(arr, [event.bar.date.timestamp()])
+
     def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
         log.warn("End of trade step")
         with self.data_lock:
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     def main():
         gui = ListenerGUI()
 
-        args = (800, 600, "Test", gui.render)
+        args = ("Test", 800, 600, gui.render)
 
         #run_window(*args)
 

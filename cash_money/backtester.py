@@ -59,9 +59,9 @@ def backtest(
     broker.addListener(listener)
     Thread(
         target=run_window, args=(
+            "Test",
             800,
             600,
-            "Test",
             listener.render,
         )
     ).start()

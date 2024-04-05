@@ -6,12 +6,8 @@ from cash_money.nodes.cmNode import CMNode
 
 class InvertNode(CMNode):
     DESCRIPTION = "Inverts a boolean (true/false) value."
-    _INPUTS = [
-        Port("In", BOOL, "The input")
-    ]
-    _OUTPUTS = [
-        Port("Out", BOOL, "The inverse")
-    ]
+    _INPUTS = [Port("In", BOOL, "The input")]
+    _OUTPUTS = [Port("Out", BOOL, "The inverse")]
     NODETYPE = "Invert"
 
     def init(self):

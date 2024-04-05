@@ -51,9 +51,7 @@ class CheckError(CMError):
 class NotSetupError(CheckError):
 
     def __init__(self):
-        super(
-            NotSetupError, self
-        ).__init__('Check indicator returned None, not enough setup days')
+        super(NotSetupError, self).__init__('Check indicator returned None, not enough setup days')
 
 
 class ActionError(CMError):
@@ -83,9 +81,7 @@ class JSONStrategyMissingVal(StrategyError):
 class JSONStrategyInvalidType(StrategyError):
 
     def __init__(self, path, expected, actual):
-        super().__init__(
-            f"Invalid strategy datatype: Path: {path}, Expected: {expected}, Actual: {actual}"
-        )
+        super().__init__(f"Invalid strategy datatype: Path: {path}, Expected: {expected}, Actual: {actual}")
 
 
 class BacktestError(StrategyError):

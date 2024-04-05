@@ -31,9 +31,7 @@ def main():
     ngFrame.setPortTypeColor(BOOL, "brown")
 
     def load():
-        filename = filedialog.askopenfilename(
-            filetypes=[(".strat", ".strat")], defaultextension="strat"
-        )
+        filename = filedialog.askopenfilename(filetypes=[(".strat", ".strat")], defaultextension="strat")
         if filename is not None and len(filename) > 0:
             with open(filename, mode='r') as f:
                 data = json.load(f)
@@ -59,9 +57,7 @@ def main():
 
     def save():
         ret = filedialog.asksaveasfilename(
-            confirmoverwrite=True,
-            filetypes=[(".strat", ".strat")],
-            defaultextension=".json"
+            confirmoverwrite=True, filetypes=[(".strat", ".strat")], defaultextension=".json"
         )
         if ret is not None and len(ret) > 0:
             print(f"Saving to {ret}")
@@ -72,16 +68,8 @@ def main():
             with open(ret, mode='w') as f:
                 json.dump(out, f)
 
-    tk.Button(
-        btnFrame, text="Load", command=load
-    ).grid(
-        row=0, column=0, sticky='w'
-    )
-    tk.Button(
-        btnFrame, text='Save', command=save
-    ).grid(
-        row=0, column=1, stick='w'
-    )
+    tk.Button(btnFrame, text="Load", command=load).grid(row=0, column=0, sticky='w')
+    tk.Button(btnFrame, text='Save', command=save).grid(row=0, column=1, stick='w')
 
     root.mainloop()
 

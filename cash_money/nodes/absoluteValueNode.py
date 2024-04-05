@@ -7,12 +7,8 @@ from cash_money.stats.smma import SMMA
 
 class AbsoluteValueNode(CMNode):
     DESCRIPTION = "Calculates the Absolute Value"
-    _INPUTS = [
-        Port("Value", FLOAT, "The input value")
-    ]
-    _OUTPUTS = [
-        Port("ABS", FLOAT, "The Absolute Value")
-    ]
+    _INPUTS = [Port("Value", FLOAT, "The input value")]
+    _OUTPUTS = [Port("ABS", FLOAT, "The Absolute Value")]
     NODETYPE = "Absolute Value"
 
     def init(self):

@@ -6,10 +6,7 @@ from cash_money.nodes.cmNode import CMNode
 
 class Crossover(CMNode):
     DESCRIPTION = "Checks if input A crosses input B."
-    _INPUTS = [
-        Port("A", FLOAT, "The first input"),
-        Port("B", FLOAT, "The second input")
-    ]
+    _INPUTS = [Port("A", FLOAT, "The first input"), Port("B", FLOAT, "The second input")]
     _OUTPUTS = [
         Port("Delta", FLOAT, "Outputs 1 if A crosses up through B, -1 if A crosses down, else 0"),
         Port("Cross Up", BOOL, "True if and only if A crosses up through B"),

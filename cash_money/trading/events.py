@@ -5,9 +5,7 @@ from datetime import datetime
 
 class TradeNotification:
 
-    def __init__(
-        self, symbol: str, side: str, qty: int, price: float, value: float
-    ) -> None:
+    def __init__(self, symbol: str, side: str, qty: int, price: float, value: float) -> None:
         self.symbol = symbol
         self.side = side
         self.qty = qty
@@ -91,15 +89,8 @@ class Notification:
             )
         )
 
-    def addTrade(
-        self, symbol: str, side: str, qty: int, price: float, value: float
-    ) -> None:
-        self.trades.append(
-            TradeNotification(
-                symbol=symbol, side=side, qty=qty, price=price, value=value
-            )
-        )
-
+    def addTrade(self, symbol: str, side: str, qty: int, price: float, value: float) -> None:
+        self.trades.append(TradeNotification(symbol=symbol, side=side, qty=qty, price=price, value=value))
 
 
 class ActionEvent:
@@ -115,6 +106,7 @@ class OrderEvent:
 
 
 class EndOfTradeStepEvent:
+
     def __init__(self, n: Notification) -> None:
         self.notif = n
 

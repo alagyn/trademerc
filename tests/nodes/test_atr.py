@@ -7,6 +7,7 @@ from nodepasta.testing.tester import Tester
 
 
 class ATRTest(unittest.TestCase):
+
     def test_8Day(self):
         atrNode = AverageTrueRange()
         atrNode.args[PERIOD].value = 8
@@ -19,6 +20,7 @@ class ATRTest(unittest.TestCase):
         tester = Tester(atrNode)
 
         # ATR, TR
+        # yapf: disable
         expected = [
             (1.68, 1.68),
             (1.565, 0.76),
@@ -32,6 +34,7 @@ class ATRTest(unittest.TestCase):
             (1.66, 2.04),
             (1.59, 1.07)
         ]
+        # yapf: enable
 
         # OUTPUTS
         # 0: ATR

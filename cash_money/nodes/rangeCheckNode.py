@@ -9,17 +9,12 @@ _MAX = '_max'
 
 class RangeCheck(CMNode):
     DESCRIPTION = "Checks if the input is within a set range"
-    _INPUTS = [
-        Port("Value", FLOAT, "The input")
-    ]
+    _INPUTS = [Port("Value", FLOAT, "The input")]
     _OUTPUTS = [
         Port("Check", BOOL, "Outputs true if and only if the input is greater than the min and less than the max")
     ]
     # TODO change to be a port
-    _ARGS = [
-        NodeArg(_MIN, FLOAT, "Min", "The minimum value", 0),
-        NodeArg(_MAX, FLOAT, "Max", "The maximum value", 1.0)
-    ]
+    _ARGS = [NodeArg(_MIN, FLOAT, "Min", "The minimum value", 0), NodeArg(_MAX, FLOAT, "Max", "The maximum value", 1.0)]
     NODETYPE = "Range"
 
     def init(self):

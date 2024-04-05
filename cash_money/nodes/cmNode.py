@@ -1,4 +1,3 @@
-
 from nodepasta.node import Node
 
 from typing import Tuple, Dict, Optional
@@ -7,6 +6,7 @@ from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
 
 
 class CMNode(Node):
+
     def setupTime(self) -> int:
         raise NotImplementedError
 

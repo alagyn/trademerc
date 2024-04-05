@@ -29,8 +29,7 @@ class Stochastic(CMNode):
         Port("%D-Slow", FLOAT, 'The slowest stochastic indicator')
     ]
     _ARGS = [
-        NodeArg(KP, INT, 'K Period',
-                "The number of cycles to choose the highest and lowest", 5),
+        NodeArg(KP, INT, 'K Period', "The number of cycles to choose the highest and lowest", 5),
         NodeArg(DP, INT, 'D Period', "The period the %D SMA", 5),
         NodeArg(SP, INT, 'Slow-D Period', "The period of the %D-Slow SMA", 0)
     ]
