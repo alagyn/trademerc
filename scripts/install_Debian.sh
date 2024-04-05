@@ -1,3 +1,7 @@
+#!/bin/bash
+home=$(realpath $(dirname $0)/..)
+cd $home
+
 python3 -m venv venv
 
 sudo apt-get update

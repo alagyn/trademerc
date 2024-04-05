@@ -1,5 +1,5 @@
 #!/bin/bash
-
-home=`dirname $0`
+home=$(realpath $(dirname $0)/..)
 cd $home
+
 venv/bin/python -m "cash_money.backtester_gui"
