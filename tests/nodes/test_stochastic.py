@@ -1,5 +1,6 @@
 import unittest
 from .data import RAW_TEST_DATA, DatamapIter
+from typing import Deque
 from cash_money.nodes.stochasticNode import Stochastic, DP, KP, SP
 from collections import deque
 
@@ -9,11 +10,11 @@ class StochTest(unittest.TestCase):
     def test_Stoch(self):
         expected = []
 
-        lows = deque()
-        highs = deque()
+        lows: Deque[float] = deque()
+        highs: Deque[float] = deque()
 
-        percKList = deque()
-        percDList = deque()
+        percKList: Deque[float] = deque()
+        percDList: Deque[float] = deque()
 
         # TODO make const
         for x in RAW_TEST_DATA:

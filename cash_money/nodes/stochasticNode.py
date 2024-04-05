@@ -1,4 +1,5 @@
 from collections import deque
+from typing import Deque
 
 from nodepasta.argtypes import FLOAT, INT
 from nodepasta.node import Port, NodeArg
@@ -47,8 +48,8 @@ class Stochastic(CMNode):
         self._percDfast = SMA(self._dp.value)
         self._percDslow = SMA(self._sp.value)
 
-        self.lows = deque(maxlen=self._kp.value)
-        self.highs = deque(maxlen=self._kp.value)
+        self.lows: Deque[float] = deque(maxlen=self._kp.value)
+        self.highs: Deque[float] = deque(maxlen=self._kp.value)
 
         self.percKOut = self.outputs[0]
         self.percDOut = self.outputs[1]
