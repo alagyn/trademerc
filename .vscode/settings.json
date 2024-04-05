@@ -11,7 +11,8 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.exclude": [
         "**/deprecated",
-        "**/build"
+        "**/build",
+        "**/venv/**"
     ],
     "python.formatting.provider": "yapf"
 }

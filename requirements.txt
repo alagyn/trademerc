@@ -7,5 +7,5 @@ nodepasta==1.1.7
 colorama==0.4.6
 yfinance==0.2.12
 py-imgui-redux==2.1.0
-cx_Freeze
+diamondpack
 pytz
