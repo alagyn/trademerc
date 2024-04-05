@@ -33,3 +33,8 @@ Strategy maker GUI
 Utility to show a simple UI to run either the backtester or the strategy UI.
 
 
+## Building to Distributable Exe
+```sh
+python -m build
+python -m diamondpack
+```
