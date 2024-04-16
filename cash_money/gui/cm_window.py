@@ -1,9 +1,10 @@
 from typing import Callable, Optional
 import logging
 
+import glfw
+
 import imgui as im
 import imgui.implot as implot
-import glfw
 
 log = logging.getLogger("CM Window")
 

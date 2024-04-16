@@ -9,8 +9,8 @@ from cash_money.utils.run_utils import runTrader, setupStrategies, downloadDaily
 from cash_money.trading.brokers.backtest_trader import BacktestTrader
 from cash_money.trading.trader import Trader
 from cash_money.utils.file_utils import loadStockFile
-from cash_money.gui.cm_window import run_window
-from cash_money.gui.listener_gui import ListenerGUI
+#from cash_money.gui.cm_window import run_window
+#from cash_money.gui.listener_gui import ListenerGUI
 
 from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
