@@ -3,7 +3,7 @@ from typing import Optional, Mapping
 
 from alpaca.trading.client import TradingClient
 from alpaca.trading.stream import TradingStream
-from alpaca.data.live.stock import StockDataStream
+from alpaca.data.live import StockDataStream
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
 from cash_money.trading.objects import Bar
@@ -14,12 +14,7 @@ log = logging.getLogger("Alpaca API")
 
 class CMAPI:
 
-    def __init__(
-        self,
-        trade: TradingClient,
-        data: StockDataStream,
-        tradeStream: TradingStream
-    ) -> None:
+    def __init__(self, trade: TradingClient, data: StockDataStream, tradeStream: TradingStream) -> None:
         self.trade = trade
         self.data = data
         self.trade_stream = tradeStream
@@ -54,9 +49,7 @@ def loadLiveAPI(apiCfg: Mapping[str, str]) -> CMAPI:
 
 def loadAPI(apiCfg, liveRun: bool = False) -> Optional[CMAPI]:
     if liveRun:
-        x = input(
-            'Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):'
-        )
+        x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
         if x != 'YES':
             return None
         else:

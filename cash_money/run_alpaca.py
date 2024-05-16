@@ -79,6 +79,9 @@ def runAlpacaTrader(
         log.info("Loading PushBullet Notifier")
         notifier = PushBulletNotifier(config)
         trader.addListener(notifier)
+    elif notifyType == 'Console':
+        log.info("Loading Console notifier")
+        # does nothing, loaded below
     else:
         raise CMError(f"run_alpaca.runTrader() Invalid notifier type \"{notifyType}\"")
 
