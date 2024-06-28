@@ -6,11 +6,10 @@ from threading import Thread
 
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.utils.run_utils import runTrader, setupStrategies, downloadDailyBars
-from cash_money.trading.brokers.backtest_trader import BacktestTrader
+from cash_money.trading.brokers.backtest_trader import BacktestTrader, BacktestStats
 from cash_money.trading.trader import Trader
 from cash_money.utils.file_utils import loadStockFile
-#from cash_money.gui.cm_window import run_window
-#from cash_money.gui.listener_gui import ListenerGUI
+from cash_money.trading.events import CMEventListener
 
 from matplotlib.figure import Figure
 import matplotlib.dates as mplDates
@@ -19,20 +18,6 @@ from matplotlib.dates import ConciseDateFormatter
 import json
 
 log = logging.getLogger("Backtest Run")
-
-STATS = [
-    ('EndValue', 'End Value $:'),
-    ('Profit', 'Profit $:'),
-    ('PercentGain', 'Percent Gain:'),
-    ('SQN', 'SQN:'),
-    ('trades', 'Num Trades:'),
-    ('wins', 'Num Wins:'),
-    ('losses', 'Num Losses:'),
-    ('wl', 'W/L:'),
-    ('winPerc', 'Win %:'),
-    ('avgGain', 'Avg Gain $:'),
-    ('avgLoss', 'Avg Loss $:'),
-]
 
 
 def backtest(
@@ -43,8 +28,10 @@ def backtest(
     startDate: datetime,
     endDate: datetime,
     startingVal=10000,
-    outputFile: str = 'stats.json'
-) -> Dict[str, Any]:
+    outputStats: Optional[BacktestStats] = None,
+    outputFile: str = 'stats.json',
+    listener: Optional[CMEventListener] = None,
+):
     log.info("Setting up strategies")
     setupStrategies(strats, startDate)
     # TODO this is doing the same thing?
@@ -53,30 +40,21 @@ def backtest(
     log.info("Initializing Trader")
     broker = BacktestTrader(strats, startingVal, bars)
 
-    # TODO Listener framework needs work.
-    """
-    listener = ListenerGUI()
-    broker.addListener(listener)
-    Thread(
-        target=run_window, args=(
-            "Test",
-            800,
-            600,
-            listener.render,
-        )
-    ).start()
-    """
+    if listener is not None:
+        broker.addListener(listener)
 
     log.info("Running Backtest")
     runTrader(broker)
 
     log.info("Calculating Stats")
     runStats = broker.getRunStats(True)
-    runStats["Strat"] = stratName
+
+    if outputStats is not None:
+        outputStats.set(runStats)
 
     log.info("Writing stat file")
     with open(outputFile, mode='a') as f:
-        json.dump(runStats, f)
+        json.dump(runStats.toDict(), f)
         f.write('\n')
 
     if masterFigure is not None and symFigs is not None:

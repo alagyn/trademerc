@@ -2,7 +2,7 @@ import json
 from typing import List
 
 
-def loadStockFile(file) -> List[str]:
+def loadStockFile(file: str) -> List[str]:
     stocks = set()
     with open(file, mode='r') as f:
         lines = [x.strip() for x in f.readlines()]
@@ -13,7 +13,7 @@ def loadStockFile(file) -> List[str]:
     return list(sorted(stocks))
 
 
-def loadStratFile(file):
+def loadStratFile(file: str):
     with open(file, mode='r') as f:
         strat = json.load(f)
         return strat

@@ -52,22 +52,22 @@ class Order(ABC):
         Returns the status of the order
         :return:
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def orderType(self) -> OrderType:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def symbol(self) -> str:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def qty(self) -> Union[int, None]:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def filledQty(self) -> int:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def filledAvgPrice(self) -> float:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def side(self) -> str:
         if self.orderType() == OrderType.BUY:
@@ -76,13 +76,16 @@ class Order(ABC):
         return "sell"
 
     def stopPrice(self) -> Union[float, None]:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def limitPrice(self) -> Union[float, None]:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def data(self) -> Any:
-        raise NotImplementedError
+        raise NotImplementedError()
+
+    def timestamp(self) -> datetime.datetime:
+        raise NotImplementedError()
 
 
 class StockStatus(IntEnum):
@@ -94,13 +97,13 @@ class StockStatus(IntEnum):
 class CMPosition:
 
     def getstatus(self) -> StockStatus:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def data(self) -> Any:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def qty(self) -> int:
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class Stock:

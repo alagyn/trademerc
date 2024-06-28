@@ -59,6 +59,13 @@
             "request": "launch",
             "module": "cash_money.strategy_gui",
             "justMyCode": true
-        }
+        },
+        {
+            "name": "cm_ui",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "cash_money.cm_ui",
+            "justMyCode": true
+        },
     ]
 }

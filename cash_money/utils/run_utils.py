@@ -27,7 +27,10 @@ log = logging.getLogger("Run Utils")
 _config = ConfigParser()
 _systemLoaded = False
 
-_configLoc = r"config/system.cfg"
+APP_DIR = os.path.split(os.path.dirname(sys.argv[0]))[0]
+CONFIG_DIR = os.path.join(APP_DIR, "config")
+
+_configLoc = os.path.join(CONFIG_DIR, "system.cfg")
 
 _ERR_C = '\x1b[1;31m'
 _DBG_C = '\x1b[1;32m'

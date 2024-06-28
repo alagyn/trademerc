@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cash-money"
 authors = [{ name = "Alagyn", email = "fake@aol.com" }]
-version = "0.2.3"
+version = "0.3.0"
 description = "Backtesting and Live Trading Application"
 readme = { file = "README.md", content-type = "text/markdown" }
 
@@ -23,13 +23,13 @@ dependencies = [
 ]
 
 [project.scripts]
-backtester = "cash_money.backtester_gui:main"
-strategy_maker = "cash_money.strategy_gui:main"
+cash-money = "cash_money.__main__:main"
 
 [tool.setuptools]
 packages = [
     "cash_money",
     "cash_money.gui",
+    "cash_money.gui.tabs",
     "cash_money.nodes",
     "cash_money.stats",
     "cash_money.trading",
@@ -40,7 +40,7 @@ packages = [
 ]
 
 [tool.diamondpack]
-mode = "script"
+mode = "app"
 include-tk = true
 # TODO add more things to blacklist
 stdlib-blacklist = ["turtle", "unittest"]

@@ -1,10 +1,10 @@
 from typing import Callable, Optional
 import logging
 
-import glfw
-
 import imgui as im
+from imgui import glfw
 import imgui.implot as implot
+import imgui.imnodes as imnodes
 
 log = logging.getLogger("CM Window")
 
@@ -18,9 +18,9 @@ def errorCallback(err: int, msg: str) -> None:
 
 def run_window(
     title: str,
-    width: int,
-    height: int,
     draw: DrawFunc,
+    width: int | None = None,
+    height: int | None = None,
     init: Optional[Callable[[], None]] = None,
     cleanup: Optional[Callable[[], None]] = None
 ):
@@ -32,7 +32,7 @@ def run_window(
     """
 
     # set error callback func
-    glfw.SetErrorCallback(errorCallback)
+    #glfw.SetErrorCallback(errorCallback)
     if not glfw.Init():
         log.fatal("Cannot initialize GLFW")
         raise RuntimeError()
@@ -40,6 +40,12 @@ def run_window(
     # create our window
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
+    if width is None or height is None:
+        monitor = glfw.GetPrimaryMonitor()
+        vidMode = glfw.GetVideoMode(monitor)
+        width = vidMode.width
+        height = vidMode.height
+
     window = glfw.CreateWindow(width, height, title)
     if window is None:
         log.fatal("Cannot create GLFW window")
@@ -53,12 +59,14 @@ def run_window(
     im.CreateContext()
     # optionally create extension contexts
     implot.CreateContext()
+    imnodes.CreateContext()
 
     # Initialize glfw backend
     im.InitContextForGLFW(window, "#version 130")
 
     # 4) Setup style
     im.StyleColorsDark()
+    imnodes.StyleColorsDark()
     # Set background OpenGL "clear color"
     clear_color = im.Vec4(0.45, 0.55, 0.6, 1.0)
     # do any init tasks
@@ -89,10 +97,12 @@ def run_window(
     # Shutdown window
     # Do this first, else there will usually be a segfault
     glfw.DestroyWindow(window)
+
     im.Shutdown()
 
     # Destroy Contexts
     # in reverse order, destroy extensions first
+    imnodes.DestroyContext()
     implot.DestroyContext()
     im.DestroyContext()
 

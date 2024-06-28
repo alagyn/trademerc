@@ -19,7 +19,7 @@ class EMA:
 
         self._ia = 1 - self._a
 
-    def next(self, data) -> float:
+    def next(self, data: float) -> float:
         if self._avg is None:
             self._avg = data
         else:

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from cash_money.trading.objects import Action, Bar, Order, CMPosition
 from datetime import datetime
 
@@ -33,7 +33,7 @@ class PositionNotification:
         self.qty = qty
         # Profit/Loss
         self.pl = pl
-        # Current prive
+        # Current price
         self.price = price
         # Total value
         self.value = value
@@ -59,6 +59,7 @@ class Notification:
 
         self.trades: List[TradeNotification] = []
         self.positions: List[PositionNotification] = []
+        self.bars: Dict[str, Bar] = {}
         self.date = date
 
     def addPosition(
@@ -91,6 +92,9 @@ class Notification:
 
     def addTrade(self, symbol: str, side: str, qty: int, price: float, value: float) -> None:
         self.trades.append(TradeNotification(symbol=symbol, side=side, qty=qty, price=price, value=value))
+
+    def addBar(self, symbol: str, bar: Bar):
+        self.bars[symbol] = bar
 
 
 class ActionEvent:

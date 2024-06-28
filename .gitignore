@@ -12,3 +12,5 @@ testnotebook.py
 
 dist/
 build/
+
+*.egg-info/

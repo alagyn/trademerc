@@ -105,7 +105,7 @@ class Trader:
         for x in self.listeners:
             x.onStockUpdate(event)
 
-    def notifyOrderEvent(self, order):
+    def notifyOrderEvent(self, order: Order):
         event = OrderEvent(order)
         for x in self.listeners:
             x.onOrder(event)

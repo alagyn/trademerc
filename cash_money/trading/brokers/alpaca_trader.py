@@ -85,6 +85,18 @@ class AlpacaOrder(Order):
     def data(self) -> Any:
         return self._data
 
+    def timestamp(self) -> datetime.datetime:
+        if self._data.filled_at is not None:
+            return self._data.filled_at
+        elif self._data.canceled_at is not None:
+            return self._data.canceled_at
+        elif self._data.expired_at is not None:
+            return self._data.expired_at
+        elif self._data.failed_at is not None:
+            return self._data.failed_at
+
+        raise RuntimeError("No timestamp")
+
 
 class AlpacaPosition(CMPosition):
 

@@ -105,19 +105,28 @@ class BacktestOrderStub(Order):
 
 class BacktestOrder(BacktestOrderStub):
 
-    def __init__(self, orderT: OrderType, symbol: str, qty: int, price: float, stopLimit: Optional[float] = None):
+    def __init__(
+        self,
+        orderT: OrderType,
+        symbol: str,
+        qty: int,
+        price: float,
+        timestamp: datetime.datetime,
+        stopLimit: Optional[float] = None
+    ):
         super().__init__(stopLimit)
         self.stat = OrderStatus.UNFILLED
         self.price = price
         self._sym = symbol
         self._qty = qty
         self._orderType = orderT
+        self._timestamp = timestamp
 
     def status(self) -> OrderStatus:
         return self.stat
 
     def orderType(self) -> OrderType:
-        raise NotImplemented
+        return self._orderType
 
     def symbol(self) -> str:
         return self._sym
@@ -126,16 +135,16 @@ class BacktestOrder(BacktestOrderStub):
         return self._qty
 
     def filledQty(self) -> int:
-        if self.stat == OrderStatus.FILLED:
-            return self._qty
-        else:
-            return 0
+        return self._qty
 
     def filledAvgPrice(self) -> float:
         return self.price
 
     def data(self) -> Any:
         return None
+
+    def timestamp(self) -> datetime.datetime:
+        return self._timestamp
 
 
 def checkStop(stop: float):
@@ -158,6 +167,53 @@ def calcSQN(tradeList) -> float:
     c = np.std(arr)
 
     return float(a * b / c)
+
+
+class BacktestStats:
+
+    def __init__(self):
+        self.startValue = 0.0
+        self.endValue = 0.0
+        self.profit = 0.0
+        self.percGain = 0.0
+        self.SQN = 0.0
+        self.trades = 0
+        self.wins = 0
+        self.losses = 0
+        self.wlRatio = 0.0
+        self.winPerc = 0.0
+        self.avgGain = 0.0
+        self.avgLoss = 0.0
+
+    def toDict(self) -> Dict[str, str]:
+        return {
+            'StartValue': f"{self.startValue:,.2f}",
+            'EndValue': f"{self.endValue:,.2f}",
+            'Profit': f"{self.profit:,.2f}",
+            'PercentGain': f"{self.percGain:.2%}",
+            'SQN': f"{self.SQN:.3f}",
+            'trades': str(self.trades),
+            'wins': str(self.wins),
+            'losses': str(self.losses),
+            'wl': f"{self.wlRatio:.2f}",
+            'winPerc': f"{self.winPerc:.2%}",
+            'avgGain': f"{self.avgGain:,.2f}",
+            'avgLoss': f"{self.avgLoss:,.2f}"
+        }
+
+    def set(self, o: 'BacktestStats'):
+        self.startValue = o.startValue
+        self.endValue = o.endValue
+        self.profit = o.profit
+        self.percGain = o.percGain
+        self.SQN = o.SQN
+        self.trades = o.trades
+        self.wins = o.wins
+        self.losses = o.losses
+        self.wlRatio = o.wlRatio
+        self.winPerc = o.winPerc
+        self.avgGain = o.avgGain
+        self.avgLoss = o.avgLoss
 
 
 class BacktestTrader(Trader):
@@ -254,6 +310,10 @@ class BacktestTrader(Trader):
         if self.totalCash < 0:
             raise cmErrors.BacktestError('BacktestBroker.postTrade() Negative Buy Power, Strategy Failure?')
 
+        for sym, stock in self.stocks.items():
+            if stock.bar is not None:
+                self._next_n.addBar(sym, stock.bar)
+
         inMarketEquity = 0
         for sym, position in self.positions.items():
             bar = self.stocks[sym].bar
@@ -300,6 +360,9 @@ class BacktestTrader(Trader):
                 position.stats.addSell(self.curDate, newCash, sellPrice)
                 self.totalCash += newCash
                 log.info(f"    [{sym}] Qty: {position.qty()}, Value: ${newCash:.2f}")
+
+                o = BacktestOrder(OrderType.SELL, sym, position.qty(), sellPrice, self.curDate)
+                self.notifyOrderEvent(o)
 
     def cash(self) -> float:
         return self.totalCash
@@ -358,13 +421,15 @@ class BacktestTrader(Trader):
 
         self.totalCash -= trueCost
 
-        o = BacktestOrder(t, stock.symbol, qty, stock.bar.close, stopLimit)
+        o = BacktestOrder(t, stock.symbol, qty, stock.bar.close, self.curDate, stopLimit)
         stock.buyOrder = o
         stock.buyDate = self.curDate
 
         self._next_n.addTrade(
             symbol=stock.symbol, side="Buy", qty=qty, price=stock.bar.close, value=stock.bar.close * qty
         )
+
+        self.notifyOrderEvent(o)
 
     def closePosition(self, stock: Stock) -> None:
         if stock.position is not None:
@@ -381,7 +446,6 @@ class BacktestTrader(Trader):
         if stock.bar is None:
             log.warn(f"Cannot submit sell for {stock.symbol}, bar is None")
             raise RuntimeError()
-            return
 
         if stock.position is None:
             log.warn(f"Cannot submit sell for {stock.symbol}, no position open")
@@ -408,9 +472,13 @@ class BacktestTrader(Trader):
 
         position.stats.addSell(self.curDate, soldValue, stock.bar.close)
 
+        o = BacktestOrder(OrderType.SELL, stock.symbol, qty, stock.bar.close, self.curDate)
+
         self._next_n.addTrade(symbol=stock.symbol, side="Sell", qty=qty, price=stock.bar.close, value=soldValue)
 
         stock.unsettledFunds[-1] += soldValue
+
+        self.notifyOrderEvent(o)
 
     def submitUpdateStop(self, stock: Stock, stopPrice: float) -> None:
         checkStop(stopPrice)
@@ -419,7 +487,7 @@ class BacktestTrader(Trader):
 
         stock.position.stopPrice = stopPrice
 
-    def getRunStats(self, logToConsole: bool) -> Dict[str, Any]:
+    def getRunStats(self, logToConsole: bool) -> BacktestStats:
         wins = 0
         losses = 0
         winTotal = 0
@@ -457,17 +525,18 @@ class BacktestTrader(Trader):
             statLog.info(f'Avg Loss: ${avgLoss:,.2f}')
             statLog.info(f'SQN: {sqnVal:.3f}')
 
-        return {
-            'StartValue': f"{self.startingVal:,.2f}",
-            'EndValue': f"{self.totalCash:,.2f}",
-            'Profit': f"{profit:,.2f}",
-            'PercentGain': f"{percentGain:.2%}",
-            'SQN': f"{sqnVal:.3f}",
-            'trades': str(numTrades),
-            'wins': str(wins),
-            'losses': str(losses),
-            'wl': f"{wlRatio:.2f}",
-            'winPerc': f"{winPercent:.2%}",
-            'avgGain': f"{avgGain:,.2f}",
-            'avgLoss': f"{avgLoss:,.2f}"
-        }
+        out = BacktestStats()
+        out.startValue = self.startingVal
+        out.endValue = self.totalCash
+        out.profit = profit
+        out.percGain = percentGain
+        out.SQN = sqnVal
+        out.trades = numTrades
+        out.wins = wins
+        out.losses = losses
+        out.wlRatio = wlRatio
+        out.winPerc = winPercent
+        out.avgGain = avgGain
+        out.avgLoss = avgLoss
+
+        return out
