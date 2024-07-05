@@ -131,27 +131,31 @@ class BacktesterTab(CMEventListener):
             self.resetPlots()
             self.stocks = state.stocks.copy()
 
-            strats = {
-                x: NodeStrategy(state.stratData['graph'], x)
-                for x in state.stocks
-            }
+            try:
+                strats = {
+                    x: NodeStrategy(state.stratData['graph'], x)
+                    for x in state.stocks
+                }
 
-            self.runThread = threading.Thread(
-                target=backtester.backtest,
-                args=(
-                    state.stratData['name'],
-                    strats,
-                    None,  # TODO remove
-                    None,  # TODO remove
-                    self.startDate,
-                    self.endDate,
-                    self.startingCash.val,
-                    self.runStats,
-                    "stats.json",  # TODO
-                    self
+                self.runThread = threading.Thread(
+                    target=backtester.backtest,
+                    args=(
+                        state.stratData['name'],
+                        strats,
+                        None,  # TODO remove
+                        None,  # TODO remove
+                        self.startDate,
+                        self.endDate,
+                        self.startingCash.val,
+                        self.runStats,
+                        "stats.json",  # TODO
+                        self
+                    )
                 )
-            )
-            self.runThread.start()
+                self.runThread.start()
+            except:
+                # TODO
+                pass
 
         im.EndDisabled()
 

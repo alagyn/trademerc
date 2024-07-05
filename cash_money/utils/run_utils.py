@@ -29,6 +29,7 @@ _systemLoaded = False
 
 APP_DIR = os.path.split(os.path.dirname(sys.argv[0]))[0]
 CONFIG_DIR = os.path.join(APP_DIR, "config")
+LOG_DIR = os.path.join(CONFIG_DIR, "logs")
 
 _configLoc = os.path.join(CONFIG_DIR, "system.cfg")
 
@@ -124,7 +125,7 @@ def loadSystem() -> ConfigParser:
         else:
             loglevel = logging.INFO
 
-        _setuplogging(loglevel, syscfg.getboolean('LogToFile'), syscfg['LogDirectory'])
+        _setuplogging(loglevel, True, LOG_DIR)
 
         #email_manager.setupEmailManager(syscfg)
 
@@ -139,12 +140,12 @@ BarDict = Dict[str, List[Optional[Bar]]]
 
 
 def downloadDailyBars(symbols: List[str], startDate: datetime.datetime, endDate: datetime.datetime) -> BarDict:
-    startStr = startDate.strftime(DATE_FMT)
-    endStr = endDate.strftime(DATE_FMT)
+    #startStr = startDate.strftime(DATE_FMT)
+    #endStr = endDate.strftime(DATE_FMT)
 
     dirtyBars: Dict[str, List[Bar]] = {}
     for sym in symbols:
-        b = yf.download(sym, startStr, endStr, progress=False)
+        b = yf.download(sym, startDate, endDate, progress=False)
         bars = [
             Bar(
                 b['Low'][x],
