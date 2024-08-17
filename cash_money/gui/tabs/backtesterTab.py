@@ -5,6 +5,7 @@ from collections import defaultdict
 import datetime
 import time
 import sys
+import traceback
 
 import imgui as im
 from imgui import implot
@@ -15,7 +16,7 @@ from ..fileSelect import askOpenFile
 from cash_money.trading.events import ActionEvent, CMEventListener, EndOfTradeStepEvent, OrderEvent, StockUpdateEvent
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money import backtester
-from cash_money.trading.brokers.backtest_trader import BacktestStats
+from cash_money.trading.brokers.backtest_trader import RunStats
 from cash_money.trading.objects import Action, ActionEnum, OrderType, OrderStatus
 
 log = logging.getLogger("BT GUI")
@@ -59,7 +60,7 @@ class BacktesterTab(CMEventListener):
 
         self.selectedStockIdx = im.IntRef(0)
 
-        self.runStats = BacktestStats()
+        self.runStats: Optional[RunStats] = None
 
         self.spinIdx = 0
         self.spinTime = time.time()
@@ -76,6 +77,8 @@ class BacktesterTab(CMEventListener):
         self.endDate = datetime.datetime(2021, 1, 1)
 
         self.startingCash = im.IntRef(10000)
+
+        self.errorMessage = ""
 
     def render(self, state: UIState) -> None:
         if im.BeginTable("config table", 2):
@@ -127,7 +130,7 @@ class BacktesterTab(CMEventListener):
 
         im.BeginDisabled(self.runThread is not None or len(state.stratFile) == 0 or len(state.stocks) == 0)
         if im.Button("Run Backtest"):
-
+            self.errorMessage = ""
             self.resetPlots()
             self.stocks = state.stocks.copy()
 
@@ -138,23 +141,19 @@ class BacktesterTab(CMEventListener):
                 }
 
                 self.runThread = threading.Thread(
-                    target=backtester.backtest,
+                    target=self._run_backtest_thread,
                     args=(
-                        state.stratData['name'],
                         strats,
-                        None,  # TODO remove
-                        None,  # TODO remove
                         self.startDate,
                         self.endDate,
                         self.startingCash.val,
-                        self.runStats,
                         "stats.json",  # TODO
                         self
                     )
                 )
                 self.runThread.start()
-            except:
-                # TODO
+            except Exception as err:
+                self.errorMessage = f"Backtesting failed, Error: {err}"
                 pass
 
         im.EndDisabled()
@@ -166,6 +165,9 @@ class BacktesterTab(CMEventListener):
                 self.spinIdx = (self.spinIdx + 1) % len(SPIN_STATES)
             im.SameLine()
             im.Text(f'Running... {SPIN_STATES[self.spinIdx]}')
+        elif len(self.errorMessage) > 0:
+            im.SameLine()
+            im.Text(self.errorMessage)
 
         if self.runThread is not None and not self.runThread.is_alive():
             self.runThread.join()
@@ -220,7 +222,7 @@ class BacktesterTab(CMEventListener):
                     #implot.SetupAxisScale(implot.Axis.Y1, implot.Scale.Log10)
                     for symbol, arr in self.pos_values.items():
                         implot.PlotLine(symbol, self.portfolio_ts, arr)
-                    implot.PlotLine("Portfolio Cash", self.portfolio_ts, self.portfolio)
+                    implot.PlotLine("Portfolio Value", self.portfolio_ts, self.portfolio)
                     implot.EndPlot()
                 # Selected stock data
 
@@ -261,19 +263,32 @@ class BacktesterTab(CMEventListener):
                 im.TableNextColumn()
                 im.Text(data)
 
-            item("Starting Value", f'${self.runStats.startValue:,.2f}')
-            item("Ending Value", f'${self.runStats.endValue:,.2f}')
-            item("Profit", f'${self.runStats.profit:,.2f}')
-            item("Percent Gain", f'{self.runStats.percGain:.2%}')
-            item("SQN", f'{self.runStats.SQN:.3f}')
-            item("Trades", str(self.runStats.trades))
-            item("Wins", str(self.runStats.wins))
-            item("Losses", str(self.runStats.losses))
-            item("W/L ratio", f'{self.runStats.wlRatio:.2%}')
-            item("Avg. Gain", f'${self.runStats.avgGain:,.2f}')
-            item("Avg. Loss", f'${self.runStats.avgLoss:,.2f}')
+            if self.runStats is None:
+                item("", "                        ")
+            else:
+                item("Starting Value", f'${self.runStats.startValue:,.2f}')
+                item("Ending Value", f'${self.runStats.endValue:,.2f}')
+                item("Profit", f'${self.runStats.totalStats.profit:,.2f}')
+                item("Percent Gain", f'{self.runStats.totalStats.percGain:.2%}')
+                item("SQN", f'{self.runStats.totalStats.sqn:.3f}')
+                item("Trades", str(self.runStats.totalStats.trades))
+                item("Wins", str(self.runStats.totalStats.wins))
+                item("Losses", str(self.runStats.totalStats.losses))
+                item("Win %", f'{self.runStats.totalStats.winPerc:.2%}')
+                item("W/L ratio", f'{self.runStats.totalStats.wlRatio:.2%}')
+                item("Avg. Gain", f'${self.runStats.totalStats.avgGain:,.2f}')
+                item("Avg. Loss", f'${self.runStats.totalStats.avgLoss:,.2f}')
 
             im.EndTable()
+
+    # Thread handler for backtesting
+    # passes args to backetest func
+    def _run_backtest_thread(self, *args, **kwargs):
+        try:
+            self.runStats = backtester.backtest(*args, **kwargs)
+        except Exception as err:
+            log.error("Error running backtest: %s", "".join(traceback.format_exception(err)))
+            self.errorMessage = f'Backtest error: {str(err)}'
 
     # Event listener funcs
 
@@ -300,7 +315,7 @@ class BacktesterTab(CMEventListener):
     def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
         # log.warn("End of trade step")
         with self.data_lock:
-            self.portfolio.append(event.notif.cash)
+            self.portfolio.append(event.notif.equity_cur)
             ts = event.notif.date.timestamp()
             self.portfolio_ts.append(ts)
             seen = set()

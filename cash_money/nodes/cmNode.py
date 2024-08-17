@@ -8,7 +8,7 @@ from cash_money.nodes.datakeys import HIGH, LOW, CLOSE
 class CMNode(Node):
 
     def setupTime(self) -> int:
-        raise NotImplementedError
+        return 0
 
     def recurseSetupTime(self, cachemap: Optional[Dict[int, int]] = None) -> int:
         if cachemap is None:

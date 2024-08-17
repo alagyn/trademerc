@@ -40,7 +40,7 @@ class DailyTF(TimeFrame):
 
         tfLog.info(f'Forcing sleep until open')
         timeToOpen = toTS(clock.next_open)
-        self._waitForTS(timeToOpen)
+        self._waitForTS(timeToOpen - 60)
 
     def notifyWait(self) -> float:
         return 600

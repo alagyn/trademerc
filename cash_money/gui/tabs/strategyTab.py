@@ -21,7 +21,7 @@ class StrategyTab:
         im.SameLine()
         if im.Button("Save As"):
             state.askSaveStrat()
-
+        im.CheckBox("Show Help", state.imNodeGraph.showHelp)
         io = im.GetIO()
 
         if io.KeyCtrl and im.IsKeyPressed(im.ImKey.S, repeat=False):

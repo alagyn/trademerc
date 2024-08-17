@@ -4,6 +4,8 @@ import math
 import datetime
 import logging
 
+import sys
+
 from cash_money import cmErrors
 from cash_money.trading.objects import Bar, Order, OrderType, OrderStatus, Stock, CMPosition, StockStatus
 from cash_money.trading.trader import Trader
@@ -14,15 +16,14 @@ from cash_money.utils.date_utils import nextBusinessDay
 from cash_money.trading.nodeStrategy import NodeStrategy
 
 log = logging.getLogger("Backtest Brkr")
-statLog = logging.getLogger("Stats")
 
 
-class Stats:
+class _TradeList:
 
     def __init__(self):
-        self.startingVal = 0
-        self.lossList = []
-        self.winList = []
+        self._startingVal = 0
+        self.lossList: List[float] = []
+        self.winList: List[float] = []
 
         self.buyDays = []
         self.buyPrices = []
@@ -32,12 +33,12 @@ class Stats:
         self.sellDeltas = []
 
     def addBuy(self, day, value, unitCost):
-        self.startingVal = value
+        self._startingVal = value
         self.buyDays.append(day)
         self.buyPrices.append(unitCost)
 
     def addSell(self, day, value, unitSell):
-        delta = value - self.startingVal
+        delta = value - self._startingVal
         self.sellDays.append(day)
         self.sellPrices.append(unitSell)
         self.sellDeltas.append(delta)
@@ -61,9 +62,10 @@ class BackTestPosition(CMPosition):
         self.prevStopUpdate: str = "TODO"
         self.nextStopUpdate: str = "TODO"
 
-        self.stats = Stats()
+        self.stats = _TradeList()
 
     def getstatus(self) -> StockStatus:
+        # always return in market since we set the position to none otherwise
         return StockStatus.InMarket
 
     def data(self) -> Any:
@@ -153,6 +155,7 @@ def checkStop(stop: float):
 
 
 def calcSQN(tradeList) -> float:
+    # TODO this calculation is bad maybe?
     """
     Calculates the System Quality Number
     Should be reliable if stats.numTrades >= 3.0
@@ -171,27 +174,32 @@ def calcSQN(tradeList) -> float:
 
 class BacktestStats:
 
-    def __init__(self):
-        self.startValue = 0.0
-        self.endValue = 0.0
-        self.profit = 0.0
-        self.percGain = 0.0
-        self.SQN = 0.0
-        self.trades = 0
-        self.wins = 0
-        self.losses = 0
-        self.wlRatio = 0.0
-        self.winPerc = 0.0
-        self.avgGain = 0.0
-        self.avgLoss = 0.0
+    def __init__(self, startingVal: float, stat: _TradeList):
+
+        self.wins = len(stat.winList)
+        self.winValue = sum(stat.winList)
+        self.losses = len(stat.lossList)
+        self.lossValue = sum(stat.lossList)
+
+        trades = stat.winList.copy()
+        trades.extend(stat.lossList)
+        self.trades = len(trades)
+
+        # loss list is negative, just add
+        self.profit = sum(stat.winList) + sum(stat.lossList)
+        self.percGain = self.profit / startingVal
+        self.sqn = 0 if self.trades <= 1 else calcSQN(trades)
+        self.wlRatio = 1.0 if self.losses == 0 else self.wins / self.losses
+        totalTrades = self.wins + self.losses
+        self.winPerc = 1.0 if totalTrades == 0 else self.wins / totalTrades
+        self.avgGain = 0 if self.wins == 0 else self.winValue / self.wins
+        self.avgLoss = 0 if self.losses == 0 else self.lossValue / self.losses
 
     def toDict(self) -> Dict[str, str]:
         return {
-            'StartValue': f"{self.startValue:,.2f}",
-            'EndValue': f"{self.endValue:,.2f}",
             'Profit': f"{self.profit:,.2f}",
             'PercentGain': f"{self.percGain:.2%}",
-            'SQN': f"{self.SQN:.3f}",
+            'SQN': f"{self.sqn:.3f}",
             'trades': str(self.trades),
             'wins': str(self.wins),
             'losses': str(self.losses),
@@ -201,19 +209,17 @@ class BacktestStats:
             'avgLoss': f"{self.avgLoss:,.2f}"
         }
 
-    def set(self, o: 'BacktestStats'):
-        self.startValue = o.startValue
-        self.endValue = o.endValue
-        self.profit = o.profit
-        self.percGain = o.percGain
-        self.SQN = o.SQN
-        self.trades = o.trades
-        self.wins = o.wins
-        self.losses = o.losses
-        self.wlRatio = o.wlRatio
-        self.winPerc = o.winPerc
-        self.avgGain = o.avgGain
-        self.avgLoss = o.avgLoss
+
+class RunStats:
+
+    def __init__(self, startVal: float, endVal: float, totalStats: _TradeList, symbols: Dict[str, _TradeList]) -> None:
+        self.startValue = startVal
+        self.endValue = endVal
+        self.totalStats = BacktestStats(startVal, totalStats)
+        self.symbolStats: Dict[str, BacktestStats] = {
+            name: BacktestStats(startVal, stat)
+            for name, stat in symbols.items()
+        }
 
 
 class BacktestTrader(Trader):
@@ -298,8 +304,17 @@ class BacktestTrader(Trader):
                     newCash = position.qty() * position.stopPrice
                     self.totalCash += newCash
                     position.stats.addSell(self.curDate, newCash, position.stopPrice)
+
+                    # Make an "order" so we can notify the UI
+                    o = BacktestOrder(OrderType.SELL, sym, position.qty(), position.stopPrice, self.curDate)
+                    self.notifyOrderEvent(o)
+
+                    self._next_n.addTrade(
+                        symbol=sym, side="Sell", qty=position.qty(), price=position.stopPrice, value=newCash
+                    )
                     # Reset position
                     position._qty = 0
+                    self.stocks[sym].position = None
                     position.stopPrice = None
 
                     log.info(f"{sym}: Stop Activated, Value: ${newCash:.2f}")
@@ -487,56 +502,15 @@ class BacktestTrader(Trader):
 
         stock.position.stopPrice = stopPrice
 
-    def getRunStats(self, logToConsole: bool) -> BacktestStats:
-        wins = 0
-        losses = 0
-        winTotal = 0
-        lossTotal = 0
-
-        tradeList = []
+    def getRunStats(self) -> RunStats:
+        symbolStats: Dict[str, _TradeList] = {}
+        totalStats = _TradeList()
 
         for sym, position in self.positions.items():
-            stat = position.stats
-            wins += len(stat.winList)
-            losses += len(stat.lossList)
-            winTotal += sum(stat.winList)
-            lossTotal += sum(stat.lossList)
+            symbolStats[sym] = position.stats
 
-            tradeList.extend(stat.winList)
-            tradeList.extend(stat.lossList)
+            totalStats.winList.extend(position.stats.winList)
+            totalStats.lossList.extend(position.stats.lossList)
+        # end for symbol
 
-        numTrades = len(tradeList)
-        profit = self.totalCash - self.startingVal
-        percentGain = profit / self.startingVal
-
-        sqnVal = 0 if numTrades <= 1 else calcSQN(tradeList)
-        wlRatio = 1 if losses == 0 else wins / losses
-        avgGain = 0 if wins == 0 else winTotal / wins
-        avgLoss = 0 if losses == 0 else lossTotal / losses
-
-        winPercent = 0 if numTrades == 0 else wins / (wins + losses)
-
-        if logToConsole:
-            statLog.info(f'Start Value: ${self.startingVal:,.2f}, End Value: ${self.totalCash:,.2f}')
-            statLog.info(f'Profit: {profit:,.2f}, Percent Gain: {percentGain:.2%}')
-            statLog.info(f'Trades: {numTrades}, Wins: {wins}, Losses: {losses}, W/L: {wlRatio:.2f}')
-            statLog.info(f'Win %: {winPercent:.2%}')
-            statLog.info(f'Avg Gain: ${avgGain:,.2f}')
-            statLog.info(f'Avg Loss: ${avgLoss:,.2f}')
-            statLog.info(f'SQN: {sqnVal:.3f}')
-
-        out = BacktestStats()
-        out.startValue = self.startingVal
-        out.endValue = self.totalCash
-        out.profit = profit
-        out.percGain = percentGain
-        out.SQN = sqnVal
-        out.trades = numTrades
-        out.wins = wins
-        out.losses = losses
-        out.wlRatio = wlRatio
-        out.winPerc = winPercent
-        out.avgGain = avgGain
-        out.avgLoss = avgLoss
-
-        return out
+        return RunStats(self.startingVal, self.totalCash, totalStats, symbolStats)

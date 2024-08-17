@@ -4,7 +4,7 @@ numpy<2
 matplotlib==3.6.3
 tkcalendar==1.6.1
 jinja2==3.1.2
-nodepasta==2.0.1
+nodepasta==2.0.4
 colorama==0.4.6
 yfinance[nospam]==0.2.40
 py-imgui-redux==3.2.0

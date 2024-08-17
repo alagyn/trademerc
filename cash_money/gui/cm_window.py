@@ -38,8 +38,8 @@ def run_window(
         raise RuntimeError()
 
     # create our window
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
+    #glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
+    #glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
     if width is None or height is None:
         monitor = glfw.GetPrimaryMonitor()
         vidMode = glfw.GetVideoMode(monitor)

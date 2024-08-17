@@ -49,7 +49,7 @@ class Trader:
 
         self.listeners: List[CMEventListener] = []
 
-        self.symbols = strats.keys()
+        self.symbols = list(strats.keys())
         # Dict of symb->stock
         self.stocks: Dict[str, Stock] = {
             x: Stock(x)
@@ -80,7 +80,7 @@ class Trader:
         # Update positions and BP
         log.debug('Updating Positions')
         self.updateBuyPower()
-        log.info(f"Cycle Cash: ${self.cash()}")
+        log.info(f"Cycle Cash: ${self.cash():,.2f}")
 
         # Calculate today's actions
         log.debug('Calculating Daily Actions')

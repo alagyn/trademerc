@@ -1,4 +1,3 @@
-import time
 from typing import List, Union, Dict, Tuple, Optional, Any
 from collections import defaultdict
 from .timeframes.timeframe import TimeFrame
@@ -6,15 +5,12 @@ import threading
 import concurrent.futures.thread  # Keep this import to resolve errors in py3.9 /shrug
 import asyncio
 import datetime
-from uuid import UUID
 import pytz
-
-from alpaca.trading.client import TradingClient
 
 import alpaca.trading.requests as tradeReq
 import alpaca.trading.enums as tradeEnum
 import alpaca.trading.models as models
-import alpaca.data.models as dataModels
+import alpaca.data.models.bars as barModels
 
 from cash_money.trading.objects import Order, OrderStatus, OrderType, Bar, Stock, CMPosition, StockStatus
 from cash_money.trading.events import Notification
@@ -206,6 +202,13 @@ class AlpacaTrader(Trader):
             if s.position is not None:
                 data: models.Position = s.position.data()
 
+                if data.unrealized_pl is None:
+                    data.unrealized_pl = "0.0"
+                if data.current_price is None:
+                    data.current_price = "0.0"
+                if data.market_value is None:
+                    data.market_value = "0.0"
+
                 self._next_notification.addPosition(
                     symbol=s.symbol,
                     qty=int(data.qty),
@@ -244,7 +247,7 @@ class AlpacaTrader(Trader):
             # TODO make this not error? don't want it to die unexpectedly
             raise CMError("AlpacaBroker.buyPwr() Cannot get cash amount")
 
-    async def _barUpdateHandler(self, data: dataModels.bars.Bar):
+    async def _barUpdateHandler(self, data: barModels.Bar):
         newBar = Bar(data.low, data.close, data.high, data.volume, data.timestamp)
         self.stocks[data.symbol].updateBar(newBar)
         self.notifyStockUpdate(data.symbol, newBar)
@@ -315,7 +318,6 @@ class AlpacaTrader(Trader):
         for s in closed:
             self.stocks[s].position = None
 
-        
         # Set buyDate for any stock that is in market without a buyDate
         if self.tradeStep == 0:
             get_orders_request = tradeReq.GetOrdersRequest(
@@ -327,18 +329,19 @@ class AlpacaTrader(Trader):
                 nested=None,
                 side=tradeEnum.OrderSide.BUY,
                 symbols=self.symbols
-                )
+            )
+
             orders: List[models.Order] = self._api.trade.get_orders(filter=get_orders_request)
-            if not orders: 
+            if not orders:
                 raise RuntimeError("No buy orders")
 
-            filled_orders: List[models.Order] = [order for order in orders if order.status == tradeEnum.OrderStatus.FILLED]
+            filled_orders: List[models.Order
+                                ] = [order for order in orders if order.status == tradeEnum.OrderStatus.FILLED]
             if not filled_orders:
                 raise RuntimeError("No filled buy orders")
-            
 
             # API returns a list of all buy orders for all stocks, need to sort by symbol
-            dates_by_symbol: Dict[str, datetime.date] = defaultdict(lambda: None) 
+            dates_by_symbol: Dict[str, datetime.date] = defaultdict(lambda: None)
             for order in filled_orders:
                 if dates_by_symbol[order.symbol] is None or order.filled_at > dates_by_symbol[order.symbol]:
                     dates_by_symbol[order.symbol] = order.filled_at
@@ -348,14 +351,13 @@ class AlpacaTrader(Trader):
                     nbd = dates_by_symbol[stock.symbol]
                     if not nbd:
                         raise RuntimeError("No date from buy ordersfor stock")
-                    
+
                     # nbd is from API so it is in UTC, convert to local time
                     local_tz = pytz.timezone("US/Eastern")
                     local_nbd = nbd.replace(tzinfo=pytz.utc).astimezone(local_tz)
 
                     stock.updateBuyDate(local_nbd)
                     log.info(f"Updating buyDate for {stock.symbol} to {local_nbd}")
-
 
     def cancelAllOrders(self) -> None:
         self._api.trade.cancel_orders()
@@ -436,7 +438,7 @@ class AlpacaTrader(Trader):
                 notional=None,
                 side=tradeEnum.OrderSide.BUY,
                 type=tradeEnum.OrderType.MARKET,
-                time_in_force=tradeEnum.TimeInForce.DAY,
+                time_in_force=tradeEnum.TimeInForce.GTC,
                 # Class: One-Triggers-Other, activates the stop loss after buy is filled
                 order_class=tradeEnum.OrderClass.OTO,
                 extended_hours=False,
@@ -490,7 +492,9 @@ class AlpacaTrader(Trader):
             oldStop = stock.stopOrder.stopPrice()
             if oldStop is None:
                 raise RuntimeError()
-            if round(oldStop, 2) == round(stopPrice, 2):
+
+            roundedStop = round(stopPrice, 2)
+            if round(oldStop, 2) == roundedStop:
                 log.debug("Stop value is the same, not updating")
                 return
 
@@ -498,7 +502,7 @@ class AlpacaTrader(Trader):
             req = tradeReq.ReplaceOrderRequest(
                 qty=None,
                 time_in_force=None,
-                stop_price=round(stopPrice,2),  # type: ignore
+                stop_price=roundedStop,
                 limit_price=None,
                 trail=None,
                 client_order_id=None

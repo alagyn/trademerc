@@ -1,6 +1,6 @@
 from nodepasta.argtypes import BOOL, EnumNodeArg
 from nodepasta.node import Port
-from nodepasta.errors import NodeDefError
+from nodepasta.errors import NodeDefError, ExecutionError
 
 from cash_money.nodes.cmNode import CMNode
 
@@ -33,3 +33,14 @@ class LogicNode(CMNode):
             self.op = xor
         else:
             raise NodeDefError("logicNode.setup()", f"Invalid option '{self._opType.value}'")
+
+    def execute(self) -> None:
+        if self.a.value() is None or self.b.value() is None:
+            self.out.value(None)
+        elif self.op is None:
+            raise ExecutionError("LogicNode.execute()", "Node not setup")
+        else:
+            self.out.value(self.op(self.a.value(), self.b.value()))
+
+    def setupTime(self) -> int:
+        return 1
