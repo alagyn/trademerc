@@ -8,6 +8,7 @@ def registerNodes(nodegraph: NodeGraph):
     nodeTypes = [
         absoluteValueNode.AbsoluteValueNode,
         averageTrueRange.AverageTrueRange,
+        bollingerNode.BollingerNode,
         compareNode.Compare,
         confidenceNode.ConfidenceNode,
         constantNode.ConstantNode,

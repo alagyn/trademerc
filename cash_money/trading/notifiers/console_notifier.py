@@ -7,14 +7,14 @@ log = logging.getLogger("Notify")
 TRADE_COLS = [
     Column("Symbol", 4, "s"),
     Column("Side", 4, "s"),
-    Column("Qty", 5, "d"),
+    FloatColumn("Qty", 5, 2),
     FloatColumn("Price", 5, 2),
     FloatColumn("Value", 5, 2)
 ]
 
 POSIT_COLS = [
     Column("Symbol", 4, "s"),
-    Column("Qty", 5, "d"),
+    FloatColumn("Qty", 5, 2),
     FloatColumn("PL", 5, 2),
     FloatColumn("Cur Price", 5, 2),
     FloatColumn("Value", 5, 2),

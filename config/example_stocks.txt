@@ -2,6 +2,7 @@
 
 QQQ
 TSLA
+QBTS
 
 #DIA
 #SPY

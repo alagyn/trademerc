@@ -67,7 +67,7 @@ def runAlpacaTrader(
     else:
         raise RuntimeError("Invalid Timeframe type")
 
-    trader = AlpacaTrader(strats, api, stocks, tf)
+    trader = AlpacaTrader(strats, api, tf)
 
     notifyType = config['System']['Notify']
     notifier = None

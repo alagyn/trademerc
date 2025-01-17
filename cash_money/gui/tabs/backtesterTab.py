@@ -43,9 +43,18 @@ def parseDate(dateStr: im.StrRef) -> datetime.datetime:
     return datetime.datetime.strptime(dateStr.copy(), "%m/%d/%Y")
 
 
+def printDate(date: datetime.datetime) -> str:
+    return date.strftime("%m/%d/%Y")
+
+
+START_DATE_CACHE = "bt_start"
+END_DATE_CACHE = "bt_end"
+CASH_CACHE = "bt_cash"
+
+
 class BacktesterTab(CMEventListener):
 
-    def __init__(self) -> None:
+    def __init__(self, cache: Dict[str, Any]) -> None:
 
         self.buys: Dict[str, Tuple[im.DoubleList,
                                    im.DoubleList]] = defaultdict(lambda: (im.DoubleList(), im.DoubleList()))
@@ -70,16 +79,21 @@ class BacktesterTab(CMEventListener):
 
         self.stocks: List[str] = []
 
-        self.startDateStr = im.StrRef(str(datetime.datetime.now().replace(year=datetime.datetime.now().year - 1).strftime("%m/%d/%Y")), 20)
+        self.startDateStr = im.StrRef(
+            str(datetime.datetime.now().replace(year=datetime.datetime.now().year - 1).strftime("%m/%d/%Y")), 20
+        )
         self.validStartDateStr = True
 
         self.endDateStr = im.StrRef(str(datetime.datetime.now().strftime("%m/%d/%Y")), 20)
         self.validEndDateStr = True
 
-        self.startDate = datetime.datetime(2020, 1, 1)
-        self.endDate = datetime.datetime(2021, 1, 1)
+        self.startDate = parseDate(self.startDateStr)
+        self.endDate = parseDate(self.endDateStr)
 
-        self.startingCash = im.IntRef(10000)
+        try:
+            self.startingCash = im.IntRef(cache[CASH_CACHE])
+        except KeyError:
+            self.startingCash = im.IntRef(10000)
 
         self.errorMessage = ""
 
@@ -87,7 +101,15 @@ class BacktesterTab(CMEventListener):
         self.plotRectXMin = im.DoubleRef()
         self.plotRectXMax = im.DoubleRef()
 
+    def cleanup(self, cache: Dict[str, Any]):
+        cache[START_DATE_CACHE] = printDate(self.startDate)
+        cache[END_DATE_CACHE] = printDate(self.endDate)
+        cache[CASH_CACHE] = self.startingCash.val
+
     def render(self, state: UIState) -> None:
+        if self.selectedStockIdx.val > len(state.stocks):
+            self.selectedStockIdx.val = 0
+
         if im.BeginTable("config table", 2):
             im.TableNextColumn()
             if im.Button(" Load Strategy "):

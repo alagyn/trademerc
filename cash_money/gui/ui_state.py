@@ -1,12 +1,11 @@
 from typing import List, Dict, Any
-import json
 import os
+import json
 import logging
 
 from .fileSelect import askOpenFile, askSaveFile
 from cash_money.utils.file_utils import loadStockFile, loadStratFile
 from cash_money.utils.node_utils import registerNodes, newStrat, defaultStratData
-from cash_money.utils.run_utils import CONFIG_DIR
 
 from nodepasta.nodegraph import NodeGraph
 import nodepasta.impasta.imgui_node_graph as imgui_node_graph
@@ -15,27 +14,36 @@ from nodepasta.argtypes import INT, FLOAT, BOOL
 
 import imgui as im
 
-CACHE_FILE = os.path.join(CONFIG_DIR, ".cache.json")
-
 log = logging.getLogger("UI-State")
+
+CACHE_STOCKS = "stock_file"
+CACHE_STRAT = "strat_file"
 
 
 class UIState:
 
-    def __init__(self) -> None:
-        self.stratFile: str = ""
-        self.stratData: Dict[str, Any] = defaultStratData()
-        self.stockFile: str = ""
+    def __init__(self, cachedata: Dict[str, Any]) -> None:
+        self.stratFile = ""
+        self.stockFile = ""
         self.stocks: List[str] = []
 
         self.stratGraph = NodeGraph()
-        self.stratName = im.StrRef(256)
-
         registerNodes(self.stratGraph)
 
-        self.imNodeGraph: imgui_node_graph.ImNodeGraph = None  # type: ignore
+        self.stratName = im.StrRef(256)
 
-        self.fromCache()
+        try:
+            self.loadStocks(cachedata[CACHE_STOCKS])
+        except KeyError:
+            pass
+
+        self.stratData = defaultStratData()
+        try:
+            self.loadStrat(cachedata[CACHE_STRAT])
+        except KeyError:
+            pass
+
+        self.imNodeGraph: imgui_node_graph.ImNodeGraph = None  # type: ignore
 
     def init(self):
         self.imNodeGraph = imgui_node_graph.ImNodeGraph(self.stratGraph)
@@ -73,6 +81,7 @@ class UIState:
             self.askSaveStrat()
         else:
             data = self.stratGraph.getJSON()
+
             with open(self.stratFile, mode='w') as f:
                 json.dump({
                     "name": self.stratName.view(),
@@ -98,21 +107,6 @@ class UIState:
         if len(f) > 0:
             self.loadStocks(f)
 
-    def toCache(self):
-        data = {
-            "stock": self.stockFile,
-            "strat": self.stratFile
-        }
-        with open(CACHE_FILE, mode='w') as f:
-            json.dump(data, f)
-
-    def fromCache(self):
-        if os.path.exists(CACHE_FILE):
-            with open(CACHE_FILE, mode='r') as f:
-                data = json.load(f)
-
-            self.loadStocks(data['stock'])
-            self.loadStrat(data['strat'])
-        else:
-            self.loadStocks(self.stockFile)
-            self.loadStrat(self.stratFile)
+    def toCache(self, cache: Dict[str, Any]):
+        cache[CACHE_STOCKS] = self.stockFile
+        cache[CACHE_STRAT] = self.stratFile

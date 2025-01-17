@@ -1,11 +1,9 @@
 import datetime
 from configparser import ConfigParser
 from typing import Dict, Optional, List, Tuple
-from sys import exit
 import os.path
 import traceback
 import colorama
-import tkinter.messagebox as dialog
 import logging
 import os
 import time
@@ -90,7 +88,9 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
         logging.getLogger("websockets.client"),
         logging.getLogger("asyncio"),
         logging.getLogger('matplotlib'),
-        logging.getLogger('PIL')
+        logging.getLogger('PIL'),
+        logging.getLogger('yfinance'),
+        logging.getLogger('peewee')
     ]
 
     for x in others:
@@ -107,9 +107,7 @@ def loadSystem() -> ConfigParser:
         if os.path.exists(_configLoc):
             _config.read(_configLoc)
         else:
-            print(f"ERROR: Cannot find {_configLoc}")
-            dialog.showerror("Error: Cash Money", f"Cannot find \"{_configLoc}\"")
-            exit(1)
+            raise RuntimeError(f"ERROR: Cannot find {_configLoc}")
 
         syscfg = _config['System']
 
@@ -132,7 +130,7 @@ def loadSystem() -> ConfigParser:
     return _config
 
 
-def parseYFDate(d: pd.Timestamp) -> datetime.datetime:
+def parseYFDate(d) -> datetime.datetime:
     return d.to_pydatetime()
 
 
@@ -145,17 +143,10 @@ def downloadDailyBars(symbols: List[str], startDate: datetime.datetime, endDate:
 
     dirtyBars: Dict[str, List[Bar]] = {}
     for sym in symbols:
-        b = yf.download(sym, startDate, endDate, progress=False)
-        bars = [
-            Bar(
-                b['Low'][x],
-                b['Close'][x],
-                b['High'][x],
-                b['Volume'][x],
-                parseYFDate(b.index[x])  # type: ignore
-            ) for x in range(len(b))
-        ]
-
+        b: pd.DataFrame = yf.download(sym, startDate, endDate, progress=False)
+        bars = []
+        for index, row in b.iterrows():
+            bars.append(Bar(row['Low'], row['Close'], row['High'], row["Volume"], parseYFDate(index)))
         dirtyBars[sym] = bars
 
     # Normalize all the bars
@@ -250,7 +241,3 @@ def runTrader(trader: Trader):
         log.error(msg)
         # raise to propagate
         raise
-
-
-def showError(title: str, message: str) -> None:
-    dialog.showerror(title, message)

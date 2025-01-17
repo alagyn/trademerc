@@ -5,7 +5,7 @@ from datetime import datetime
 
 class TradeNotification:
 
-    def __init__(self, symbol: str, side: str, qty: int, price: float, value: float) -> None:
+    def __init__(self, symbol: str, side: str, qty: float, price: float, value: float) -> None:
         self.symbol = symbol
         self.side = side
         self.qty = qty
@@ -18,7 +18,7 @@ class PositionNotification:
     def __init__(
         self,
         symbol: str,
-        qty: int,
+        qty: float,
         pl: float,
         price: float,
         value: float,
@@ -65,7 +65,7 @@ class Notification:
     def addPosition(
         self,
         symbol: str,
-        qty: int = 0,
+        qty: float = 0,
         pl: float = 0,
         price: float = 0,
         value: float = 0,
@@ -90,7 +90,7 @@ class Notification:
             )
         )
 
-    def addTrade(self, symbol: str, side: str, qty: int, price: float, value: float) -> None:
+    def addTrade(self, symbol: str, side: str, qty: float, price: float, value: float) -> None:
         self.trades.append(TradeNotification(symbol=symbol, side=side, qty=qty, price=price, value=value))
 
     def addBar(self, symbol: str, bar: Bar):

@@ -3,6 +3,7 @@ import numpy as np
 import math
 import datetime
 import logging
+import uuid
 
 import sys
 
@@ -53,7 +54,7 @@ class BackTestPosition(CMPosition):
 
     def __init__(self, symbol: str) -> None:
         self.symbol: str = symbol
-        self._qty: int = 0
+        self._qty: float = 0
         self.side = ""
         self.initUnitPrice: float = 0
         self.stopPrice: Optional[float] = None
@@ -96,7 +97,7 @@ class BacktestOrderStub(Order):
     _ID_GEN = 0
 
     def __init__(self, stopPrice: Optional[float]):
-        super().__init__(BacktestOrderStub._ID_GEN)
+        super().__init__(uuid.UUID(int=BacktestOrderStub._ID_GEN))
         BacktestOrderStub._ID_GEN += 1
 
         self._sl = stopPrice
@@ -111,7 +112,7 @@ class BacktestOrder(BacktestOrderStub):
         self,
         orderT: OrderType,
         symbol: str,
-        qty: int,
+        qty: float,
         price: float,
         timestamp: datetime.datetime,
         stopLimit: Optional[float] = None
@@ -133,10 +134,10 @@ class BacktestOrder(BacktestOrderStub):
     def symbol(self) -> str:
         return self._sym
 
-    def qty(self) -> Union[int, None]:
+    def qty(self) -> Union[float, None]:
         return self._qty
 
-    def filledQty(self) -> int:
+    def filledQty(self) -> float:
         return self._qty
 
     def filledAvgPrice(self) -> float:
@@ -402,7 +403,7 @@ class BacktestTrader(Trader):
         # TODO
         raise NotImplementedError
 
-    def submitBuy(self, stock: Stock, qty: int, stopLimit: Optional[float] = None) -> None:
+    def submitBuy(self, stock: Stock, qty: float, stopLimit: Optional[float] = None) -> None:
         if stock.bar is None:
             log.warn(f"Cannot submit buy for {stock.symbol}, bar is none")
             return
@@ -424,7 +425,7 @@ class BacktestTrader(Trader):
         trueCost = qty * stock.bar.close
 
         if trueCost > self.totalCash:
-            newQty = int(self.totalCash // stock.bar.close)
+            newQty = self.totalCash / stock.bar.close
             log.warn(
                 f"Attempted to buy more than we can afford\n"
                 f"symbol: {stock.symbol}, qty: {qty}, price: ${stock.bar.close:.2f}, value: ${stock.bar.close * qty:.2f}\n"
@@ -457,7 +458,7 @@ class BacktestTrader(Trader):
             if stock.position is not None and stock.position.qty() > 0:
                 self.closePosition(stock)
 
-    def submitSell(self, stock: Stock, qty: int) -> None:
+    def submitSell(self, stock: Stock, qty: float) -> None:
         if stock.bar is None:
             log.warn(f"Cannot submit sell for {stock.symbol}, bar is None")
             raise RuntimeError()

@@ -13,8 +13,12 @@ from cash_money.utils.date_utils import deltaBusinessDays
 BUY_PWR_SAFETY = 0.985
 
 
-def calcQty(buyPwr: float, cost: float):
-    return math.floor(buyPwr / cost)
+def calcQtyFractional(buyPwr: float, cost: float) -> float:
+    return buyPwr / cost
+
+
+def calcQtyNonfractional(buyPwr: float, cost: float) -> int:
+    return int(buyPwr // cost)
 
 
 log = logging.getLogger("Trader")
@@ -202,7 +206,11 @@ class Trader:
         if action.stock.bar is None:
             raise cmErrors.ActionError("Stock bar is None")
 
-        qty = calcQty(buyPwr, action.stock.bar.close)
+        if action.stock.fractional:
+            qty = calcQtyFractional(buyPwr, action.stock.bar.close)
+        else:
+            qty = calcQtyNonfractional(buyPwr, action.stock.bar.close)
+
         if qty <= 0:
             log.info(f"Qty <= 0: {qty}, not submitting Buy request:\n\t{str(action)}")
             return
@@ -211,12 +219,12 @@ class Trader:
 
     def _submitSell(self, action: Action):
         if action.stock.position is None:
-            raise RuntimeError("position is None")
+            log.warning(f"Cannot sell {action.stock}, no known open position")
+            return
 
         if action.stock.buyDate is None:
-            raise RuntimeError("buyDate is None")
-
-        if action.stock.buyDate == self.curDateTime:
+            log.warning("No known buy date, this sell cannot be used to track day trades")
+        elif action.stock.buyDate == self.curDateTime:
             if self.totalDayTrades >= MAX_DAY_TRADES:
                 log.info("Ignoring Sell, sell would go above max day trades")
                 return
@@ -232,11 +240,13 @@ class Trader:
 
         o = action.stock.stopOrder
         if o is None:
-            raise cmErrors.ActionError(f'Cannot Update stop, no stop order created:\n\t{action}')
+            log.warning(f'Cannot Update stop, no stop order created:\n\t{action}')
+            return
 
         oldPrice = o.stopPrice()
         if oldPrice is None:
-            raise cmErrors.ActionError(f'Cannot Update stop, no invalid stop order:\n\t{action}')
+            log.warning(f'Cannot Update stop, invalid stop order:\n\t{action}')
+            return
 
         if action.stopPrice == oldPrice:
             log.info(f"Ignoring {action}, stop-price is equal")
@@ -324,7 +334,7 @@ class Trader:
         """
         raise NotImplementedError
 
-    def submitBuy(self, stock: Stock, qty: int, stopLoss: Optional[float] = None) -> None:
+    def submitBuy(self, stock: Stock, qty: float, stopLoss: Optional[float] = None) -> None:
         """
         Submits a buy order for the given symbol and quantity
         :param stock: The stock to buy

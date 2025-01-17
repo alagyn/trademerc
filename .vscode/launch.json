@@ -39,7 +39,7 @@
             "module": "cash_money.run_alpaca",
             "args": [
                 "-s",
-                "${workspaceFolder}/config/test.strat",
+                "${workspaceFolder}/config/example_strat.strat",
                 "-stx",
                 "${workspaceFolder}/config/example_stocks.txt",
             ],

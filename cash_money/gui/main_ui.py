@@ -1,3 +1,6 @@
+import os
+import json
+
 import imgui as im
 
 from .ui_state import UIState
@@ -5,6 +8,7 @@ from .tabs.backtesterTab import BacktesterTab
 from .tabs.strategyTab import StrategyTab
 from .tabs.configTab import ConfigTab
 from cash_money.utils.run_utils import _configLoc
+from cash_money.utils.run_utils import CONFIG_DIR
 
 windowFlags = (
     im.WindowFlags.NoMove
@@ -13,23 +17,37 @@ windowFlags = (
     | im.WindowFlags.NoDecoration
 )
 
+CACHE_FILE = os.path.join(CONFIG_DIR, ".cache.json")
+
 
 class MainUI:
 
     def __init__(self) -> None:
-        self.state = UIState()
+        cache = {}
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, mode='r') as f:
+                cache = json.load(f)
+
+        self.state = UIState(cache)
 
         # Tabs
-        self.backtesterTab = BacktesterTab()
+        self.backtesterTab = BacktesterTab(cache)
         self.strategyTab = StrategyTab()
         self.configTab = ConfigTab(_configLoc)
+
     def init(self):
         self.state.init()
 
     def cleanup(self):
-        self.state.toCache()
+        cache = {}
+        self.state.toCache(cache)
+        self.backtesterTab.cleanup(cache)
+
         if self.needToSave():
             self.state.askSaveStrat()
+
+        with open(CACHE_FILE, mode='w') as f:
+            json.dump(cache, f)
 
     def needToSave(self) -> bool:
         return self.state.imNodeGraph is not None and self.state.imNodeGraph.needToSave

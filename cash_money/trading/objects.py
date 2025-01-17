@@ -3,6 +3,7 @@ import enum
 from typing import Optional, Tuple
 import datetime
 from collections import deque
+import uuid
 
 from abc import ABC
 from enum import IntEnum
@@ -30,17 +31,17 @@ class OrderStatus(IntEnum):
 
 
 class OrderType(IntEnum):
-    BUY = enum.auto()
-    SELL = enum.auto()
-    STOP = enum.auto()
+    BUY = 0
+    SELL = 1
+    STOP = 2
 
 
 class Order(ABC):
 
-    def __init__(self, orderid: Any):
+    def __init__(self, orderid: uuid.UUID):
         self._orderid = orderid
 
-    def orderid(self) -> Any:
+    def orderid(self) -> uuid.UUID:
         """
         Returns this order's id
         :return: the id
@@ -60,16 +61,16 @@ class Order(ABC):
     def symbol(self) -> str:
         raise NotImplementedError()
 
-    def qty(self) -> Union[int, None]:
+    def qty(self) -> float | None:
         raise NotImplementedError()
 
-    def filledQty(self) -> int:
+    def filledQty(self) -> float:
         raise NotImplementedError()
 
     def filledAvgPrice(self) -> float:
         raise NotImplementedError()
 
-    def side(self) -> str:
+    def sideStr(self) -> str:
         if self.orderType() == OrderType.BUY:
             return "buy"
 
@@ -102,7 +103,7 @@ class CMPosition:
     def data(self) -> Any:
         raise NotImplementedError()
 
-    def qty(self) -> int:
+    def qty(self) -> float | int:
         raise NotImplementedError()
 
 
@@ -114,6 +115,7 @@ class Stock:
         self.sellOrder: Optional[Order] = None
         self.stopOrder: Optional[Order] = None
         self.buyDate: Optional[datetime.date] = None
+        self.fractional: bool = False
 
         self.position: Optional[CMPosition] = None
 
