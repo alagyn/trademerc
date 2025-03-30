@@ -142,11 +142,16 @@ def downloadDailyBars(symbols: List[str], startDate: datetime.datetime, endDate:
     #endStr = endDate.strftime(DATE_FMT)
 
     dirtyBars: Dict[str, List[Bar]] = {}
+    dl = yf.download(symbols, startDate, endDate, progress=False, auto_adjust=False)
+    if dl is None:
+        raise RuntimeError("Failed to download data")
+    b: pd.DataFrame = dl
     for sym in symbols:
-        b: pd.DataFrame = yf.download(sym, startDate, endDate, progress=False)
         bars = []
         for index, row in b.iterrows():
-            bars.append(Bar(row['Low'], row['Close'], row['High'], row["Volume"], parseYFDate(index)))
+            bars.append(
+                Bar(row['Low'][sym], row['Close'][sym], row['High'][sym], row["Volume"][sym], parseYFDate(index))
+            )
         dirtyBars[sym] = bars
 
     # Normalize all the bars

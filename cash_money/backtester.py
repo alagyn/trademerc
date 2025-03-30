@@ -94,8 +94,8 @@ if __name__ == "__main__":
             for sym in stocks
         }
 
-        start_date = datetime(2018, 1, 1)
-        end_date = datetime(2019, 1, 1)
+        start_date = datetime(2021, 1, 1)
+        end_date = datetime(2022, 1, 1)
 
         backtest(strats=strats, startDate=start_date, endDate=end_date)
 
