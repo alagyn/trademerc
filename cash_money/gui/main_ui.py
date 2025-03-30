@@ -8,7 +8,7 @@ from .tabs.backtesterTab import BacktesterTab
 from .tabs.strategyTab import StrategyTab
 from .tabs.configTab import ConfigTab
 from cash_money.utils.run_utils import _configLoc
-from cash_money.utils.run_utils import CONFIG_DIR
+from cash_money.utils.run_utils import CONFIG_DIR, APP_DIR
 
 windowFlags = (
     im.WindowFlags.NoMove
@@ -18,6 +18,7 @@ windowFlags = (
 )
 
 CACHE_FILE = os.path.join(CONFIG_DIR, ".cache.json")
+FONT_FILE = os.path.join(APP_DIR, "fonts", "MonaspaceNeon-Regular.otf")
 
 
 class MainUI:
@@ -37,6 +38,9 @@ class MainUI:
 
     def init(self):
         self.state.init()
+        io = im.GetIO()
+        io.Fonts.AddFontFromFileTTF(FONT_FILE, 14)
+        io.Fonts.Build()
 
     def cleanup(self):
         cache = {}
