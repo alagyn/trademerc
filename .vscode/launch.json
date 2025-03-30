@@ -47,24 +47,10 @@
             "justMyCode": true
         },
         {
-            "name": "Backtester",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "cash_money.backtester_gui",
-            "justMyCode": true
-        },
-        {
-            "name": "Strategy",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "cash_money.strategy_gui",
-            "justMyCode": true
-        },
-        {
             "name": "cm_ui",
             "type": "debugpy",
             "request": "launch",
-            "module": "cash_money.cm_ui",
+            "module": "cash_money",
             "justMyCode": true
         },
     ]
