@@ -27,6 +27,8 @@ class ConfigTab:
         self.paper_api_secret_ref = im.StrRef(self.config.get('Alpaca', 'Paper_API_Secret', fallback=""), 256)
         self.timeframe_value_ref = im.StrRef(self.timeframe_value, 64)
 
+        self.needSave = False
+
     def load_config(self):
         """Loads the configuration from file."""
         try:
@@ -41,7 +43,8 @@ class ConfigTab:
         """Manually writes the configuration to the file with custom formatting."""
         with open(self.config_path, 'w') as configfile:
             self.config.write(configfile)
-    
+        self.needSave = False
+
     def get_log_level_index(self):
         try:
             return self.log_level_options.index(self.config["System"].get("LogLevel", "Debug"))
@@ -60,62 +63,75 @@ class ConfigTab:
         except ValueError:
             return 0
 
-
     def render(self):
-        
-        # Log Level Dropdown
-        im.Text("System Settings")
-        if im.BeginCombo("Log Level", self.log_level_options[self.log_level_index]):
-            for idx, option in enumerate(self.log_level_options):
-                if im.Selectable(option, self.log_level_index == idx):
-                    self.log_level_index = idx
-            im.EndCombo()
-            
-        if im.BeginCombo("Notify", self.notify_options[self.notify_index]):
-            for idx, option in enumerate(self.notify_options):
-                if im.Selectable(option, self.notify_index == idx):
-                    self.notify_index = idx
-            im.EndCombo()
+        if im.BeginChild("settings", im.Vec2(500, 0)):
+            # Save all settings on button click
+            pushed = False
+            if self.needSave:
+                pushed = True
+                im.PushStyleColor(im.Col.Button, im.Vec4(1.0, 0.2, 0.2, 1.0))
+            if im.Button("Save Config"):
+                # Update the configuration from the current input values
+                self.config["System"]["LogLevel"] = self.log_level_options[self.log_level_index]
+                self.config["System"]["Notify"] = self.notify_options[self.notify_index]
+                self.config["Alpaca"]["Live_API_Key"] = str(self.live_api_key_ref)
+                self.config["Alpaca"]["Live_API_Secret"] = str(self.live_api_secret_ref)
+                self.config["Alpaca"]["Paper_API_Key"] = str(self.paper_api_key_ref)
+                self.config["Alpaca"]["Paper_API_Secret"] = str(self.paper_api_secret_ref)
+                self.config["Alpaca"]["Timeframe"] = self.timeframe_options[self.timeframe_index]
+                self.config["Alpaca"]["Timeframe_value"] = str(self.timeframe_value_ref)
 
-        # Alpaca API Key Inputs
-        im.Separator()
-        im.Text("Alpaca API Keys")
+                # Save to file
+                self.save_config()
+                log.info("Config saved successfully.")
+            if pushed:
+                im.PopStyleColor(1)
 
-        im.InputText("Live_API_Key", self.live_api_key_ref, 256)
-        im.InputText("Live_API_Secret", self.live_api_secret_ref, 256)
-        im.InputText("Paper_API_Key", self.paper_api_key_ref, 256)
-        im.InputText("Paper_API_Secret", self.paper_api_secret_ref, 256)
+            # Log Level Dropdown
+            im.Text("System Settings")
+            if im.BeginCombo("Log Level", self.log_level_options[self.log_level_index]):
+                for idx, option in enumerate(self.log_level_options):
+                    if im.Selectable(option, self.log_level_index == idx):
+                        self.log_level_index = idx
+                        self.needSave = True
+                im.EndCombo()
 
-        # Timeframe Dropdown
-        im.Separator()
-        im.Text("Timeframe")
-        if im.BeginCombo("Timeframe", self.timeframe_options[self.timeframe_index]):
-            for idx, option in enumerate(self.timeframe_options):
-                if im.Selectable(option, self.timeframe_index == idx):
-                    self.timeframe_index = idx
-            im.EndCombo()
+            if im.BeginCombo("Notify", self.notify_options[self.notify_index]):
+                for idx, option in enumerate(self.notify_options):
+                    if im.Selectable(option, self.notify_index == idx):
+                        self.notify_index = idx
+                        self.needSave = True
+                im.EndCombo()
 
-        # Conditional input based on selected timeframe
-        if self.timeframe_options[self.timeframe_index] == "second":
-            im.InputText("Timeframe_value", self.timeframe_value_ref, 256)
-        elif self.timeframe_options[self.timeframe_index] == "daily":
-            # daily_timeframe_ref = im.StrRef(self.config["Alpaca"].get("Daily_Timeframe", "open"))
-            im.InputText("Timeframe_value", self.timeframe_value_ref, 256)
-            self.config["Alpaca"]["Timeframe_value"] = str(self.timeframe_value_ref)
+            # Alpaca API Key Inputs
+            im.Separator()
+            im.Text("Alpaca API Keys")
+            if im.InputText("Live_API_Key", self.live_api_key_ref, 256):
+                self.needSave = True
+            if im.InputText("Live_API_Secret", self.live_api_secret_ref, 256):
+                self.needSave = True
+            if im.InputText("Paper_API_Key", self.paper_api_key_ref, 256):
+                self.needSave = True
+            if im.InputText("Paper_API_Secret", self.paper_api_secret_ref, 256):
+                self.needSave = True
 
-        # Save all settings on button click
-        if im.Button("Save Config"):
-            # Update the configuration from the current input values
-            self.config["System"]["LogLevel"] = self.log_level_options[self.log_level_index]
-            self.config["System"]["Notify"] = self.notify_options[self.notify_index]
-            self.config["Alpaca"]["Live_API_Key"] = str(self.live_api_key_ref)
-            self.config["Alpaca"]["Live_API_Secret"] = str(self.live_api_secret_ref)
-            self.config["Alpaca"]["Paper_API_Key"] = str(self.paper_api_key_ref)
-            self.config["Alpaca"]["Paper_API_Secret"] = str(self.paper_api_secret_ref)
-            self.config["Alpaca"]["Timeframe"] = self.timeframe_options[self.timeframe_index]
-            self.config["Alpaca"]["Timeframe_value"] = str(self.timeframe_value_ref)
+            # Timeframe Dropdown
+            im.Separator()
+            im.Text("Timeframe")
+            if im.BeginCombo("Timeframe", self.timeframe_options[self.timeframe_index]):
+                for idx, option in enumerate(self.timeframe_options):
+                    if im.Selectable(option, self.timeframe_index == idx):
+                        self.timeframe_index = idx
+                        self.needSave = True
+                im.EndCombo()
 
-            # Save to file
-            self.save_config()
-            log.info("Config saved successfully.")
-
+            # Conditional input based on selected timeframe
+            if self.timeframe_options[self.timeframe_index] == "second":
+                if im.InputText("Timeframe_value", self.timeframe_value_ref, 256):
+                    self.needSave = True
+            elif self.timeframe_options[self.timeframe_index] == "daily":
+                # daily_timeframe_ref = im.StrRef(self.config["Alpaca"].get("Daily_Timeframe", "open"))
+                if im.InputText("Timeframe_value", self.timeframe_value_ref, 256):
+                    self.config["Alpaca"]["Timeframe_value"] = str(self.timeframe_value_ref)
+                    self.needSave = True
+        im.EndChild()
