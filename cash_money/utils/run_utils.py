@@ -27,7 +27,8 @@ _systemLoaded = False
 
 APP_DIR = os.path.split(os.path.dirname(sys.argv[0]))[0]
 CONFIG_DIR = os.path.join(APP_DIR, "config")
-LOG_DIR = os.path.join(CONFIG_DIR, "logs")
+SYS_LOG_DIR = os.path.join(CONFIG_DIR, "logs", "system")
+TRADE_LOGS_DIR = os.path.join(CONFIG_DIR, "logs", "trade")
 
 _configLoc = os.path.join(CONFIG_DIR, "system.cfg")
 
@@ -123,7 +124,9 @@ def loadSystem() -> ConfigParser:
         else:
             loglevel = logging.INFO
 
-        _setuplogging(loglevel, True, LOG_DIR)
+        _setuplogging(loglevel, True, SYS_LOG_DIR)
+
+        os.makedirs(TRADE_LOGS_DIR, exist_ok=True)
 
         #email_manager.setupEmailManager(syscfg)
 

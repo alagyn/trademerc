@@ -4,15 +4,16 @@ import math
 import datetime
 import logging
 import uuid
-
-import sys
+import time
+import os
 
 from cash_money import cmErrors
 from cash_money.trading.objects import Bar, Order, OrderType, OrderStatus, Stock, CMPosition, StockStatus
 from cash_money.trading.trader import Trader
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
+from cash_money.trading.notifiers.plain_text_notifier import PlainTextNotifier
 from cash_money.trading.events import Notification
-from cash_money.utils.run_utils import BarDict
+from cash_money.utils.run_utils import BarDict, TRADE_LOGS_DIR
 from cash_money.utils.date_utils import nextBusinessDay
 from cash_money.trading.nodeStrategy import NodeStrategy
 
@@ -264,6 +265,10 @@ class BacktestTrader(Trader):
                 self.curDate = barlist[0].date
                 break
 
+        logname = time.strftime(r'%Y_%b_%dT%H_%M_%S_backtest.log')
+        logname = os.path.join(TRADE_LOGS_DIR, logname)
+
+        self.addListener(PlainTextNotifier(logname))
         self.addListener(ConsoleNotifier())
         self._next_n = Notification(self.curDate)
 
