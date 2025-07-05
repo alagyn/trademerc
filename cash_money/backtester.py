@@ -4,7 +4,8 @@ from datetime import datetime
 import logging
 
 from cash_money.trading.nodeStrategy import NodeStrategy
-from cash_money.utils.run_utils import runTrader, setupStrategies, downloadDailyBars
+from cash_money.utils.run_utils import runTrader, setupStrategies, loadDataBroker
+from cash_money.trading.data.dataBroker import DataBroker
 from cash_money.trading.brokers.backtest_trader import BacktestTrader, RunStats, BacktestStats
 from cash_money.trading.trader import Trader
 from cash_money.utils.file_utils import loadStockFile
@@ -31,14 +32,16 @@ def backtest(
     strats: Dict[str, NodeStrategy],
     startDate: datetime,
     endDate: datetime,
+    dataBroker: DataBroker,
     startingVal=10000,
     outputFile: str = 'stats.json',
     listener: Optional[CMEventListener] = None,
 ) -> RunStats:
     log.info("Setting up strategies")
-    setupStrategies(strats, startDate)
+
+    setupStrategies(strats, startDate, dataBroker)
     # TODO this is doing the same thing?
-    bars = downloadDailyBars([sym for sym in strats], startDate, endDate)
+    bars = dataBroker.getBars([sym for sym in strats], startDate, endDate)
 
     log.info("Initializing Trader")
     broker = BacktestTrader(strats, startingVal, bars)
@@ -75,8 +78,6 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     from cash_money.utils.run_utils import loadSystem
 
-    loadSystem()
-
     def _main():
         parser = ArgumentParser()
 
@@ -84,6 +85,8 @@ if __name__ == "__main__":
         parser.add_argument('-stx', '--stocks', required=True)
 
         args = parser.parse_args()
+
+        config = loadSystem()
 
         with open(args.strat, mode='r') as f:
             strat = json.load(f)
@@ -97,6 +100,13 @@ if __name__ == "__main__":
         start_date = datetime(2021, 1, 1)
         end_date = datetime(2022, 1, 1)
 
-        backtest(strats=strats, startDate=start_date, endDate=end_date)
+        dataBroker = loadDataBroker(config)
+
+        backtest(
+            strats=strats,
+            startDate=start_date,
+            endDate=end_date,
+            dataBroker=dataBroker,
+        )
 
     _main()

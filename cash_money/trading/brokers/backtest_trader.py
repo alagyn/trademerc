@@ -12,8 +12,9 @@ from cash_money.trading.objects import Bar, Order, OrderType, OrderStatus, Stock
 from cash_money.trading.trader import Trader
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.notifiers.plain_text_notifier import PlainTextNotifier
+from cash_money.trading.data.dataBroker import BarDict
 from cash_money.trading.events import Notification
-from cash_money.utils.run_utils import BarDict, TRADE_LOGS_DIR
+from cash_money.utils.run_utils import TRADE_LOGS_DIR
 from cash_money.utils.date_utils import nextBusinessDay
 from cash_money.trading.nodeStrategy import NodeStrategy
 

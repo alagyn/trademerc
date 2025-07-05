@@ -11,7 +11,7 @@ from cash_money.trading.brokers.alpaca_trader import AlpacaTrader
 from cash_money.trading.brokers.timeframes.dailyTF import DailyTF
 from cash_money.trading.brokers.timeframes.secondTF import SecTF
 from cash_money.utils.file_utils import loadStockFile, loadStratFile
-from cash_money.utils.run_utils import runTrader, loadSystem, setupStrategies
+from cash_money.utils.run_utils import runTrader, loadSystem, setupStrategies, loadDataBroker
 from cash_money.utils.api_utils import loadLiveAPI, loadPaperAPI
 from cash_money.cmErrors import CMError
 
@@ -44,8 +44,10 @@ def runAlpacaTrader(
     for sym in stocks:
         strats[sym] = NodeStrategy(stratVars, sym)
 
+    databroker = loadDataBroker(config)
+
     log.info('Setting up strategies')
-    setupStrategies(strats, datetime.datetime.today())
+    setupStrategies(strats, datetime.datetime.today(), databroker)
 
     if liveRun:
         x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
