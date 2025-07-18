@@ -19,7 +19,7 @@ dependencies = [
     "nodepasta==2.0.4",
     "colorama==0.4.6",
     "yfinance[nospam]==0.2.40",
-    "py-imgui-redux>=3.3.0",
+    "py-imgui-redux>=4.0.0",
     "pytz",
 ]
 

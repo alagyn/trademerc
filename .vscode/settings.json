@@ -10,7 +10,7 @@
     "python.testing.unittestEnabled": true,
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.exclude": [
-        "**/deprecated",
+        "**/deprecated/**",
         "**/build",
         "**/venv/**"
     ],

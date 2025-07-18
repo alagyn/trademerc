@@ -18,6 +18,7 @@ from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money import backtester
 from cash_money.trading.brokers.backtest_trader import RunStats
 from cash_money.trading.objects import Action, ActionEnum, OrderType, OrderStatus
+from cash_money.trading.data.dataBroker import DataBroker
 
 log = logging.getLogger("BT GUI")
 
@@ -54,8 +55,9 @@ CASH_CACHE = "bt_cash"
 
 class BacktesterTab(CMEventListener):
 
-    def __init__(self, cache: Dict[str, Any]) -> None:
+    def __init__(self, cache: Dict[str, Any], dataBroker: DataBroker) -> None:
 
+        self.dataBroker = dataBroker
         self.buys: Dict[str, Tuple[im.DoubleList,
                                    im.DoubleList]] = defaultdict(lambda: (im.DoubleList(), im.DoubleList()))
         self.sells: Dict[str, Tuple[im.DoubleList,
@@ -175,6 +177,7 @@ class BacktesterTab(CMEventListener):
                         strats,
                         self.startDate,
                         self.endDate,
+                        self.dataBroker,
                         self.startingCash.val,
                         "stats.json",  # TODO
                         self

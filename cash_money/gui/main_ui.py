@@ -7,7 +7,7 @@ from .ui_state import UIState
 from .tabs.backtesterTab import BacktesterTab
 from .tabs.strategyTab import StrategyTab
 from .tabs.configTab import ConfigTab
-from cash_money.utils.run_utils import _configLoc
+from cash_money.utils.run_utils import _configLoc, loadDataBroker
 from cash_money.utils.run_utils import CONFIG_DIR, APP_DIR
 
 windowFlags = (
@@ -23,24 +23,24 @@ FONT_FILE = os.path.join(APP_DIR, "fonts", "MonaspaceNeon-Regular.otf")
 
 class MainUI:
 
-    def __init__(self) -> None:
+    def __init__(self, configs) -> None:
         cache = {}
         if os.path.exists(CACHE_FILE):
             with open(CACHE_FILE, mode='r') as f:
                 cache = json.load(f)
 
         self.state = UIState(cache)
+        databroker = loadDataBroker(configs)
 
         # Tabs
-        self.backtesterTab = BacktesterTab(cache)
+        self.backtesterTab = BacktesterTab(cache, databroker)
         self.strategyTab = StrategyTab()
-        self.configTab = ConfigTab(_configLoc)
+        self.configTab = ConfigTab(configs)
 
     def init(self):
         self.state.init()
-        io = im.GetIO()
-        io.Fonts.AddFontFromFileTTF(FONT_FILE, 14)
-        io.Fonts.Build()
+        # io = im.GetIO()
+        # io.Fonts.AddFontFromFileTTF(FONT_FILE, 14)
 
     def cleanup(self):
         cache = {}

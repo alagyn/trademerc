@@ -5,7 +5,7 @@ from cash_money.utils import run_utils
 
 def main():
     configs = run_utils.loadSystem()
-    ui = main_ui.MainUI()
+    ui = main_ui.MainUI(configs)
     cm_window.run_window(
         "CashMoney",
         ui.render,
