@@ -13,8 +13,8 @@ from imgui import implot
 from ..ui_state import UIState
 from ..fileSelect import askOpenFile
 
-from cash_money.trading.events import ActionEvent, CMEventListener, EndOfTradeStepEvent, OrderEvent, StockUpdateEvent
-from cash_money.trading.nodeStrategy import NodeStrategy
+from cash_money.trading.events import ActionEvent, CMEventListener, EndOfTradeStepEvent, LineUpdateEvent, OrderEvent, StockUpdateEvent
+from cash_money.trading.nodeStrategy import loadStratFromJson
 from cash_money import backtester
 from cash_money.trading.brokers.backtest_trader import RunStats
 from cash_money.trading.objects import Action, ActionEnum, OrderType, OrderStatus
@@ -103,6 +103,8 @@ class BacktesterTab(CMEventListener):
         self.plotRectXMin = im.DoubleRef()
         self.plotRectXMax = im.DoubleRef()
 
+        self.lines: dict[str, dict[str, im.DoubleList]] = defaultdict(lambda: defaultdict(im.DoubleList))
+
     def cleanup(self, cache: Dict[str, Any]):
         cache[START_DATE_CACHE] = printDate(self.startDate)
         cache[END_DATE_CACHE] = printDate(self.endDate)
@@ -167,7 +169,7 @@ class BacktesterTab(CMEventListener):
 
             try:
                 strats = {
-                    x: NodeStrategy(state.stratData['graph'], x)
+                    x: loadStratFromJson(state.stratGraph.getJSON(), x)
                     for x in state.stocks
                 }
 
@@ -221,9 +223,9 @@ class BacktesterTab(CMEventListener):
 
                 # Portfolio plot
                 with self.data_lock:
+                    if self.reset_axes:
+                        implot.SetNextAxesToFit()
                     if len(self.portfolio) > 0 and implot.BeginPlot("Portfolio Value##plot", plot_dim):
-                        if self.reset_axes:
-                            implot.SetNextAxesToFit()
                         implot.SetupAxisLinks(implot.Axis.X1, self.plotRectXMin, self.plotRectXMax)
 
                         implot.SetupAxisScale(implot.Axis.X1, implot.Scale.Time)
@@ -267,9 +269,9 @@ class BacktesterTab(CMEventListener):
 
                         # Stock plot
                         with self.data_lock:
+                            if self.reset_axes:
+                                implot.SetNextAxesToFit()
                             if len(self.stock_closes[symbol]) > 0 and implot.BeginPlot(f"{symbol}##plot", plot_dim):
-                                if self.reset_axes:
-                                    implot.SetNextAxesToFit()
 
                                 implot.SetupAxisLinks(implot.Axis.X1, self.plotRectXMin, self.plotRectXMax)
 
@@ -294,6 +296,10 @@ class BacktesterTab(CMEventListener):
                                     implot.PushStyleColor(implot.Col.MarkerOutline, SELL_COL)
                                     implot.PlotScatter(f"Sell##{symbol}", sells_ts, sells)
                                     implot.PopStyleColor()
+
+                                for key, line in self.lines[symbol].items():
+                                    if (len(self.portfolio_ts) == len(line)):
+                                        implot.PlotLine(key, self.portfolio_ts, line)
 
                                 implot.EndPlot()
 
@@ -334,6 +340,7 @@ class BacktesterTab(CMEventListener):
             self.sells.clear()
             self.pos_values.clear()
             self.stock_closes.clear()
+            self.lines.clear()
 
     # Thread handler for backtesting
     # passes args to backetest func
@@ -383,3 +390,7 @@ class BacktesterTab(CMEventListener):
 
             for sym, bar in event.notif.bars.items():
                 self.stock_closes[sym].append(bar.close)
+
+    def onLineUpdate(self, event: LineUpdateEvent):
+        with self.data_lock:
+            self.lines[event.symbol][event.key].append(event.value)

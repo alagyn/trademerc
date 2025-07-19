@@ -13,6 +13,7 @@ from . import logicNode
 from . import macdNode
 from . import mathNode
 from . import parabolicSARNode
+from . import plotNode
 from . import rangeCheckNode
 from . import smaNode
 from . import smmaNode

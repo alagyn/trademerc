@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
 from nodepasta.nodegraph import NodeGraph
+from nodepasta.impasta.imgui_arg_handlers import ImArgHandler
 from cash_money.nodes import *
 
 
@@ -21,6 +22,7 @@ def registerNodes(nodegraph: NodeGraph):
         macdNode.MACD,
         mathNode.MathNode,
         parabolicSARNode.ParabolicSAR,
+        plotNode.PlotNode,
         rangeCheckNode.RangeCheck,
         smaNode.SMANode,
         smmaNode.SMMANode,

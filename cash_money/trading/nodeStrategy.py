@@ -2,6 +2,7 @@ from cash_money.nodes.cmNode import CMNode
 from cash_money.trading.objects import Bar, Stock, StockStatus, Action, BuyAction, UpdateStopAction, HoldAction, SellAction
 from cash_money.nodes.datakeys import *
 from cash_money.utils.node_utils import registerNodes
+from cash_money.trading.lineManager import LineManager
 
 import logging
 
@@ -12,10 +13,11 @@ log = logging.getLogger("NodeStrategy")
 
 class NodeStrategy:
 
-    def __init__(self, jGraph, symbol: str):
-        self.nodegraph = NodeGraph()
-        registerNodes(self.nodegraph)
-        self.nodegraph.loadFromJSON(jGraph)
+    def __init__(self, nodeGraph: NodeGraph, symbol: str):
+        self.nodegraph = nodeGraph
+        self.lineManager = LineManager()
+        self.nodegraph.datamap[LINE_MGR] = self.lineManager
+
         self.nodegraph.setupNodes()
 
         self.nodegraph.datamap[SYMBOL] = symbol
@@ -70,3 +72,10 @@ class NodeStrategy:
     def getSetupTime(self) -> int:
         stratNode: CMNode = self.nodegraph.datamap[STRAT_NODE]
         return stratNode.recurseSetupTime()
+
+
+def loadStratFromJson(json, symbol: str) -> NodeStrategy:
+    nodegraph = NodeGraph()
+    registerNodes(nodegraph)
+    nodegraph.loadFromJSON(json)
+    return NodeStrategy(nodegraph, symbol)

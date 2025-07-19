@@ -6,7 +6,7 @@ from cash_money import cmErrors
 from cash_money.trading.nodeStrategy import NodeStrategy
 from cash_money.trading.objects import ActionEnum, Action, BuyAction, UpdateStopAction, StockStatus
 from cash_money.trading.objects import Order, Stock, Bar
-from cash_money.trading.events import CMEventListener, Notification, EndOfTradeStepEvent, ActionEvent, PositionUpdateEvent, StockUpdateEvent, OrderEvent
+from cash_money.trading.events import CMEventListener, Notification, EndOfTradeStepEvent, ActionEvent, PositionUpdateEvent, StockUpdateEvent, OrderEvent, LineUpdateEvent
 import logging
 from cash_money.utils.date_utils import deltaBusinessDays
 
@@ -90,6 +90,8 @@ class Trader:
         log.debug('Calculating Daily Actions')
         actions = self.getStepActions()
 
+        self.notifyLineUpdates()
+
         # Run actions
         log.info('Running Actions')
         self.runActions(actions)
@@ -118,6 +120,13 @@ class Trader:
         event = PositionUpdateEvent(position)
         for x in self.listeners:
             x.onPositionUpdate(event)
+
+    def notifyLineUpdates(self):
+        for symbol, strat in self.strats.items():
+            for key, value in strat.lineManager.lines.items():
+                event = LineUpdateEvent(symbol, key, value)
+                for x in self.listeners:
+                    x.onLineUpdate(event)
 
     def updateStocks(self):
         """

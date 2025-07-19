@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from typing import List, Optional
 import logging
 
-from cash_money.trading.nodeStrategy import NodeStrategy
+from cash_money.trading.nodeStrategy import NodeStrategy, loadStratFromJson
 from cash_money.trading.notifiers.push_bullet_notifier import PushBulletNotifier
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.brokers.alpaca_trader import AlpacaTrader
@@ -40,9 +40,12 @@ def runAlpacaTrader(
         else:
             raise CMError("run_alpaca.runTrader() No stocks or stock file provided")
 
+    if stratVars is None:
+        raise RuntimeError()
+
     strats = {}
     for sym in stocks:
-        strats[sym] = NodeStrategy(stratVars, sym)
+        strats[sym] = loadStratFromJson(stratVars, sym)
 
     databroker = loadDataBroker(config)
 

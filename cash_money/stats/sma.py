@@ -23,6 +23,8 @@ class SMA:
         return self.avg
 
     def std_dev(self) -> float:
+        if len(self.vals) == 1:
+            return 0
         return stdev(self.vals)
 
     def getValue(self) -> float:

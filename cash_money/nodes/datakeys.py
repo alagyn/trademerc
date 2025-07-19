@@ -9,6 +9,7 @@ STOP = "__STOP"
 STOP_PERIOD = "__STOP_PER"
 
 SYMBOL = "__symbol"
+LINE_MGR = "__lineMgr"
 
 STRAT_NODE = "__strategy"
 

@@ -134,6 +134,14 @@ class ErrorEvent:
         self.message = message
 
 
+class LineUpdateEvent:
+
+    def __init__(self, symbol: str, key: str, value: float) -> None:
+        self.symbol = symbol
+        self.key = key
+        self.value = value
+
+
 class CMEventListener:
     """
     CashMoney Event Listener interface
@@ -155,4 +163,7 @@ class CMEventListener:
         pass
 
     def onError(self, event: ErrorEvent):
+        pass
+
+    def onLineUpdate(self, event: LineUpdateEvent):
         pass
