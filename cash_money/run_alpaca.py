@@ -53,13 +53,10 @@ def runAlpacaTrader(
     setupStrategies(strats, datetime.datetime.today(), databroker)
 
     if liveRun:
-        x = input('Are you sure you want to run using the LIVE ACCOUNT? (YES/NO):')
-        if x != 'YES':
-            sys.exit()
-        else:
-            api = loadLiveAPI(apiCfg)
-
+        log.warning("Loading Live API")
+        api = loadLiveAPI(apiCfg)
     else:
+        log.warning("Loading Paper API")
         api = loadPaperAPI(apiCfg)
 
     tfType = apiCfg['Timeframe']
