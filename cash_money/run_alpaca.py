@@ -101,8 +101,6 @@ def runAlpacaTrader(
         pass
     except Exception as err:
         print(err)
-        if isinstance(notifier, PushBulletNotifier):
-            notifier.send_message(f"Error {err}")
     finally:
         # Errors will be logged in runTradeBroker
         trader.postRun()

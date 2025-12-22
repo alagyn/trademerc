@@ -60,6 +60,8 @@ class EmailNotifier(CMEventListener):
         self.htmlEnv = Environment(loader=FileSystemLoader('html-templates'), autoescape=select_autoescape())
         self.emailTemplate = self.htmlEnv.get_template("emailtemplate.html")
 
+        self.send_message("Yo dog, it's alive")
+
     def _updateThread(self, n: Notification):
         args = {
             NotifyKeys.Portfolio.START: n.equity_prev,
