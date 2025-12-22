@@ -81,6 +81,8 @@
                 <td>{{ pos.p_date }}</td>
                 {% if pos.stop_price %}
                 <td>{{ "%.2f" % pos.stop_price }}</td>
+                {% else %}
+                <td></td>
                 {% endif %}
                 <td>{{ pos.last_stop }}</td>
                 <td>{{ pos.next_stop }}</td>
