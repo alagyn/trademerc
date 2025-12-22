@@ -4,9 +4,9 @@
     <style>
 
         table {
-            #border: 1px solid black;
+            border: 1px solid black;
             width: 100%;
-            border-collapse: collapse:
+            border-collapse: collapse;
         }
 
         th, td {
@@ -45,9 +45,9 @@
             <tr>
                 <td>{{ trade.symbol }}</td>
                 <td>{{ trade.side }}</td>
-                <td>{{ trade.qty }}</td>
-                <td>{{ trade.price }}</td>
-                <td>{{ trade.value }}</td>
+                <td>{{ "%.2f" % trade.qty }}</td>
+                <td>{{ "%.2f" % trade.price }}</td>
+                <td>{{ "%.2f" % trade.value }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -73,13 +73,15 @@
             {% for pos in positions %}
             <tr>
                 <td>{{ pos.symbol }}</td>
-                <td>{{ pos.qty }}</td>
-                <td>{{ pos.pl }}</td>
-                <td>{{ pos.price }}</td>
-                <td>{{ pos.value }}</td>
+                <td>{{ "%.2f" % pos.qty }}</td>
+                <td>{{ "%.2f" % pos.pl }}</td>
+                <td>{{ "%.2f" % pos.price }}</td>
+                <td>{{ "%.2f" % pos.value }}</td>
                 <td>{{ pos.p_value }}</td>
                 <td>{{ pos.p_date }}</td>
-                <td>{{ pos.stop_price }}</td>
+                {% if pos.stop_price %}
+                <td>{{ "%.2f" % pos.stop_price }}</td>
+                {% endif %}
                 <td>{{ pos.last_stop }}</td>
                 <td>{{ pos.next_stop }}</td>
             </tr>
