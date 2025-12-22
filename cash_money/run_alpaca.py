@@ -6,6 +6,7 @@ import logging
 
 from cash_money.trading.nodeStrategy import NodeStrategy, loadStratFromJson
 from cash_money.trading.notifiers.push_bullet_notifier import PushBulletNotifier
+from cash_money.trading.notifiers.email_notifier import EmailNotifier
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.brokers.alpaca_trader import AlpacaTrader
 from cash_money.trading.brokers.timeframes.dailyTF import DailyTF
@@ -84,6 +85,10 @@ def runAlpacaTrader(
     elif notifyType == 'Console':
         log.info("Loading Console notifier")
         # does nothing, loaded below
+    elif notifyType == 'Email':
+        log.info("Loading Email notifier")
+        notifier = EmailNotifier(config)
+        trader.addListener(notifier)
     else:
         raise CMError(f"run_alpaca.runTrader() Invalid notifier type \"{notifyType}\"")
 
@@ -97,8 +102,7 @@ def runAlpacaTrader(
     except Exception as err:
         print(err)
         if isinstance(notifier, PushBulletNotifier):
-            notifier.send_message("Error", str(err))
-
+            notifier.send_message(f"Error {err}")
     finally:
         # Errors will be logged in runTradeBroker
         trader.postRun()

@@ -5,6 +5,7 @@ import os.path
 import traceback
 import colorama
 import logging
+import logging.handlers
 import os
 import time
 import sys
@@ -71,12 +72,12 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
     root.setLevel(loglevel)
 
     if logToFile:
-        logname = time.strftime(r'%Y_%b_%dT%H_%M_%S')
-
         os.makedirs(logDir, exist_ok=True)
 
         # Terminal Log File
-        filehandler = logging.FileHandler(filename=f'{logDir}/{logname}.log', mode='w')
+        filehandler = logging.handlers.TimedRotatingFileHandler(
+            filename=f'{logDir}/run.log', when="D", interval=2, backupCount=3
+        )
         filehandler.setLevel(level=loglevel)
         filehandler.setFormatter(_FILE_FMT)
         root.addHandler(filehandler)
