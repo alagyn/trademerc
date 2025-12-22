@@ -123,7 +123,7 @@ class AlpacaPosition(CMPosition):
         return self._data
 
     def getstatus(self) -> StockStatus:
-        if float(self._data.qty) > 0:
+        if self._data.qty_available == self._data.qty:
             return StockStatus.InMarket
         else:
             return StockStatus.Pending
@@ -257,21 +257,12 @@ class AlpacaTrader(Trader):
                     stock.buyDate = stock.buyOrder.timestamp()
                 else:
                     # TODO how to handle last order not being a BUY?
-                    raise RuntimeError()
+                    log.warning(f"Open position, but last order was not a buy ({stock.symbol}, {stock.position})")
+                    stock.buyDate = lastOrder.timestamp()
 
     def postRun(self) -> None:
-        log.info('Stopping System, Cancelling all existing orders')
+        log.info('Stopping System')
 
-        #self._api.trade.cancel_orders()
-
-        # New
-        open_orders = self.getAllOrders()
-        for order in open_orders.values():
-            if order.orderType() != OrderType.STOP:
-                self._api.trade.cancel_order_by_id(order.data().id)
-
-        # Close all positions?
-        # self.api.close_all_positions()
         asyncio.run(self._api.data.stop_ws())
         asyncio.run(self._api.trade_stream.stop_ws())
 
@@ -448,6 +439,9 @@ class AlpacaTrader(Trader):
         positions: List[models.Position] = x
         openset = set()
         for p in positions:
+            if p.qty_available != p.qty:
+                # Ignore positions that haven't fully completed yet
+                continue
             openset.add(p.symbol)
             try:
                 self.stocks[p.symbol].position = AlpacaPosition(p, )
@@ -543,7 +537,6 @@ class AlpacaTrader(Trader):
                 side=tradeEnum.OrderSide.BUY,
                 type=tradeEnum.OrderType.MARKET,
                 time_in_force=tradeEnum.TimeInForce.DAY,
-                # Class: One-Triggers-Other, activates the stop loss after buy is filled
                 order_class=tradeEnum.OrderClass.SIMPLE,
                 extended_hours=False,
                 client_order_id=orderID.hex

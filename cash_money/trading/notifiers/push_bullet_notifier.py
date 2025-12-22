@@ -1,73 +1,150 @@
 import requests
 from threading import Thread
+import time
+import datetime
+import logging
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from cash_money.trading.events import EndOfTradeStepEvent
 
 from ..events import CMEventListener, Notification
-from cash_money.utils.tumble import Tumble, Column, FloatColumn
 
-TRADE_COLS = [
-    Column("Symbol", 4, "s"),
-    Column("Side", 4, "s"),
-    Column("Qty", 5, "d"),
-    FloatColumn("Price", 5, 2),
-    FloatColumn("Value", 5, 2)
-]
-
-POSIT_COLS = [
-    Column("Symbol", 4, "s"),
-    Column("Qty", 5, "d"),
-    FloatColumn("PL", 5, 2),
-    FloatColumn("Cur Price", 5, 2),
-    FloatColumn("Value", 5, 2),
-    FloatColumn("Stop Price", 5, 2)
-]
+log = logging.getLogger("PushBullet")
 
 ENDPOINT = "https://api.pushbullet.com"
+
+
+class NotifyKeys:
+
+    class Portfolio:
+        START = "portfolio_start"
+        CUR = "portfolio_cur"
+        PL = "portfolio_pl"
+
+    TRADES = "trades"
+
+    class Trade:
+        Symbol = "symbol"
+        Side = "side"
+        Qty = "qty"
+        Price = "price"
+        Value = "value"
+
+    POSITIONS = "positions"
+
+    class Position:
+        Symbol = "symbol"
+        Qty = "qty"
+        PL = "pl"
+        Price = "price"
+        Value = "value"
+        PurchaseValue = "p_value"
+        PurchaseDate = "p_date"
+        StopPrice = "stop_price"
+        LastStop = "last_stop"
+        NextStop = "next_stop"
 
 
 class PushBulletNotifier(CMEventListener):
 
     def __init__(self, config) -> None:
         self._token = config['PushBullet']['API_KEY']
-        self._trade_tumble = Tumble(TRADE_COLS)
-        self._pos_tumble = Tumble(POSIT_COLS)
+
+        self.htmlEnv = Environment(loader=FileSystemLoader('html-templates'), autoescape=select_autoescape())
+        self.emailTemplate = self.htmlEnv.get_template("emailtemplate.html")
 
     def _updateThread(self, n: Notification):
-        title = "Trade Update"
-        msg = []
-        msg.append(f'Cash: ${n.cash:.2f}')
-        msg.append(f"Equity: ${n.equity_prev:.2f} -> ${n.equity_cur:.2f}, P/L: ${n.equity_pl:.2f}")
-        if len(n.trades) > 0:
-            msg.append("Trades:")
-            msg.append(self._trade_tumble.header())
-            msg.append(self._trade_tumble.breaker())
-            for x in n.trades:
-                msg.append(self._trade_tumble.row(x.symbol, x.side, x.qty, x.price, x.value))
-        else:
-            msg.append("No Trades")
-
-        if len(n.positions) > 0:
-            msg.append("Positions:")
-            msg.append(self._pos_tumble.header())
-            msg.append(self._pos_tumble.breaker())
-            for x in n.positions:
-                msg.append(self._pos_tumble.row(x.symbol, x.qty, x.pl, x.price, x.value, x.stopPrice))
-            msg.append("")
-        else:
-            msg.append("No Open Positions")
-
-        txt = '\n'.join(msg)
-        self.send_message(title, txt)
-
-    def send_message(self, title: str, msg: str):
-        data = {
-            "type": "note", "title": title, "body": msg
+        args = {
+            NotifyKeys.Portfolio.START: n.equity_prev,
+            NotifyKeys.Portfolio.CUR: n.equity_cur,
+            NotifyKeys.Portfolio.PL: n.equity_pl,
+            NotifyKeys.TRADES: n.trades,
+            NotifyKeys.POSITIONS: n.positions
         }
-        requests.post(
-            f'{ENDPOINT}/v2/pushes', headers={'Access-Token': self._token}, data=data, timeout=10
+        txt = self.emailTemplate.render(**args)
+
+        self.send_message(txt)
+
+    def send_message(self, msg: str):
+        now = time.time()
+
+        title = datetime.datetime.now().strftime("Trades-%a-%b-%d-%Y-%H.%M.%S")
+
+        uploadRequestData = {
+            "file_name": f'{title}.html',
+            "file_type": "text/html"
+        }
+
+        headers = {
+            "Access-Token": self._token
+        }
+
+        print("requesting upload")
+        res = requests.post(
+            f'{ENDPOINT}/v2/upload-request',
+            headers=headers,
+            data=uploadRequestData,
         )
 
+        try:
+            resData = res.json()
+        except:
+            log.error(f"Upload request failed, {res}")
+            return
+
+        # upload the file
+        print("uploading file")
+        res = requests.post(
+            resData["upload_url"], files={
+                "file": (
+                    resData["file_name"],
+                    msg.encode(),
+                    resData["file_type"],
+                )
+            }
+        )
+
+        if res.status_code != 204:
+            try:
+                errorData = res.json()
+            except:
+                errorData = None
+            log.error(f"Upload failed, {res.status_code}, {errorData}")
+            return
+
+        data = {
+            "type": "file",
+            "title": title,
+            "file_name": resData["file_name"],
+            "file_url": resData["file_url"],
+            "file_type": resData["file_type"]
+        }
+        print("posting push")
+        res = requests.post(
+            f'{ENDPOINT}/v2/pushes', headers={
+                'Access-Token': self._token
+            }, data=data, timeout=10
+        )
+
+        if res.status_code != 200:
+            log.error(f"Push failed, {res.status_code}, {res.json()}")
+            return
+
     def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
-        # Thread(target=self._updateThread, args=(event.notif, ), daemon=True).start()
-        pass
+        Thread(target=self._updateThread, args=(event.notif, ), daemon=True).start()
+
+
+if __name__ == "__main__":
+    from cash_money.utils import run_utils
+
+    import sys
+    print(sys.argv[0])
+
+    cfg = run_utils.loadSystem()
+    notif = PushBulletNotifier(cfg)
+    n = Notification(datetime.datetime.now())
+    n.addTrade("QQQ", "BUY", 25, 1.25, 500)
+    n.addTrade("AAA", "BUY", 25, 1.25, 500)
+    n.addTrade("BBB", "BUY", 25, 1.25, 500)
+    n.addPosition("QQQ", 25, 0.15, 6.90, 250, 2.3, 1.2)
+    notif._updateThread(n)

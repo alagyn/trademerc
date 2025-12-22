@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <style>
+
+        table {
+            #border: 1px solid black;
+            width: 100%;
+            border-collapse: collapse:
+        }
+
+        th, td {
+            text-align: center;
+            padding: 5px;
+            border-bottom: 1px solid #666;
+        }
+
+    </style>
+    <head></head>
+    <body>
+    <p>
+        <b>Portfolio Report:</b>
+    </p>
+    <p>
+        Starting Portfolio: {{ portfolio_start }}
+        <br>
+        Ending Portfolio: {{ portfolio_cur }}
+        <br>
+        P/L: {{ portfolio_pl }}
+    </p>
+    <br>
+    <p>
+        <b>Trades:</b>
+        <br>
+        <div style="overflow-x:auto">
+        <table>
+            <tr>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Value</th>
+            </tr>
+            {% for trade in trades %}
+            <tr>
+                <td>{{ trade.symbol }}</td>
+                <td>{{ trade.side }}</td>
+                <td>{{ trade.qty }}</td>
+                <td>{{ trade.price }}</td>
+                <td>{{ trade.value }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        </div>
+    </p>
+    <br>
+    <p>
+        <b>Positions:</b>
+        <div style="overflow-x:auto">
+        <table>
+            <tr>
+                <th>Symbol</th>
+                <th>Qty</th>
+                <th>P/L</th>
+                <th>Price</th>
+                <th>Value</th>
+                <th>Purchase Value</th>
+                <th>Purchase Date</th>
+                <th>Stop Price</th>
+                <th>Last Stop Update</th>
+                <th>Next Stop Update</th>
+            </tr>
+            {% for pos in positions %}
+            <tr>
+                <td>{{ pos.symbol }}</td>
+                <td>{{ pos.qty }}</td>
+                <td>{{ pos.pl }}</td>
+                <td>{{ pos.price }}</td>
+                <td>{{ pos.value }}</td>
+                <td>{{ pos.p_value }}</td>
+                <td>{{ pos.p_date }}</td>
+                <td>{{ pos.stop_price }}</td>
+                <td>{{ pos.last_stop }}</td>
+                <td>{{ pos.next_stop }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        </div>
+    </p>
+
+    </body>
+
+</html>

@@ -106,6 +106,9 @@ class CMPosition:
     def qty(self) -> float | int:
         raise NotImplementedError()
 
+    def __str__(self) -> str:
+        return f'Position(status={self.getstatus()}, qty={self.qty()})'
+
 
 class Stock:
 
@@ -148,6 +151,7 @@ class Stock:
 
     def updateBuyDate(self, date: datetime.date):
         self.buyDate = date
+
 
 
 class ActionEnum(IntEnum):

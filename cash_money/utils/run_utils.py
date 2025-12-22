@@ -24,8 +24,14 @@ log = logging.getLogger("Run Utils")
 _config = ConfigParser()
 _systemLoaded = False
 
-APP_DIR = os.path.split(os.path.dirname(sys.argv[0]))[0]
-CONFIG_DIR = os.path.join(APP_DIR, "config")
+_CONFIG_PATH_KEY = "CM_CONFIG_DIR"
+
+if _CONFIG_PATH_KEY in os.environ:
+    CONFIG_DIR = os.environ[_CONFIG_PATH_KEY]
+else:
+    APP_DIR = os.path.split(os.path.dirname(sys.argv[0]))[0]
+    CONFIG_DIR = os.path.join(APP_DIR, "config")
+
 SYS_LOG_DIR = os.path.join(CONFIG_DIR, "logs", "system")
 TRADE_LOGS_DIR = os.path.join(CONFIG_DIR, "logs", "trade")
 
