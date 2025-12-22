@@ -51,7 +51,7 @@ class NotifyKeys:
 class EmailNotifier(CMEventListener):
 
     def __init__(self, config) -> None:
-        self._recievingEmail = config['Email']['recieving_email']
+        self._recievingEmail = config['Email']['receiving_email']
         self._sendingEmail = config['Email']['sending_email']
         self._sendingPass = config['Email']['sending_email_pass']
         self._smtpServer = config['Email']['smtp_server']
