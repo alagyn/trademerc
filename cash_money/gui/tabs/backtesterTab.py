@@ -327,7 +327,7 @@ class BacktesterTab(CMEventListener):
                             im.EndTable()
 
                     im.Separator()
-                im.EndChild()
+            im.EndChild()
             implot.EndAlignedPlots()
 
         # Reset the axes flag after rendering all plots
