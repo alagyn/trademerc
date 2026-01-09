@@ -12,7 +12,7 @@ class InputNode(CMNode):
         Port("Low", FLOAT, "The cycle's Low"),
         Port("Close", FLOAT, "The cycle's Close"),
         Port("High", FLOAT, "The cycles's High"),
-        Port("Volume", FLOAT, "The cycle's Volume")
+        Port("Volume", FLOAT, "The cycle's Volume"),
         Port("Stop-Loss", FLOAT, "The current stop-loss price")
     ]
     NODETYPE = 'Input'
