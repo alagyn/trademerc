@@ -11,7 +11,12 @@ class MathNode(CMNode):
     _INPUTS = [Port("A", FLOAT, "The first operand"), Port("B", FLOAT, "The second operand")]
     _OUTPUTS = [Port("Out", FLOAT, "The output of the operation")]
     _ARGS = [
-        EnumNodeArg("op", "Operation", "The operation to perform", "ADD", ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE"])
+        EnumNodeArg(
+            "op",
+            "Operation",
+            "The operation to perform",
+            "ADD", ["ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MIN", "MAX"]
+        )
     ]
     NODETYPE = "Math"
 
@@ -32,6 +37,10 @@ class MathNode(CMNode):
             self.op = operator.mul
         elif x == "DIVIDE":
             self.op = operator.truediv
+        elif x == "MIN":
+            self.op = min
+        elif x == "MAX":
+            self.op = max
         else:
             raise NodeDefError("MathNode.init", f"Unknown operation: {x}")
 
