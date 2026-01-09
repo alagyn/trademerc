@@ -2,6 +2,7 @@ LOW = '__lo'
 CLOSE = '__cl'
 HIGH = '__hi'
 VOLUME = '__vol'
+PREV_STOP = '__prev_stop'
 
 ENTRY = '__ENTRY'
 EXIT = "__EXIT"

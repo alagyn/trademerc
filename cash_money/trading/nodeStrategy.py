@@ -40,12 +40,17 @@ class NodeStrategy:
         self.nodegraph.datamap[ENTRY] = False
         self.nodegraph.datamap[EXIT] = False
 
+        pos = stock.status()
+        if pos == StockStatus.InMarket and stock.stopOrder is not None:
+            self.nodegraph.datamap[PREV_STOP] = stock.stopOrder.stopPrice()
+        else:
+            self.nodegraph.datamap[PREV_STOP] = 0.0
+
         if stock.bar is None:
             log.warn(f"stock.bar is None: {stock.symbol}, trade day: {tradeDay}")
             return HoldAction(stock)
 
         self.nodegraph.execute()
-        pos = stock.status()
 
         stop = self.nodegraph.datamap[STOP]
 

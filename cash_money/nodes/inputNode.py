@@ -2,7 +2,7 @@ from nodepasta.argtypes import FLOAT
 from nodepasta.node import Port
 
 from cash_money.nodes.cmNode import CMNode
-from cash_money.nodes.datakeys import HIGH, LOW, CLOSE, VOLUME
+from cash_money.nodes.datakeys import HIGH, LOW, CLOSE, VOLUME, PREV_STOP
 
 
 class InputNode(CMNode):
@@ -13,6 +13,7 @@ class InputNode(CMNode):
         Port("Close", FLOAT, "The cycle's Close"),
         Port("High", FLOAT, "The cycles's High"),
         Port("Volume", FLOAT, "The cycle's Volume")
+        Port("Stop-Loss", FLOAT, "The current stop-loss price")
     ]
     NODETYPE = 'Input'
 
@@ -21,6 +22,7 @@ class InputNode(CMNode):
         self.close = self.outputs[1]
         self.hi = self.outputs[2]
         self.vol = self.outputs[3]
+        self.stop = self.outputs[4]
 
     def setup(self) -> None:
         pass
@@ -33,3 +35,4 @@ class InputNode(CMNode):
         self.close.value(self.datamap[CLOSE])
         self.hi.value(self.datamap[HIGH])
         self.vol.value(self.datamap[VOLUME])
+        self.stop.value(self.datamap[PREV_STOP])
