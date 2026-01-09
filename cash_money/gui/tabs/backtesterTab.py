@@ -187,6 +187,7 @@ class BacktesterTab(CMEventListener):
                 )
                 self.runThread.start()
             except Exception as err:
+                log.error("Error running backtest: %s", "".join(traceback.format_exception(err)))
                 self.errorMessage = f"Backtesting failed, Error: {err}"
                 pass
 

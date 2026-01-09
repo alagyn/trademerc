@@ -17,6 +17,7 @@ class NodeStrategy:
         self.nodegraph = nodeGraph
         self.lineManager = LineManager()
         self.nodegraph.datamap[LINE_MGR] = self.lineManager
+        self.nodegraph.datamap[PREV_STOP] = 0.0
 
         self.nodegraph.setupNodes()
 
