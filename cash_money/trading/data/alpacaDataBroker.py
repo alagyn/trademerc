@@ -11,8 +11,8 @@ from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
 class AlpacaDataBroker(DataBroker):
 
-    def __init__(self, apiCfg) -> None:
-        super().__init__()
+    def __init__(self, dataDBDir: str, apiCfg) -> None:
+        super().__init__(dataDBDir)
 
         try:
             key = apiCfg["Paper_API_Key"]
@@ -23,7 +23,7 @@ class AlpacaDataBroker(DataBroker):
 
         self._client = StockHistoricalDataClient(key, secret)
 
-    def getBars(self, symbols: list[str], startDate: datetime, endDate: datetime) -> BarDict:
+    def _getBars(self, symbols: list[str], startDate: datetime, endDate: datetime) -> BarDict:
         req = StockBarsRequest(
             symbol_or_symbols=symbols,
             start=startDate,

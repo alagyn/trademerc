@@ -35,6 +35,7 @@ else:
 
 SYS_LOG_DIR = os.path.join(CONFIG_DIR, "logs", "system")
 TRADE_LOGS_DIR = os.path.join(CONFIG_DIR, "logs", "trade")
+DATA_DB_FILE = os.path.join(CONFIG_DIR, "data_cache.db")
 
 _configLoc = os.path.join(CONFIG_DIR, "system.cfg")
 
@@ -94,7 +95,6 @@ def _setuplogging(loglevel: int, logToFile: bool, logDir: str):
         logging.getLogger("urllib3.connectionpool"),
         logging.getLogger("websockets.client"),
         logging.getLogger("asyncio"),
-        logging.getLogger('matplotlib'),
         logging.getLogger('PIL'),
         logging.getLogger('yfinance'),
         logging.getLogger('peewee')
@@ -144,9 +144,9 @@ def loadDataBroker(config: ConfigParser) -> DataBroker:
 
     match databrokerName.lower():
         case "yfinance":
-            databroker = YFinanceDataBroker()
+            databroker = YFinanceDataBroker(DATA_DB_FILE)
         case 'alpaca':
-            databroker = AlpacaDataBroker(config["Alpaca"])
+            databroker = AlpacaDataBroker(DATA_DB_FILE, config["Alpaca"])
 
     return databroker
 

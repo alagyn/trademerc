@@ -13,10 +13,10 @@ def parseYFDate(d) -> datetime:
 
 class YFinanceDataBroker(DataBroker):
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, dataDBDir: str) -> None:
+        super().__init__(dataDBDir)
 
-    def getBars(self, symbols: list[str], startDate: datetime, endDate: datetime) -> BarDict:
+    def _getBars(self, symbols: list[str], startDate: datetime, endDate: datetime) -> BarDict:
         dirtyBars: dict[str, list[Bar]] = {}
         dl = yf.download(symbols, startDate, endDate, progress=False, auto_adjust=False)
         if dl is None:
