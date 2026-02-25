@@ -123,7 +123,6 @@ class AlpacaPosition(CMPosition):
         return self._data
 
     def status(self) -> StockStatus:
-        log.debug(f"{self._data.symbol} qty={self._data.qty} qty_ava={self._data.qty_available}")
         if self._data.qty_available == self._data.qty:
             return StockStatus.InMarket
         else:
