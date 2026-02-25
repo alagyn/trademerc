@@ -67,7 +67,7 @@ class BackTestPosition(CMPosition):
 
         self.stats = _TradeList()
 
-    def getstatus(self) -> StockStatus:
+    def status(self) -> StockStatus:
         # always return in market since we set the position to none otherwise
         return StockStatus.InMarket
 
@@ -307,7 +307,7 @@ class BacktestTrader(Trader):
             position = self.positions[sym]
 
             if position.stopPrice is not None and newBar is not None:
-                if position.stopPrice > newBar.lo:
+                if newBar.hi > position.stopPrice > newBar.lo:
                     newCash = position.qty() * position.stopPrice
                     self.totalCash += newCash
                     position.stats.addSell(self.curDate, newCash, position.stopPrice)

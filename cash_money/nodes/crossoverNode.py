@@ -2,9 +2,10 @@ from nodepasta.argtypes import FLOAT, BOOL
 from nodepasta.node import Port
 
 from cash_money.nodes.cmNode import CMNode
+from cash_money.stats.crossover import Crossover, CrossoverType
 
 
-class Crossover(CMNode):
+class CrossoverNode(CMNode):
     DESCRIPTION = "Checks if input A crosses input B."
     _INPUTS = [Port("A", FLOAT, "The first input"), Port("B", FLOAT, "The second input")]
     _OUTPUTS = [
@@ -15,8 +16,7 @@ class Crossover(CMNode):
     NODETYPE = "Crossover"
 
     def init(self):
-        self.prevDiff = None
-        self.curDiff = None
+        self.co = Crossover()
 
         self.a = self.inputs[0]
         self.b = self.inputs[1]
@@ -25,32 +25,25 @@ class Crossover(CMNode):
         self.crossDn = self.outputs[2]
 
     def setup(self) -> None:
-        self.prevDiff = None
-        self.curDiff = None
+        pass
 
     def execute(self) -> None:
-        if self.a.value() is None or self.b.value() is None:
+        a = self.a.value()
+        b = self.b.value()
+
+        if a is None or b is None:
             self.delta.value(None)
             self.crossUp.value(None)
             self.crossDn.value(None)
-
-        if self.curDiff is None:
-            self.curDiff = self.a.value() - self.b.value()
-            self.delta.value(0)
-            self.crossDn.value(False)
-            self.crossUp.value(True)
             return
 
-        self.prevDiff = self.curDiff
-        self.curDiff = self.a.value() - self.b.value()
+        out = self.co.check(a, b)
 
-        # Upcross
-        if self.prevDiff < 0 < self.curDiff:
+        if out == CrossoverType.CROSS_UP:
             self.delta.value(1)
             self.crossUp.value(True)
             self.crossDn.value(False)
-        # Downcross
-        elif self.prevDiff > 0 > self.curDiff:
+        elif out == CrossoverType.CROSS_DOWN:
             self.delta.value(-1)
             self.crossUp.value(False)
             self.crossDn.value(True)

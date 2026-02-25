@@ -97,7 +97,7 @@ class StockStatus(IntEnum):
 
 class CMPosition:
 
-    def getstatus(self) -> StockStatus:
+    def status(self) -> StockStatus:
         raise NotImplementedError()
 
     def data(self) -> Any:
@@ -107,7 +107,7 @@ class CMPosition:
         raise NotImplementedError()
 
     def __str__(self) -> str:
-        return f'Position(status={self.getstatus()}, qty={self.qty()})'
+        return f'Position(status={self.status()}, qty={self.qty()})'
 
 
 class Stock:
@@ -143,15 +143,24 @@ class Stock:
     def status(self) -> StockStatus:
         if self.position is None:
             return StockStatus.OutMarket
+        elif self.buyOrder is not None:
+            match self.buyOrder.status():
+                case OrderStatus.UNFILLED:
+                    return StockStatus.Pending
+                case OrderStatus.CANCELED | OrderStatus.REPLACED:
+                    # TODO????
+                    return StockStatus.OutMarket
+                case OrderStatus.FILLED:
+                    return StockStatus.InMarket
         else:
-            return self.position.getstatus()
+            # TODO error???
+            return StockStatus.InMarket
 
     def setNextStopDate(self, date: datetime.datetime):
         self.nextStopUpdate = date
 
     def updateBuyDate(self, date: datetime.date):
         self.buyDate = date
-
 
 
 class ActionEnum(IntEnum):

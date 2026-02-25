@@ -13,7 +13,7 @@ def registerNodes(nodegraph: NodeGraph):
         compareNode.Compare,
         confidenceNode.ConfidenceNode,
         constantNode.ConstantNode,
-        crossoverNode.Crossover,
+        crossoverNode.CrossoverNode,
         delayNode.DelayNode,
         emaNode.EMANode,
         inputNode.InputNode,

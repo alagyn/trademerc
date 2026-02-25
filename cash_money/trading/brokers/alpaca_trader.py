@@ -38,9 +38,11 @@ class AlpacaOrder(Order):
     _REPLACE_SET = {"replaced", "pending_replace"}
 
     def __init__(self, o: models.Order):
-        super().__init__(o.id)
+        super().__init__(uuid.UUID(o.client_order_id))
 
         self._data = o
+        self._status: OrderStatus = OrderStatus.UNFILLED
+        self._type: OrderType = OrderType.BUY
 
         if self._data.order_type == tradeEnum.OrderType.STOP:
             self._type = OrderType.STOP
@@ -56,8 +58,6 @@ class AlpacaOrder(Order):
             self._status = OrderStatus.CANCELED
         elif self._data.status in AlpacaOrder._REPLACE_SET:
             self._status = OrderStatus.REPLACED
-        else:
-            self._status = OrderStatus.UNFILLED
 
     def orderType(self) -> OrderType:
         return self._type
@@ -122,7 +122,8 @@ class AlpacaPosition(CMPosition):
     def data(self) -> Any:
         return self._data
 
-    def getstatus(self) -> StockStatus:
+    def status(self) -> StockStatus:
+        log.debug(f"{self._data.symbol} qty={self._data.qty} qty_ava={self._data.qty_available}")
         if self._data.qty_available == self._data.qty:
             return StockStatus.InMarket
         else:
@@ -166,7 +167,6 @@ class AlpacaTrader(Trader):
         self._api.trade_stream.subscribe_trade_updates(self._tradeUpdateHandler)
         log.info("Starting Trade Update Websocket")
         self._tradeThread = threading.Thread(name="Alpaca Trade", target=self._api.trade_stream.run)
-        self._tradeThread.start()
 
         self._curDate = datetime.date.today()
 
@@ -240,14 +240,21 @@ class AlpacaTrader(Trader):
             for order in cmOrders:
                 self._db.addOrder(order)
 
-            # TODO stop orders?
+                if stock.stopOrder is None and order.orderType() == OrderType.STOP:
+                    stock.stopOrder = order
+
+            lastOrder = None
+
+            for order in cmOrders:
+                if order.orderType() != OrderType.STOP:
+                    lastOrder = order
+                    break
+
+            if lastOrder is None:
+                log.warning(f"Open position, but could not find last non-stop order, {stock}")
+                continue
 
             if stock.position is not None:
-                if len(orders) == 0:
-                    # TODO how to handle a position but no orders?
-                    # maybe this won't happen?
-                    raise RuntimeError("Open position, but no orders")
-                lastOrder = cmOrders[0]
                 if lastOrder.orderType() == OrderType.BUY:
                     if lastOrder.qty() != stock.position.qty():
                         # TODO how to handle last buy not having the full qty?
@@ -259,6 +266,8 @@ class AlpacaTrader(Trader):
                     # TODO how to handle last order not being a BUY?
                     log.warning(f"Open position, but last order was not a buy ({stock.symbol}, {stock.position})")
                     stock.buyDate = lastOrder.timestamp()
+        # end for symbol
+        self._tradeThread.start()
 
     def postRun(self) -> None:
         log.info('Stopping System')
@@ -390,16 +399,28 @@ class AlpacaTrader(Trader):
 
         # TODO make these not error?
         if orderType == OrderType.BUY and stock.buyOrder is None:
-            raise RuntimeError("Unknown BUY trade update, Stock.buyOrder is None")
+            log.warning(f"Unknown BUY trade update, Stock.buyOrder is None, {stock}")
         elif orderType == OrderType.SELL and stock.sellOrder is None:
-            raise RuntimeError("Unkown SELL trade update, Stock.sellOrder is None")
+            log.warning(f"Unkown SELL trade update, Stock.sellOrder is None, {stock}")
         elif orderType == OrderType.STOP and stock.stopOrder is None:
-            raise RuntimeError("Unkown STOP trade update, Stock.stopOrder is None")
+            log.warning(f"Unkown STOP trade update, Stock.stopOrder is None, {stock}")
+
+        if order.status() == OrderStatus.UNFILLED:
+            return
+
+        if orderType == OrderType.BUY:
+            stock.buyOrder = order
+            stock.buyDate = self._curDate
+        elif orderType == OrderType.STOP:
+            stock.stopOrder = order
+        elif orderType == OrderType.SELL:
+            stock.sellOrder = order
+            stock.buyDate = None
+
+        if order.status() in (OrderStatus.CANCELED, OrderStatus.REPLACED):
+            return
 
         self.notifyOrderEvent(order)
-
-        if order.status() != OrderStatus.FILLED:
-            return
 
         qty = order.filledQty()
         price = order.filledAvgPrice()
@@ -407,27 +428,15 @@ class AlpacaTrader(Trader):
 
         self._next_notification.addTrade(stock.symbol, order.sideStr(), qty, price, value)
 
-        if orderType == OrderType.BUY:
-            log.warning(f"Setting buy date {order.status().name} {order.symbol()} {order.sideStr()}")
-            stock.buyDate = self._curDate
-        else:
-            log.warning(f"Resetting buy date {order.status().name} {order.symbol()} {order.sideStr()}")
-            stock.buyDate = None
-
-        if orderType == OrderType.BUY:
-            stock.buyOrder = order
-        elif orderType == OrderType.STOP:
-            stock.stopOrder = order
-        elif orderType == OrderType.SELL:
-            stock.sellOrder = order
-
         try:
             x = self._followOrders.pop(order.orderid())
+            log.debug(f"Submitting follow order {x.client_order_id=}")
             newOrder = self._api.trade.submit_order(x)
             if not isinstance(newOrder, models.Order):
                 raise RuntimeError()
             if isinstance(x, tradeReq.StopOrderRequest):
                 stock.stopOrder = AlpacaOrder(newOrder)
+                self._db.addOrder(stock.stopOrder)
         except KeyError:
             pass
 
@@ -439,9 +448,6 @@ class AlpacaTrader(Trader):
         positions: List[models.Position] = x
         openset = set()
         for p in positions:
-            if p.qty_available != p.qty:
-                # Ignore positions that haven't fully completed yet
-                continue
             openset.add(p.symbol)
             try:
                 self.stocks[p.symbol].position = AlpacaPosition(p, )
@@ -552,7 +558,7 @@ class AlpacaTrader(Trader):
                 stop_price=stopPrice,
                 client_order_id=stopID.hex
             )
-
+            log.debug(f"Submitting buy with follow stop {stopID=}")
             x = self._api.trade.submit_order(req)
             if not isinstance(x, models.Order):
                 raise CMError()
@@ -592,33 +598,56 @@ class AlpacaTrader(Trader):
         raise NotImplementedError
 
     def submitUpdateStop(self, stock: Stock, stopPrice: float) -> None:
-        if stock.stopOrder is not None:
+        roundedStop = round(stopPrice, 2)
+        if stock.stopOrder is not None and stock.stopOrder.status() == OrderStatus.UNFILLED:
             oldStop = stock.stopOrder.stopPrice()
             if oldStop is None:
                 raise RuntimeError()
 
-            roundedStop = round(stopPrice, 2)
             if round(oldStop, 2) == roundedStop:
                 log.debug("Stop value is the same, not updating")
                 return
 
             oldID = stock.stopOrder.orderid()
+            stopID = uuid.uuid4()
             req = tradeReq.ReplaceOrderRequest(
                 qty=None,
                 time_in_force=None,
                 stop_price=roundedStop,
                 limit_price=None,
                 trail=None,
-                client_order_id=None
+                client_order_id=stopID.hex
             )
-            order = self._api.trade.replace_order_by_id(stock.stopOrder.orderid(), req)
+            # This needs the alpaca ID, not the client
+            order = self._api.trade.replace_order_by_id(stock.stopOrder.data().id, req)
             if not isinstance(order, models.Order):
                 raise CMError()
 
             log.debug("Submitting update stop, oldID: %s newID: %s", oldID, order.id)
             stock.stopOrder = AlpacaOrder(order)
 
-            self._db.setStop(stock.symbol, stopPrice)
+        else:
+            stopID = uuid.uuid4()
+            if stock.position is None:
+                log.error("Cannot make stop, no open positino")
+                return
+            req = tradeReq.StopOrderRequest(
+                symbol=stock.symbol,
+                qty=stock.position.qty(),
+                side=tradeEnum.OrderSide.SELL,
+                type=tradeEnum.OrderType.MARKET,
+                time_in_force=tradeEnum.TimeInForce.DAY,
+                stop_price=roundedStop,
+                client_order_id=stopID.hex
+            )
+            order = self._api.trade.submit_order(req)
+            if not isinstance(order, models.Order):
+                raise CMError()
+            log.debug("Submitting new stop, newID: %s", order.id)
+            stock.stopOrder = AlpacaOrder(order)
+
+        self._db.setStop(stock.symbol, roundedStop)
+        self._db.addOrder(stock.stopOrder)
 
     def now(self) -> datetime.date:
         clock = self._clock()
@@ -627,11 +656,13 @@ class AlpacaTrader(Trader):
     def _submitNewStopOrders(self):
         for stock in self.stocks.values():
             if stock.stopOrder is not None:
+                log.debug(f"Submitting daily stop order for {stock}")
                 req = tradeReq.StopOrderRequest(
                     symbol=stock.symbol,
                     side=tradeEnum.OrderSide.SELL,
                     type=tradeEnum.OrderType.STOP,
-                    time_if_force=tradeEnum.TimeInForce.DAY,
+                    qty=stock.stopOrder.qty(),
+                    time_in_force=tradeEnum.TimeInForce.DAY,
                     stop_price=stock.stopOrder.stopPrice()
                 )
 

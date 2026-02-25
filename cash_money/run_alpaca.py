@@ -3,10 +3,12 @@ import sys
 from argparse import ArgumentParser
 from typing import List, Optional
 import logging
+import traceback
 
 from cash_money.trading.nodeStrategy import NodeStrategy, loadStratFromJson
 from cash_money.trading.notifiers.push_bullet_notifier import PushBulletNotifier
 from cash_money.trading.notifiers.email_notifier import EmailNotifier
+from cash_money.trading.events import ErrorEvent
 from cash_money.trading.notifiers.console_notifier import ConsoleNotifier
 from cash_money.trading.brokers.alpaca_trader import AlpacaTrader
 from cash_money.trading.brokers.timeframes.dailyTF import DailyTF
@@ -101,6 +103,9 @@ def runAlpacaTrader(
         pass
     except Exception as err:
         print(err)
+        if isinstance(notifier, EmailNotifier):
+            event = ErrorEvent(traceback.format_exc())
+            notifier.onError(event)
     finally:
         # Errors will be logged in runTradeBroker
         trader.postRun()

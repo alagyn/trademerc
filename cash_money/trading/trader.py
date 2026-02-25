@@ -14,7 +14,7 @@ BUY_PWR_SAFETY = 0.985
 
 
 def calcQtyFractional(buyPwr: float, cost: float) -> float:
-    return buyPwr / cost
+    return round(buyPwr / cost, 2)
 
 
 def calcQtyNonfractional(buyPwr: float, cost: float) -> int:
@@ -175,9 +175,13 @@ class Trader:
 
     def runActions(self, actions: List[Action]):
         numOutOfMarket = 0
+        numPending = 0
         for stock in self.stocks.values():
-            if stock.status() == StockStatus.OutMarket:
-                numOutOfMarket += 1
+            match stock.status():
+                case StockStatus.OutMarket:
+                    numOutOfMarket += 1
+                case StockStatus.Pending:
+                    numPending += 1
 
         usableCash = self.buying_power - self.totalUnsettled
 
@@ -188,6 +192,7 @@ class Trader:
 
         log.info(f"Unsettled Funds: ${self.totalUnsettled:.2f}, usable cash: ${usableCash:.2f}")
         log.info(f"Num out of market: {numOutOfMarket}, per-stock cash: ${buyPwr:.2f}")
+        log.info(f"Num pending positions: {numPending}")
         log.info(f"Unsettled Day trades: {self.totalDayTrades}")
 
         for a in actions:
@@ -248,18 +253,14 @@ class Trader:
             raise cmErrors.ActionError("Action not an UpdateStopAction")
 
         o = action.stock.stopOrder
-        if o is None:
-            log.warning(f'Cannot Update stop, no stop order created:\n\t{action}')
-            return
-
-        oldPrice = o.stopPrice()
-        if oldPrice is None:
-            log.warning(f'Cannot Update stop, invalid stop order:\n\t{action}')
-            return
-
-        if action.stopPrice == oldPrice:
-            log.info(f"Ignoring {action}, stop-price is equal")
-            return
+        if o is not None:
+            oldPrice = o.stopPrice()
+            if oldPrice is None:
+                log.warning(f'Cannot Update stop, invalid stop order:\n\t{action}')
+                return
+            if action.stopPrice == oldPrice:
+                log.info(f"Ignoring {action}, stop-price is equal")
+                return
 
         self.submitUpdateStop(action.stock, action.stopPrice)
 

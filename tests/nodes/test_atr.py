@@ -10,14 +10,14 @@ class ATRTest(unittest.TestCase):
 
     def test_8Day(self):
         atrNode = AverageTrueRange()
+        tester = Tester(atrNode)
         atrNode.args[PERIOD].value = 8
+        atrNode.init()
         atrNode.setup()
 
         self.assertEqual(8, atrNode._atr_smma._p)
 
         i = DatamapIter(atrNode, RAW_TEST_DATA)
-
-        tester = Tester(atrNode)
 
         # ATR, TR
         # yapf: disable

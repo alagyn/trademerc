@@ -4,6 +4,8 @@ from typing import Deque
 from cash_money.nodes.stochasticNode import Stochastic, DP, KP, SP
 from collections import deque
 
+from nodepasta.testing.tester import Tester
+
 
 class StochTest(unittest.TestCase):
 
@@ -48,21 +50,24 @@ class StochTest(unittest.TestCase):
             expected.append((percK, percDFast, percDSlow))
 
         stoch = Stochastic()
+        tester = Tester(stoch)
+        stoch.init()
         stoch.args[KP].value = 5
         stoch.args[DP].value = 10
         stoch.args[SP].value = 10
+
         stoch.setup()
 
         i = DatamapIter(stoch, RAW_TEST_DATA)
 
-        percKOut = stoch.percKOut
-        percDOut = stoch.percDOut
-        percDSOut = stoch.percDSOut
-
         for idx, e in enumerate(expected):
             next(i)
-            stoch.execute()
+            out = tester.test({})
 
-            self.assertAlmostEqual(e[0], percKOut.value, 2, msg=f'Idx: {idx}')
-            self.assertAlmostEqual(e[1], percDOut.value, 2, msg=f'Idx: {idx}')
-            self.assertAlmostEqual(e[2], percDSOut.value, 2, msg=f'Idx: {idx}')
+            percKOut = out["%K"]
+            percDOut = out["%D"]
+            percDSOut = out["%D-Slow"]
+
+            self.assertAlmostEqual(e[0], percKOut, 2, msg=f'Idx: {idx}')
+            self.assertAlmostEqual(e[1], percDOut, 2, msg=f'Idx: {idx}')
+            self.assertAlmostEqual(e[2], percDSOut, 2, msg=f'Idx: {idx}')

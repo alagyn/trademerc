@@ -8,7 +8,8 @@
             "name": "Easy Alpaca",
             "type": "debugpy",
             "request": "launch",
-            "module": "cash_money.easy_run_alpaca",
+            "module": "cash_money.run_alpaca",
+            "args": ["--strat=config/always_buy.strat", "--stocks=config/example_stocks.txt"],
             "justMyCode": true
         },
         {

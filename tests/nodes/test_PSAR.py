@@ -9,14 +9,14 @@ class PSARTest(unittest.TestCase):
 
     def test_uptrend(self):
         sar = ParabolicSAR()
+        tester = Tester(sar)
+        sar.init()
         sar.setup()
 
         self.assertEqual(DEFAULT_AF_START, sar._af, "The start AF is not correct")
 
         datamap = {}
         sar.datamap._datamap = datamap  # type: ignore
-
-        tester = Tester(sar)
 
         # HI, LO, Expected
         # yapf: disable
@@ -58,14 +58,14 @@ class PSARTest(unittest.TestCase):
 
     def test_downtrend(self):
         sar = ParabolicSAR()
+        tester = Tester(sar)
+        sar.init()
         sar.setup()
 
         self.assertEqual(DEFAULT_AF_START, sar._af, "The start AF is not correct")
 
         datamap = {}
         sar.datamap._datamap = datamap  # type: ignore
-
-        tester = Tester(sar)
 
         # yapf: disable
         testvals = [

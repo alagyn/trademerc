@@ -10,7 +10,7 @@ from email.mime.text import MIMEText
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from cash_money.trading.events import EndOfTradeStepEvent
+from cash_money.trading.events import EndOfTradeStepEvent, ErrorEvent
 
 from ..events import CMEventListener, Notification
 
@@ -72,10 +72,11 @@ class EmailNotifier(CMEventListener):
 
         self.send_message(txt)
 
-    def send_message(self, msg: str):
+    def send_message(self, msg: str, title: str | None = None):
         now = time.time()
 
-        title = datetime.datetime.now().strftime("Trades %a-%b-%d-%Y-%H.%M.%S")
+        if title is None:
+            title = datetime.datetime.now().strftime("Trades %a-%b-%d-%Y-%H.%M.%S")
 
         email = MIMEText(msg, "html")
         email["Subject"] = title
@@ -88,6 +89,9 @@ class EmailNotifier(CMEventListener):
 
     def onEndOfTradeStep(self, event: EndOfTradeStepEvent):
         Thread(target=self._updateThread, args=(event.notif, ), daemon=True).start()
+
+    def onError(self, event: ErrorEvent):
+        self.send_message(event.message, "Error")
 
 
 if __name__ == "__main__":
