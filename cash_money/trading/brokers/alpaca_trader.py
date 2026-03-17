@@ -63,6 +63,8 @@ class AlpacaOrder(Order):
         return self._type
 
     def symbol(self) -> str:
+        if self._data.symbol is None:
+            raise RuntimeError()
         return self._data.symbol
 
     def status(self) -> OrderStatus:
@@ -411,7 +413,11 @@ class AlpacaTrader(Trader):
             stock.buyOrder = order
             stock.buyDate = self._curDate
         elif orderType == OrderType.STOP:
-            stock.stopOrder = order
+            if order.status() == OrderStatus.FILLED:
+                # Clear out the stop order so we don't try to resubmit it
+                stock.stopOrder = None
+            else:
+                stock.stopOrder = order
         elif orderType == OrderType.SELL:
             stock.sellOrder = order
             stock.buyDate = None

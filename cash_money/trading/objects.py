@@ -162,6 +162,9 @@ class Stock:
     def updateBuyDate(self, date: datetime.date):
         self.buyDate = date
 
+    def __str__(self) -> str:
+        return f'Stock({self.symbol})'
+
 
 class ActionEnum(IntEnum):
     Buy = enum.auto()
