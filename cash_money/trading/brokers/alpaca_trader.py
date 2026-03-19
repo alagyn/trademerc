@@ -661,18 +661,30 @@ class AlpacaTrader(Trader):
     def _submitNewStopOrders(self):
         for stock in self.stocks.values():
             if stock.stopOrder is not None:
-                log.debug(f"Submitting daily stop order for {stock}")
-                req = tradeReq.StopOrderRequest(
-                    symbol=stock.symbol,
-                    side=tradeEnum.OrderSide.SELL,
-                    type=tradeEnum.OrderType.STOP,
-                    qty=stock.stopOrder.qty(),
-                    time_in_force=tradeEnum.TimeInForce.DAY,
-                    stop_price=stock.stopOrder.stopPrice()
-                )
+                if stock.bar is None:
+                    log.warning(f'Missing bar')
+                else:
+                    stopPrice = stock.stopOrder.stopPrice()
+                    if stopPrice is None:
+                        log.warning(f'Missing stop price')
+                    elif stock.bar.close < stopPrice:
+                        log.debug(f"Price dropped below stop, closing position")
+                        self.closePosition(stock)
+                        stock.stopOrder = None
+                    else:
+                        log.debug(f"Submitting daily stop order for {stock}")
 
-                order = self._api.trade.submit_order(req)
-                if not isinstance(order, models.Order):
-                    raise RuntimeError()
-                stock.stopOrder = AlpacaOrder(order)
-                self._db.addOrder(stock.stopOrder)
+                        req = tradeReq.StopOrderRequest(
+                            symbol=stock.symbol,
+                            side=tradeEnum.OrderSide.SELL,
+                            type=tradeEnum.OrderType.STOP,
+                            qty=stock.stopOrder.qty(),
+                            time_in_force=tradeEnum.TimeInForce.DAY,
+                            stop_price=stock.stopOrder.stopPrice()
+                        )
+
+                        order = self._api.trade.submit_order(req)
+                        if not isinstance(order, models.Order):
+                            raise RuntimeError()
+                        stock.stopOrder = AlpacaOrder(order)
+                        self._db.addOrder(stock.stopOrder)
