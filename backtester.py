@@ -2,10 +2,11 @@ import time
 from datetime import datetime
 import backtrader as bt
 from argparse import ArgumentParser
-import os
-import configparser
 from strategies.master_strategy import MasterStrategy
+from bt_errors import *
 import yfinance as yf
+import json
+from consts import STRAT_FORMAT, DATE_FMT
 
 # TODO remove/update
 """
@@ -54,57 +55,62 @@ def sqn(strat):
     return analyzer.sqn
 
 
-def main():
-    parser = ArgumentParser()
-    parser.add_argument(
-        '--stocks', '-stx',
-        required=True,
-        type=str
-    )
-
-    parser.add_argument(
-        '--strategy', '-str',
-        required=True,
-        type=str
-    )
-
-    args = parser.parse_args()
-
-    start_date = datetime(2018, 1, 1)
-    end_date = datetime.today()
-
+def loadStockFile(file):
     stocks = []
+    with open(file, mode='r') as f:
+        lines = [x.strip() for x in f.readlines()]
+        for x in lines:
+            if not x.startswith('#'):
+                stocks.append(x)
 
-    if os.path.exists(args.stocks):
-        with open(args.stocks, mode='r') as f:
-            lines = [x.strip() for x in f.readlines()]
-            for x in lines:
-                if not x.startswith('#'):
-                    stocks.append(x)
-    else:
-        print('Invalid Stock list file')
+    return stocks
 
 
-    config = configparser.ConfigParser()
-    config.read(args.strategy)
+def loadStratFile(file):
+    with open(file, mode='r') as f:
+        strat = json.load(f)
+        verifyStrat(strat)
+        return strat
+
+
+def recursVerify(fmt, strat, path):
+    for key, val in fmt.items():
+        curPath = path + '->' + key
+        try:
+            stratVal = strat[key]
+        except KeyError:
+            raise StrategyMissingVal(curPath)
+
+        if not isinstance(stratVal, type(val)):
+            if not (isinstance(val, float) and isinstance(stratVal, int)):
+                raise StrategyInvalidType(curPath, type(val), type(stratVal))
+
+        if isinstance(val, dict):
+            recursVerify(val, stratVal, curPath)
+
+
+def verifyStrat(strat):
+    with open(STRAT_FORMAT, mode='r') as f:
+        fmt = json.load(f)
+
+    print(fmt)
+    recursVerify(fmt, strat, "root")
+
+
+def backtest(stock: str, strat, start_date: str, end_date: str, plotter=None):
 
     cerebro = bt.Cerebro()  # Create a cerebro entity
 
     cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="ta")  # Adds trade analyzer
     cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")  # Adds SQN analyzer
 
-    cerebro.addstrategy(MasterStrategy, config)
+    cerebro.addstrategy(MasterStrategy, strat['variables'])
 
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)  # Sets the amount willing to risk per trade
 
-    fmt = '%Y-%m-%d'
-    sd = start_date.strftime(fmt)
-    ed = end_date.strftime(fmt)
-
-    for stock in stocks:
-        data = bt.feeds.PandasData(dataname=yf.download(stock, sd, ed, auto_adjust=True))
-        cerebro.adddata(data)
-        print(f'Stock: {stock}')
+    data = bt.feeds.PandasData(dataname=yf.download(stock, start_date, end_date, auto_adjust=True))
+    cerebro.adddata(data)
+    print(f'Stock: {stock}')
 
     cerebro.broker.setcash(10000)  # Sets initial portfolio amount
 
@@ -127,9 +133,35 @@ def main():
     tradeAnalysis(strat)
     print(f'SQN: {sqn(strat):.2f}')
 
-    cerebro.plot()
+    cerebro.plot(plotter=plotter)
     # TODO remove?
     # record()
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument(
+        '--stock', '-stk',
+        required=True,
+        type=str
+    )
+
+    parser.add_argument(
+        '--strategy', '-str',
+        required=True,
+        type=str
+    )
+
+    args = parser.parse_args()
+    strat = loadStratFile(args.strategy)
+
+    start_date = datetime(2018, 1, 1).strftime(DATE_FMT)
+    end_date = datetime.today().strftime(DATE_FMT)
+
+    try:
+        backtest(args.stock, strat, start_date, end_date)
+    except StrategyError as err:
+        print(err)
 
 
 if __name__ == '__main__':

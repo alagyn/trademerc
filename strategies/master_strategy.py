@@ -1,13 +1,7 @@
-import configparser
-
 import backtrader as bt
 import backtrader.indicators as btI
 from datetime import timedelta as TD
-from configparser import ConfigParser
-
-
-def get(c: ConfigParser, x: str):
-    return c.get('STRATEGY', x)
+from bt_errors import StrategyError
 
 
 # Standard trading strategy for trend trading, see commented section above for sudo code
@@ -15,7 +9,7 @@ class MasterStrategy(bt.Strategy):
 
     # Function to initialize all variables and indicators of this strategy
     # noinspection PyArgumentList
-    def __init__(self, cfg: ConfigParser):
+    def __init__(self, variables):
         self.dataclose = self.datas[0].close  # Defines closing price for each day
         self.confidence = 0
         # Sets initial state of "action" taken, either None, Buy, Hold, or Sell
@@ -38,37 +32,48 @@ class MasterStrategy(bt.Strategy):
 
         self.sell_date = None
 
-        try:
-            self.safety_factor = float(get(cfg, 'safety_factor'))
-            self.days_to_update_stop_price = int(get(cfg, 'days_to_update_stop_price'))
-            # Indicators
-            plots = False
-            self.emafast = btI.ExponentialMovingAverage(period=int(get(cfg, 'emafast')), plot=plots)
-            self.emaslow = btI.ExponentialMovingAverage(period=int(get(cfg, 'emaslow')), plot=plots)
-            self.emalong = btI.ExponentialMovingAverage(period=int(get(cfg, 'emalong')), plot=plots)
-            self.macd = btI.MACD(
-                period_me1=int(get(cfg, 'macdfast')),
-                period_me2=int(get(cfg, 'macdslow')),
-                period_signal=int(get(cfg, 'macdsignal')),
-                plot=plots
-            )
-            self.macdX = btI.CrossOver(self.macd.macd, self.macd.signal, plot=plots)
-            self.stoch = btI.Stochastic(
-                period=int(get(cfg, 'stochp')),
-                period_dfast=int(get(cfg, 'stochfast')),
-                period_dslow=int(get(cfg, 'stochslow')),
-                plot=plots
-            )
-            self.stochX = btI.CrossOver(self.stoch.percK, self.stoch.percD, plot=plots)
-            self.parabolic = btI.ParabolicSAR(
-                af=float(get(cfg, 'parabolicaf')),
-                afmax=float(get(cfg, 'parabolicafmax')),
-                plot=plots
-            )
-            self.atr = btI.AverageTrueRange(period=int(get(cfg, 'atr')), plot=plots)
-        except (configparser.NoOptionError, KeyError) as err:
-            print(f'Missing Strategy Param: {err}')
-            exit()
+        def getVar(*path):
+            cur = variables
+            try:
+                for x in path:
+                    cur = cur[x]
+                return cur
+            except KeyError as err:
+                p = ''
+                for idx, x in enumerate(path):
+                    p += x
+                    if idx + 1 < len(path):
+                        p += '->'
+
+                raise StrategyError(f'Missing Strategy Variable: {p}')
+
+        self.safety_factor = float(getVar('safety'))
+        self.days_to_update_stop_price = int(getVar('days_to_update'))
+        # Indicators
+        plots = False
+        self.emafast = btI.ExponentialMovingAverage(period=int(getVar('ema', 'fast')), plot=plots)
+        self.emaslow = btI.ExponentialMovingAverage(period=int(getVar('ema', 'slow')), plot=plots)
+        self.emalong = btI.ExponentialMovingAverage(period=int(getVar('ema', 'long')), plot=plots)
+        self.macd = btI.MACD(
+            period_me1=int(getVar('macd', 'fast')),
+            period_me2=int(getVar('macd', 'slow')),
+            period_signal=int(getVar('macd', 'signal')),
+            plot=plots
+        )
+        self.macdX = btI.CrossOver(self.macd.macd, self.macd.signal, plot=plots)
+        self.stoch = btI.Stochastic(
+            period=int(getVar('stoch', 'p')),
+            period_dfast=int(getVar('stoch', 'fast')),
+            period_dslow=int(getVar('stoch', 'slow')),
+            plot=plots
+        )
+        self.stochX = btI.CrossOver(self.stoch.percK, self.stoch.percD, plot=plots)
+        self.parabolic = btI.ParabolicSAR(
+            af=float(getVar('parabolic', 'af')),
+            afmax=float(getVar('parabolic', 'afmax')),
+            plot=plots
+        )
+        self.atr = btI.AverageTrueRange(period=int(getVar('atr')), plot=plots)
 
     # Logs the information
     def log(self):

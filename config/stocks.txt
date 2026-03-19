@@ -6,7 +6,7 @@ QQQ
 #TSLA
 #AAPL
 #DOCU
-ZM
+#ZM
 #NVDA
 #AMD
 #TQQQ
