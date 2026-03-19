@@ -2,3 +2,4 @@
 venv/
 *.pyc
 ignore/
+stats.json
