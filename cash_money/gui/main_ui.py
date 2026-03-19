@@ -43,12 +43,12 @@ class MainUI:
         if im.Begin("##main", flags=windowFlags):
             if im.BeginTabBar("_mainTabs"):
 
-                if im.BeginTabItem("Backtesting"):
-                    self.backtesterTab.render(self.state)
-                    im.EndTabItem()
-
                 if im.BeginTabItem(f"Strategy{' *' if self.needToSave() else ''}###strategy"):
                     self.strategyTab.render(self.state)
+                    im.EndTabItem()
+
+                if im.BeginTabItem("Backtesting"):
+                    self.backtesterTab.render(self.state)
                     im.EndTabItem()
 
                 if im.BeginTabItem("Config"):
