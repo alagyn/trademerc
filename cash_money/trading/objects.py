@@ -144,6 +144,9 @@ class Stock:
     def setNextStopDate(self, date: datetime.datetime):
         self.nextStopUpdate = date
 
+    def updateBuyDate(self, date: datetime.date):
+        self.buyDate = date
+
 
 class ActionEnum(IntEnum):
     Buy = enum.auto()
