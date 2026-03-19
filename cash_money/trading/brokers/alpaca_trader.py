@@ -498,7 +498,7 @@ class AlpacaTrader(Trader):
             req = tradeReq.ReplaceOrderRequest(
                 qty=None,
                 time_in_force=None,
-                stop_price=f"{stopPrice:.2f}",  # type: ignore
+                stop_price=round(stopPrice,2),  # type: ignore
                 limit_price=None,
                 trail=None,
                 client_order_id=None
