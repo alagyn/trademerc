@@ -1,0 +1,1 @@
+venv\Scripts\python.exe backtester_trend.py -stx config\stocks.txt -str config\strat1.cfg
