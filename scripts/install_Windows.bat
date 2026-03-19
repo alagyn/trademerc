@@ -1,6 +1,6 @@
 :: batch magic to get cur dir
 set SCRIPT_DIR=%~dp0
-cd SCRIPT_DIR\..
+cd %SCRIPT_DIR%\..
 
 py -m venv venv
 
