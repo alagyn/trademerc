@@ -28,6 +28,9 @@ STATS_WIDTH = 200
 
 SPIN_STATES = ["\\", "|", "/", "-"]
 
+PLOT_HEIGHT = 250
+PLOT_WIDTH_PERC = 0.7
+
 
 def clip(minVal, val, maxVal):
     if val.val < minVal:
@@ -79,6 +82,10 @@ class BacktesterTab(CMEventListener):
         self.startingCash = im.IntRef(10000)
 
         self.errorMessage = ""
+
+        # linked plot dimensions
+        self.plotRectXMin = im.DoubleRef()
+        self.plotRectXMax = im.DoubleRef()
 
     def render(self, state: UIState) -> None:
         if im.BeginTable("config table", 2):
@@ -175,24 +182,124 @@ class BacktesterTab(CMEventListener):
 
         im.Separator()
 
-        im.BeginDisabled()
-        im.Text("Selected Stock:")
-        im.NewLine()
-        im.EndDisabled()
-        for idx, x in enumerate(state.stocks):
-            im.SameLine()
-            if im.RadioButton(x, self.selectedStockIdx, idx):
-                self.reset_axes = True
+        # Calculate available width for plots and stats
+        available_width = im.GetContentRegionAvail().x
+        plot_width = available_width * PLOT_WIDTH_PERC
+        plot_dim = im.Vec2(plot_width, PLOT_HEIGHT)
 
-        if im.BeginTable("mainTable", 2, flags=im.TableFlags.SizingFixedFit):
-            im.TableNextColumn()
-            im.TableSetupColumn("stats", 0, STATS_WIDTH)
+        tableFlags = im.TableFlags.SizingFixedFit
 
-            self.renderStats()
-            im.TableNextColumn()
-            name = state.stocks[self.selectedStockIdx.val] if len(state.stocks) > 0 else "  "
-            self.renderPlots(name)
-            im.EndTable()
+        if implot.BeginAlignedPlots("backtest_graphs"):
+            # Portfolio plot with summary at the top
+            if im.BeginTable("Portfolio Row", 2, tableFlags):
+                im.TableNextColumn()
+
+                # Portfolio plot
+                with self.data_lock:
+                    if len(self.portfolio) > 0 and implot.BeginPlot("Portfolio Value##plot", plot_dim):
+                        if self.reset_axes:
+                            implot.SetNextAxesToFit()
+                        implot.SetupAxisLinks(implot.Axis.X1, self.plotRectXMin, self.plotRectXMax)
+
+                        implot.SetupAxisScale(implot.Axis.X1, implot.Scale.Time)
+                        implot.SetupAxisFormat(implot.Axis.Y1, "$%g")
+
+                        # Plot position values for each symbol
+                        for symbol, arr in self.pos_values.items():
+                            if len(arr) > 0:
+                                implot.PlotLine(f"{symbol}##pos", self.portfolio_ts, arr)
+
+                        # Plot overall portfolio value
+                        if len(self.portfolio) > 0:
+                            implot.PlotLine("Portfolio Value##total", self.portfolio_ts, self.portfolio)
+
+                        implot.EndPlot()
+
+                # Portfolio stats (keep the same)
+                im.TableNextColumn()
+                if self.runStats:
+                    im.Text(f"Portfolio Summary")
+                    im.Separator()
+                    im.Text(f"Starting Value: ${self.runStats.startValue:,.2f}")
+                    im.Text(f"Ending Value: ${self.runStats.endValue:,.2f}")
+                    total_profit = sum(stats.profit for stats in self.runStats.symbolStats.values())
+                    im.Text(f"Total Profit: ${total_profit:,.2f}")
+                    im.Text(
+                        f"Total % Gain: {(self.runStats.endValue - self.runStats.startValue) / self.runStats.startValue:.2%}"
+                    )
+                    im.Text(f"SQN: {self.runStats.totalStats.sqn:.3f}")
+                else:
+                    im.Text("No portfolio data available")
+
+                im.EndTable()
+
+            im.Separator()
+            # Individual stock plots with their stats
+            if im.BeginChild("Stocks"):  # child window to keep the portfolio from scrolling away
+                for symbol in self.stocks:
+                    if im.BeginTable(f"Stock Row {symbol}", 2, tableFlags):
+                        im.TableNextColumn()
+
+                        # Stock plot
+                        with self.data_lock:
+                            if len(self.stock_closes[symbol]) > 0 and implot.BeginPlot(f"{symbol}##plot", plot_dim):
+                                if self.reset_axes:
+                                    implot.SetNextAxesToFit()
+
+                                implot.SetupAxisLinks(implot.Axis.X1, self.plotRectXMin, self.plotRectXMax)
+
+                                implot.SetupAxisScale(implot.Axis.X1, implot.Scale.Time)
+                                implot.SetupAxisFormat(implot.Axis.Y1, "$%g")
+
+                                buys, buys_ts = self.buys[symbol]
+                                sells, sells_ts = self.sells[symbol]
+
+                                # Plot price line
+                                closes = self.stock_closes[symbol]
+                                if len(closes) > 0:
+                                    implot.PlotLine(f"Price##{symbol}", self.portfolio_ts, closes)
+
+                                # Plot buy/sell markers
+                                if len(buys) > 0:
+                                    implot.PushStyleColor(implot.Col.MarkerOutline, BUY_COL)
+                                    implot.PlotScatter(f"Buy##{symbol}", buys_ts, buys)
+                                    implot.PopStyleColor()
+
+                                if len(sells) > 0:
+                                    implot.PushStyleColor(implot.Col.MarkerOutline, SELL_COL)
+                                    implot.PlotScatter(f"Sell##{symbol}", sells_ts, sells)
+                                    implot.PopStyleColor()
+
+                                implot.EndPlot()
+
+                            # Stock stats (keep the same)
+                            im.TableNextColumn()
+                            if self.runStats and symbol in self.runStats.symbolStats:
+                                stats = self.runStats.symbolStats[symbol]
+                                weight = abs(stats.profit) / self.runStats.endValue
+
+                                im.Text(f"{symbol} Summary")
+                                im.Separator()
+                                im.Text(f"Weight: {weight:.2%}")
+                                im.Text(f"Profit: ${stats.profit:,.2f}")
+                                im.Text(f"% Gain: {stats.percGain:.2%}")
+                                im.Text(f"SQN: {stats.sqn:.3f}")
+                                im.Text(f"Trades: {stats.trades}")
+                                im.Text(f"Win/Loss: {stats.wins}/{stats.losses}")
+                                im.Text(f"Win %: {stats.winPerc:.2%}")
+                                im.Text(f"Avg Gain: ${stats.avgGain:,.2f}")
+                                im.Text(f"Avg Loss: ${stats.avgLoss:,.2f}")
+                            else:
+                                im.Text(f"No data available for {symbol}")
+
+                            im.EndTable()
+
+                    im.Separator()
+                im.EndChild()
+            implot.EndAlignedPlots()
+
+        # Reset the axes flag after rendering all plots
+        self.reset_axes = False
 
     def resetPlots(self):
         with self.data_lock:
@@ -202,84 +309,6 @@ class BacktesterTab(CMEventListener):
             self.sells.clear()
             self.pos_values.clear()
             self.stock_closes.clear()
-
-    def renderPlots(self, selectedStock: str):
-        with self.data_lock:
-            vp = im.GetMainViewport()
-
-            if implot.BeginSubplots("Run Data",
-                                    2,
-                                    1,
-                                    im.Vec2(im.GetWindowWidth() - im.GetCursorPosX(), 500),
-                                    flags=implot.SubplotFlags.LinkAllX):
-                if self.reset_axes:
-                    implot.SetNextAxesToFit()
-
-                if implot.BeginPlot("Value"):
-                    implot.SetupAxisScale(implot.Axis.X1, implot.Scale.Time)
-                    implot.SetupAxisLimits(implot.Axis.Y1, 0, 10000)  # TODO
-                    implot.SetupAxisFormat(implot.Axis.Y1, "$%g")
-                    #implot.SetupAxisScale(implot.Axis.Y1, implot.Scale.Log10)
-                    for symbol, arr in self.pos_values.items():
-                        implot.PlotLine(symbol, self.portfolio_ts, arr)
-                    implot.PlotLine("Portfolio Value", self.portfolio_ts, self.portfolio)
-                    implot.EndPlot()
-                # Selected stock data
-
-                if self.reset_axes:
-                    implot.SetNextAxisToFit(implot.Axis.Y1)
-
-                if implot.BeginPlot(f"Selected Stock: {selectedStock}###selected_stock"):
-                    implot.SetupAxisScale(implot.Axis.X1, implot.Scale.Time)
-                    implot.SetupAxisFormat(implot.Axis.Y1, "$%g")
-                    #value = self.pos_values[selectedStock]
-                    #implot.PlotLine(selectedStock, self.portfolio_ts, value)
-
-                    buys, buys_ts = self.buys[selectedStock]
-                    sells, sells_ts = self.sells[selectedStock]
-
-                    implot.PushStyleColor(implot.Col.MarkerOutline, BUY_COL)
-                    implot.PlotScatter("Buy Value", buys_ts, buys)
-                    implot.PushStyleColor(implot.Col.MarkerOutline, SELL_COL)
-                    implot.PlotScatter("Sell Value", sells_ts, sells)
-                    implot.PopStyleColor(2)
-
-                    closes = self.stock_closes[selectedStock]
-                    implot.PlotLine("Price", self.portfolio_ts, closes)
-
-                    implot.EndPlot()
-
-                self.reset_axes = False
-                implot.SetupLegend(implot.Location.South)
-                implot.EndSubplots()
-        # end beginsubplots
-
-    def renderStats(self):
-        if im.BeginTable("stats", 2, outer_size=im.Vec2(STATS_WIDTH, 0)):
-
-            def item(label, data):
-                im.TableNextColumn()
-                im.Text(label)
-                im.TableNextColumn()
-                im.Text(data)
-
-            if self.runStats is None:
-                item("", "                        ")
-            else:
-                item("Starting Value", f'${self.runStats.startValue:,.2f}')
-                item("Ending Value", f'${self.runStats.endValue:,.2f}')
-                item("Profit", f'${self.runStats.totalStats.profit:,.2f}')
-                item("Percent Gain", f'{self.runStats.totalStats.percGain:.2%}')
-                item("SQN", f'{self.runStats.totalStats.sqn:.3f}')
-                item("Trades", str(self.runStats.totalStats.trades))
-                item("Wins", str(self.runStats.totalStats.wins))
-                item("Losses", str(self.runStats.totalStats.losses))
-                item("Win %", f'{self.runStats.totalStats.winPerc:.2%}')
-                item("W/L ratio", f'{self.runStats.totalStats.wlRatio:.2%}')
-                item("Avg. Gain", f'${self.runStats.totalStats.avgGain:,.2f}')
-                item("Avg. Loss", f'${self.runStats.totalStats.avgLoss:,.2f}')
-
-            im.EndTable()
 
     # Thread handler for backtesting
     # passes args to backetest func
