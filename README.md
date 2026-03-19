@@ -1,5 +1,4 @@
 ### TODO:
-1) Setup install file to create an environment and install packages
 2) Setup a GUI to perform a backtest with a strategy
 3) Integrate Alpaca paper trading API
 4) Reporting
