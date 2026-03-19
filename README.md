@@ -1,7 +1,24 @@
+### TODO:
+1) Setup install file to create an environment and install packages
+2) Setup a GUI to perform a backtest with a strategy
+3) Integrate Alpaca paper trading API
+4) Reporting
+	4a) Alert for stock meeting buy criteria and is bought @ X% of portfolio
+	4b) Alert for stock meeting sell criteria and sale is triggered
+	4c) Weekly update on: number of trades (buy and sold) and portfolio size, and portfolio change
+
+5) Setup GUI to create strategies - This is fairly complicated given the number of indicators and variables 
+
+
+
+
 ### Dependencies:  
 * backtrader  
 * yfinance  
 * matplotlib  
+
+
+### STRATEGY 1
 
 ### BUY CONDITIONS
 1) Confidence GREATER THAN 60% for X days
@@ -21,7 +38,6 @@
 * stochfast(P20|%K10) > 50: confidence =+0.05  
 * parablicsar(0.02|0.07) > price =+ 0.20  
 * XXXXX =+ 0.15  <--- NEED ANOTHER CRITERION   
-
 
 ### Stop conditions
 * Price - ATR (15 OR 30) * 1.5
