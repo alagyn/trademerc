@@ -70,10 +70,10 @@ class BacktesterTab(CMEventListener):
 
         self.stocks: List[str] = []
 
-        self.startDateStr = im.StrRef("1/1/2020", 20)
+        self.startDateStr = im.StrRef(str(datetime.datetime.now().replace(year=datetime.datetime.now().year - 1).strftime("%m/%d/%Y")), 20)
         self.validStartDateStr = True
 
-        self.endDateStr = im.StrRef("1/1/2021", 20)
+        self.endDateStr = im.StrRef(str(datetime.datetime.now().strftime("%m/%d/%Y")), 20)
         self.validEndDateStr = True
 
         self.startDate = datetime.datetime(2020, 1, 1)
