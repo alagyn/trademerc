@@ -3,6 +3,8 @@ import imgui as im
 from .ui_state import UIState
 from .tabs.backtesterTab import BacktesterTab
 from .tabs.strategyTab import StrategyTab
+from .tabs.configTab import ConfigTab
+from cash_money.utils.run_utils import _configLoc
 
 windowFlags = (
     im.WindowFlags.NoMove
@@ -20,7 +22,7 @@ class MainUI:
         # Tabs
         self.backtesterTab = BacktesterTab()
         self.strategyTab = StrategyTab()
-
+        self.configTab = ConfigTab(_configLoc)
     def init(self):
         self.state.init()
 
@@ -47,6 +49,10 @@ class MainUI:
 
                 if im.BeginTabItem(f"Strategy{' *' if self.needToSave() else ''}###strategy"):
                     self.strategyTab.render(self.state)
+                    im.EndTabItem()
+
+                if im.BeginTabItem("Config"):
+                    self.configTab.render()
                     im.EndTabItem()
 
                 im.EndTabBar()
