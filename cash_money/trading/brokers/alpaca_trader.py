@@ -153,13 +153,73 @@ class AlpacaTrader(Trader):
     def preRun(self):
         # TODO check for proper shutdown
         # First cancel any existing orders?
-        self._api.trade.cancel_orders()
+        #self._api.trade.cancel_orders()
+
+        get_orders_request = tradeReq.GetOrdersRequest(
+                status=tradeEnum.QueryOrderStatus.ALL,
+                limit=100,
+                after=None,
+                until=None,
+                direction=None,
+                nested=None,
+                side=None,
+                symbols=self.symbols
+            )
+
+        orders: List[models.Order] = self._api.trade.get_orders(filter=get_orders_request)
+        
+        if not orders:
+            log.info(f"No previous orders")
+            return
+
+        filled_orders: List[models.Order] = []
+        for order in orders:
+            if order.side == tradeEnum.OrderSide.BUY and order.status == tradeEnum.OrderStatus.FILLED:
+                filled_orders.append(order)
+                orders.remove(order)
+        
+        # API returns a list of all buy orders for all stocks, need to sort by symbol
+        if filled_orders:
+            dates_by_symbol: Dict[str, datetime.date] = defaultdict(lambda: None)
+            for order in filled_orders:
+                if dates_by_symbol[order.symbol] is None or order.filled_at > dates_by_symbol[order.symbol]:
+                    dates_by_symbol[order.symbol] = order.filled_at
+
+            for stock in self.stocks.values():
+                if stock.status() == StockStatus.InMarket and stock.buyDate == None:
+                    nbd = dates_by_symbol[stock.symbol]
+                    if not nbd:
+                        raise RuntimeError("No date from buy orders for stock")
+
+                    # nbd is from API so it is in UTC, convert to local time
+                    local_tz = pytz.timezone("US/Eastern")
+                    local_nbd = nbd.replace(tzinfo=pytz.utc).astimezone(local_tz)
+
+                    stock.updateBuyDate(local_nbd)
+                    log.info(f"Updating buyDate for {stock.symbol} to {local_nbd}")
+        
+        stop_orders: List[models.Order
+                            ] = [order for order in orders if order.order_type == tradeEnum.OrderType.STOP and order.status == tradeEnum.OrderStatus.NEW]
+        if stop_orders:
+            for order in stop_orders:
+                log.info(f"Setting stop order for {order.symbol}")
+                self.stocks[order.symbol].stopOrder = AlpacaOrder(order)
+
         # Close all positions?
         # self._api.close_all_positions()
 
     def postRun(self) -> None:
         log.info('Stopping System, Cancelling all existing orders')
-        self._api.trade.cancel_orders()
+        
+        #self._api.trade.cancel_orders()
+
+        # New
+        open_orders = self.getAllOrders()
+        for order in open_orders.values():
+            if order.orderType() != OrderType.STOP:
+                self.api.trade.cancel_order(order.data().id)
+
+
         # Close all positions?
         # self.api.close_all_positions()
         asyncio.run(self._api.data.stop_ws())
@@ -318,46 +378,6 @@ class AlpacaTrader(Trader):
         for s in closed:
             self.stocks[s].position = None
 
-        # Set buyDate for any stock that is in market without a buyDate
-        if self.tradeStep == 0:
-            get_orders_request = tradeReq.GetOrdersRequest(
-                status=tradeEnum.QueryOrderStatus.CLOSED,
-                limit=None,
-                after=None,
-                until=None,
-                direction=None,
-                nested=None,
-                side=tradeEnum.OrderSide.BUY,
-                symbols=self.symbols
-            )
-
-            orders: List[models.Order] = self._api.trade.get_orders(filter=get_orders_request)
-            if not orders:
-                raise RuntimeError("No buy orders")
-
-            filled_orders: List[models.Order
-                                ] = [order for order in orders if order.status == tradeEnum.OrderStatus.FILLED]
-            if not filled_orders:
-                raise RuntimeError("No filled buy orders")
-
-            # API returns a list of all buy orders for all stocks, need to sort by symbol
-            dates_by_symbol: Dict[str, datetime.date] = defaultdict(lambda: None)
-            for order in filled_orders:
-                if dates_by_symbol[order.symbol] is None or order.filled_at > dates_by_symbol[order.symbol]:
-                    dates_by_symbol[order.symbol] = order.filled_at
-
-            for stock in self.stocks.values():
-                if stock.status() == StockStatus.InMarket and stock.buyDate == None:
-                    nbd = dates_by_symbol[stock.symbol]
-                    if not nbd:
-                        raise RuntimeError("No date from buy ordersfor stock")
-
-                    # nbd is from API so it is in UTC, convert to local time
-                    local_tz = pytz.timezone("US/Eastern")
-                    local_nbd = nbd.replace(tzinfo=pytz.utc).astimezone(local_tz)
-
-                    stock.updateBuyDate(local_nbd)
-                    log.info(f"Updating buyDate for {stock.symbol} to {local_nbd}")
 
     def cancelAllOrders(self) -> None:
         self._api.trade.cancel_orders()
