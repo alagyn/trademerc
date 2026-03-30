@@ -77,15 +77,15 @@
                 <td>{{ "%.2f" % pos.pl }}</td>
                 <td>{{ "%.2f" % pos.price }}</td>
                 <td>{{ "%.2f" % pos.value }}</td>
-                <td>{{ pos.p_value }}</td>
-                <td>{{ pos.p_date }}</td>
-                {% if pos.stop_price %}
-                <td>{{ "%.2f" % pos.stop_price }}</td>
+                <td>{{ pos.purchaseValue }}</td>
+                <td>{{ pos.purchaseDate }}</td>
+                {% if pos.stopPrice %}
+                <td>{{ "%.2f" % pos.stopPrice }}</td>
                 {% else %}
                 <td></td>
                 {% endif %}
-                <td>{{ pos.last_stop }}</td>
-                <td>{{ pos.next_stop }}</td>
+                <td>{{ pos.lastStop }}</td>
+                <td>{{ pos.nextStop }}</td>
             </tr>
             {% endfor %}
         </table>

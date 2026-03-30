@@ -91,7 +91,7 @@ class EmailNotifier(CMEventListener):
         Thread(target=self._updateThread, args=(event.notif, ), daemon=True).start()
 
     def onError(self, event: ErrorEvent):
-        self.send_message(event.message, "Error")
+        self.send_message(f'<pre>{event.message}</pre>', "Error")
 
 
 if __name__ == "__main__":
