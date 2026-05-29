@@ -1,3 +1,3 @@
-# Mercuria
+# Trademerc
 
 README coming soon
